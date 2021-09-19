@@ -65,7 +65,7 @@ cat /root/config.json
 
 # cat config.json 
 {
-"server": "a.b.c:12356",
+"server": "a.com:12345",
 "up_mbps": 10,
 "down_mbps": 50,
 "http": {
@@ -76,7 +76,7 @@ cat /root/config.json
 "acl": "chnroutes.acl",
 "obfs": "pekora",
 "auth_str": "pekopeko",
-"server_name": "a.b.c",
+"server_name": "a.com",
 "insecure": false,
 "recv_window_conn": 15728640,
 "recv_window": 67108864,
