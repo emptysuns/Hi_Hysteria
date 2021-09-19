@@ -10,7 +10,7 @@ Hysteria这是一款非常优秀的代理程序，它很好的解决了，在搭
 
 ![image](https://raw.githubusercontent.com/HyNetwork/hysteria/master/docs/bench/bench.png)
 
-50mbps电信带宽北方北京出口 落地vir San Jose机房163线路，22-23点测试YT 1080p60直播流:
+50mbps电信北方北京出口 落地vir San Jose机房163线路，22-23点测试YT 1080p60直播流:
 
 ![image](https://cloud.iacg.cf/0:/normal/img/hihysteria/speed.png)
 
