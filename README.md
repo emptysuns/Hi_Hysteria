@@ -77,7 +77,7 @@ ctrl+c and +v. 保证目录结构如上图！
 
 运行setup.bat启动
 
-![image](https://cloud.iacg.cf/0:/normal/img/hihysteria/Screenshot_1.png)
+![image](https://cloud.iacg.cf/0:/normal/img/hihysteria/mark.png)
 
 - 客户端停止代理
 
