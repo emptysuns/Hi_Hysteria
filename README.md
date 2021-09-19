@@ -10,6 +10,15 @@ Hysteria这是一款非常优秀的代理程序，它很好的解决了，在搭
 
 ![image](https://raw.githubusercontent.com/HyNetwork/hysteria/master/docs/bench/bench.png)
 
+笔者电信北京出口50mbps带宽 落地vir San Jose机房22-23点测试YT 1080p60直播流:
+
+![image](https://cloud.iacg.cf/0:/normal/img/hihysteria/speed.png)
+
+```
+190/131329 dropped
+```
+
+可见效果如此明显！
 
 这是一款我在闲暇时为了方便自己而写的快速使用脚本，仅作学习用途。
 
