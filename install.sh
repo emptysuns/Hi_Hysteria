@@ -97,5 +97,6 @@ systemctl daemon-reload
 systemctl enable hysteria
 systemctl start hysteria
 echo "Tips:客户端默认只开启http代理!http://127.0.0.1:8888\n\n"
-echo  "\033[42;37m所有安装已经完成，配置文件已经在本目录生成！\033[0m\n\n"
+echo  "\033[42;37m所有安装已经完成，配置文件已经在本目录生成！\033[0m"
 cat ./config.json
+echo  "\033[42;37m安装完毕\033[0m\n\n"
