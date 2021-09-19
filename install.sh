@@ -49,7 +49,7 @@ cat <<EOF > /etc/hysteria/config.json
       "password": "pekopeko"
     }
   },
-  "acl": "/etc/hysteria/hysteria/chnroutes.acl",
+  "acl": "/etc/hysteria/chnroutes.acl",
   "recv_window_conn": 15728640,
   "recv_window_client": 67108864,
   "max_conn_client": 4096,
