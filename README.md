@@ -40,7 +40,7 @@ pekora
 
 
 当出现**安装完毕**字样后，在脚本的所处目录默认是/root下会生成一个config.json文件，
-将这个文件下载下来并加入下载release中提供的windows的client,保证这个文件和如下几个文件是同目录的，如下图（请保证这五个文件同目录）：
+将这个文件下载下来并加入[下载release](https://github.com/emptysuns/HiHysteria/releases/download/0.1/hihysteria_windows0.1.rar)中提供的windows的client,保证这个文件和如下几个文件是同目录的，如下图（请保证这五个文件同目录）：
 
 ![image](https://cloud.iacg.cf/0:/normal/img/hihysteria/Screenshot_2.png)
 
