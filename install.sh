@@ -91,7 +91,8 @@ RestartSec=10s
 [Install]
 WantedBy=multi-user.target
 EOF
-
+sysctl -w net.core.rmem_max=4000000
+sysctl -p
 chmod 644 /etc/systemd/system/hysteria.service
 systemctl daemon-reload
 systemctl enable hysteria
