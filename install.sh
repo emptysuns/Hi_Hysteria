@@ -50,8 +50,8 @@ cat <<EOF > /etc/hysteria/config.json
     }
   },
   "acl": "/etc/hysteria/chnroutes.acl",
-  "recv_window_conn": 15728640,
-  "recv_window_client": 67108864,
+  "recv_window_conn": 33554432,
+  "recv_window_client": 134217728,
   "max_conn_client": 4096,
   "disable_mtu_discovery": false
 }
@@ -72,8 +72,8 @@ cat <<EOF > config.json
 "auth_str": "pekopeko",
 "server_name": "$domain",
 "insecure": false,
-"recv_window_conn": 15728640,
-"recv_window": 67108864,
+"recv_window_conn": 33554432,
+"recv_window": 134217728,
 "disable_mtu_discovery": false
 }
 EOF
