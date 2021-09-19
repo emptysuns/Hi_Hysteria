@@ -6,7 +6,8 @@ by:[Hynetwork](https://github.com/HyNetwork)（Thank you!）
 
 Hysteria这是一款非常优秀的代理程序，它很好的解决了，在搭建代理服务器时最大的痛点--**线路垃圾**。在魔法咏唱时最难的不是搭建维护，而是在晚高峰时期的交付质量。~~当三大运营商晚高变成了：奠信、连不通、移不动时，你我都有感触。~~ 虽然是走的udp但是因为加了混淆使暂时不会被运营商qos。
 
-项目作者提供的测试
+项目作者提供的速度
+
 ![image](https://raw.githubusercontent.com/HyNetwork/hysteria/master/docs/bench/bench.png)
 
 
