@@ -91,6 +91,10 @@ ctrl+c and +v. 保证目录结构如上图！
 
 ![image](https://cloud.iacg.cf/0:/normal/img/hihysteria/mark.png)
 
+如果代理未启用请手动打开设置->网络->代理,查看配置是否生效
+
+![image](https://cloud.iacg.cf/0:/normal/img/hihysteria/error.png)
+
 - 客户端停止代理
 
 请在运行的该cmd窗口下键盘**直接键入Enter**，切记不要直接关闭cmd窗口，直接关闭后会导致hysteria的程序无法停止并且，代理功能并不能关闭！
