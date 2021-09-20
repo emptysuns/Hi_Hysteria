@@ -48,7 +48,7 @@ pekora
 
 本项目只介绍如何在windows环境下使用，其他环境请参考[官方原文](https://github.com/HyNetwork/hysteria)。
 
-因为暂时没有hysteria的图形界面，所以我简单用批处理写了一个简单的“客户端”，支持自动改代理和清除代理，实际使用没问题，**注意在运行时不要关闭cmd端口**。
+因为暂时没有hysteria的图形界面，所以我简单用批处理写了一个简单的“客户端”，支持自动改代理和清除代理，实际使用没问题，**注意在运行时不要关闭cmd端口**。欢迎其他开发者贡献新的UI或者插件。
 
 
 当出现**安装完毕**字样后，在脚本的所处目录默认是/root下会生成一个config.json文件，
@@ -91,7 +91,9 @@ ctrl+c and +v. 保证目录结构如上图！
 
 ![image](https://cloud.iacg.cf/0:/normal/img/hihysteria/mark.png)
 
-如果代理未启用请手动打开设置->网络->代理,查看配置是否生效
+- 客户端配置未生效？
+
+如上图启动成功，但代理并未启用，请手动打开设置->网络->代理,查看配置是否生效
 
 ![image](https://cloud.iacg.cf/0:/normal/img/hihysteria/error.png)
 
@@ -131,5 +133,5 @@ rm -rf /root/config.json
 ```
 ## 四·结语
 
-走udp的quic协议，加了tls和混淆，个人跑了一段时间大流量，ip并没有被墙，也不知道什么时候被针对，大家且用且珍惜吧。
+走udp的quic协议，加了tls和混淆，个人跑了一段时间大流量，未被运营商QoS，落地ip并没有被墙，也不知道什么时候被针对，大家且用且珍惜吧。
 
