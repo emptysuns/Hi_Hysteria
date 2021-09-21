@@ -13,6 +13,7 @@ echo "\033[32mVersion:\033[0m 0.1"
 echo "\033[32mGithub:\033[0m https://github.com/emptysuns/HiHysteria"
 echo "\033[35m******************************************************************\033[0m"
 echo "\033[41;37mReady to install!\033[0m\n\n"
+mkdir -p /etc/hysteria
 echo  "\033[42;37mDowload:hysteria主程序... \033[0m"
 wget -O /etc/hysteria/hysteria https://github.com/HyNetwork/hysteria/releases/download/v0.8.5/hysteria-linux-amd64
 chmod 755 /etc/hysteria/hysteria
