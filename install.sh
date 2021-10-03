@@ -85,9 +85,11 @@ Description=hysteria:Hello World!
 After=network.target
 
 [Service]
-ExecStart=/etc/hysteria/hysteria --log-level warn -c /etc/hysteria/config.json server
-Restart=on-failure
-RestartSec=10s
+Type=simple
+PIDFile=/run/hysteria.pid
+ExecStart=/etc/hysteria/hysteria --log-level warn -c /etc/hysteria/config.json server >> /etc/hysteria/hysteria.log
+#Restart=on-failure
+#RestartSec=10s
 
 [Install]
 WantedBy=multi-user.target
