@@ -8,8 +8,9 @@ start "Hysteria" /b cmd /c client.bat
 echo Succees!Input 'Enter' to stop me.
 :running
 pause>nul
-set /p check=Confirm to Stop!? Y(default)/n :
-if /i "%check%"=="\n" goto stop
+set check="Y"
+set /p check=Confirm to Stop!? Y(default) or n:
+if /i "%check%"=="Y" goto stop
 if /i "%check%"=="n" goto running else(goto stop)
 :stop
 echo Start Clear! 
