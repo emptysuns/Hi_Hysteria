@@ -1,4 +1,5 @@
 #!/bin/sh
+echo "\033[41;37mStart Uninstall!\033[0m\n\n"
 wget -O /tmp/uninstall.sh https://git.io/rmhysteria.sh && chmod +x /tmp/uninstall.sh && sh /tmp/uninstall.sh
 echo "\033[41;37mUninstall Complete!\033[0m\n\n"
 echo "\033[41;37mStart reinstall!\033[0m\n"
