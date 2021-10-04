@@ -17,11 +17,11 @@ echo  "\033[42;37mDowload:hysteria主程序... \033[0m"
 mkdir -p /etc/hysteria
 version=`wget -qO- -t1 -T2 "https://api.github.com/repos/HyNetwork/hysteria/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'`
 get_arch=`arch`
-if [ $get_arch =~ "x86_64" ];then
+if [ $get_arch = "x86_64" ];then
     wget -O /etc/hysteria/hysteria https://github.com/HyNetwork/hysteria/releases/download/$version/hysteria-linux-amd64
-elif [ $get_arch =~ "aarch64" ];then
+elif [ $get_arch = "aarch64" ];then
     wget -O /etc/hysteria/hysteria https://github.com/HyNetwork/hysteria/releases/download/$version/hysteria-linux-arm64
-elif [ $get_arch =~ "mips64" ];then
+elif [ $get_arch = "mips64" ];then
     wget -O /etc/hysteria/hysteria https://github.com/HyNetwork/hysteria/releases/download/$version/hysteria-linux-mipsle
 else
     echo "\033[42;37mError[OS Message]:$get_arch\nPlease open a issue to https://github.com/emptysuns/HiHysteria !\033[0m"
