@@ -15,7 +15,18 @@ echo "\033[35m******************************************************************
 echo "\033[41;37mReady to install!\033[0m\n\n"
 echo  "\033[42;37mDowload:hysteria主程序... \033[0m"
 mkdir -p /etc/hysteria
-wget -O /etc/hysteria/hysteria https://github.com/HyNetwork/hysteria/releases/download/v0.8.5/hysteria-linux-amd64
+version=`wget -qO- -t1 -T2 "https://api.github.com/repos/HyNetwork/hysteria/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'`
+get_arch=`arch`
+if [ $get_arch =~ "x86_64" ];then
+    wget -O /etc/hysteria/hysteria https://github.com/HyNetwork/hysteria/releases/download/$version/hysteria-linux-amd64
+elif [ $get_arch =~ "aarch64" ];then
+    wget -O /etc/hysteria/hysteria https://github.com/HyNetwork/hysteria/releases/download/$version/hysteria-linux-arm64
+elif [ $get_arch =~ "mips64" ];then
+    wget -O /etc/hysteria/hysteria https://github.com/HyNetwork/hysteria/releases/download/$version/hysteria-linux-mipsle
+else
+    echo "\033[42;37mError[OS Message]:$get_arch\nPlease open a issue to https://github.com/emptysuns/HiHysteria !\033[0m"
+    exit
+fi
 chmod 755 /etc/hysteria/hysteria
 wget -O /etc/hysteria/routes.acl https://raw.githubusercontent.com/emptysuns/HiHysteria/main/acl/routes.acl
 echo "\033[32m下载完成！\033[0m"
@@ -40,7 +51,7 @@ cat <<EOF > /etc/hysteria/config.json
     "domains": [
 	"$domain"
     ],
-    "email": "pekora@gmail.com"
+    "email": "pekora@$domain"
   },
   "disable_udp": false,
   "obfs": "$obfs",
@@ -100,7 +111,7 @@ chmod 644 /etc/systemd/system/hysteria.service
 systemctl daemon-reload
 systemctl enable hysteria
 systemctl start hysteria
-echo "Tips:客户端默认只开启http代理!http://127.0.0.1:8888\n\n"
+echo "Tips:客户端默认只开启http代理!http://127.0.0.1:8888\n"
 echo  "\033[42;37m所有安装已经完成，配置文件输出如下且已经在本目录生成（可自行复制粘贴到本地）！\033[0m"
 cat ./config.json
 echo  "\033[42;37m安装完毕\033[0m\n\n"
