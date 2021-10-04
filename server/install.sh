@@ -15,20 +15,20 @@ echo "\033[35m******************************************************************
 echo "\033[42;37mReady to install!\033[0m\n"
 echo  "\033[42;37mDowload:hysteria主程序... \033[0m"
 mkdir -p /etc/hysteria
-version=`wget -qO- -t1 -T2 "https://api.github.com/repos/HyNetwork/hysteria/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'`
+version=`wget -qO- -t1 -T2 --no-check-certificate "https://api.github.com/repos/HyNetwork/hysteria/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'`
 get_arch=`arch`
 if [ $get_arch = "x86_64" ];then
-    wget -O /etc/hysteria/hysteria https://github.com/HyNetwork/hysteria/releases/download/$version/hysteria-linux-amd64
+    wget -O --no-check-certificate /etc/hysteria/hysteria https://github.com/HyNetwork/hysteria/releases/download/$version/hysteria-linux-amd64
 elif [ $get_arch = "aarch64" ];then
-    wget -O /etc/hysteria/hysteria https://github.com/HyNetwork/hysteria/releases/download/$version/hysteria-linux-arm64
+    wget -O --no-check-certificate /etc/hysteria/hysteria https://github.com/HyNetwork/hysteria/releases/download/$version/hysteria-linux-arm64
 elif [ $get_arch = "mips64" ];then
-    wget -O /etc/hysteria/hysteria https://github.com/HyNetwork/hysteria/releases/download/$version/hysteria-linux-mipsle
+    wget -O --no-check-certificate /etc/hysteria/hysteria https://github.com/HyNetwork/hysteria/releases/download/$version/hysteria-linux-mipsle
 else
     echo "\033[41;37mError[OS Message]:$get_arch\nPlease open a issue to https://github.com/emptysuns/HiHysteria !\033[0m"
     exit
 fi
 chmod 755 /etc/hysteria/hysteria
-wget -O /etc/hysteria/routes.acl https://raw.githubusercontent.com/emptysuns/HiHysteria/main/acl/routes.acl
+wget -O --no-check-certificate /etc/hysteria/routes.acl https://raw.githubusercontent.com/emptysuns/HiHysteria/main/acl/routes.acl
 echo "\033[32m下载完成！\033[0m"
 echo  "\033[42;37m开始配置: \033[0m"
 echo "\033[32m请输入您的域名(必须是存在的域名，并且解析到此ip):\033[0m"
