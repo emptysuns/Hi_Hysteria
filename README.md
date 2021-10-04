@@ -72,9 +72,11 @@ pekora
 因为暂时没有hysteria的图形界面，所以我用批处理写了一个简单的“客户端”，支持自动改代理和清除代理，实际使用没问题，**注意在运行时不要关闭cmd端口**。欢迎其他开发者贡献新的UI或者插件。
 
 
-当出现**安装完毕**字样后，会自动生成配置信息，本地新建一个config.json，复制粘贴到本地，同时当前目录下会生成一个config.json文件，也可以直接下载下来。
+当出现**安装完毕**字样后，会自动生成配置信息，同时当前目录下会生成一个config.json文件。
 
-![image](https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/imgs/dir.png)
+可以本地新建一个config.json文件，复制粘贴到本地，也可以直接下载生成的文件到本地。
+
+![image](https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/imgs/result.png)
 
 
 将config.json加入[**release**](https://github.com/emptysuns/Hi_Hysteria/releases/download/0.1/hihysteria_windows0.1.rar)中提供的简单的windows cmd客户端的解压目录中.
