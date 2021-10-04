@@ -1,7 +1,8 @@
 #!/bin/sh
+systemctl stop hysteria
+systemctl disable hysteria
 rm -rf /etc/systemd/system/hysteria.serive
-rm -rf /etc/hysteria/
-rm -rf /root/install.sh
-rm -rf /root/config.json
 systemctl daemon-reload
+rm -rf /etc/hysteria/
+rm -rf /root/config.json
 echo "Uninstall complete!"
