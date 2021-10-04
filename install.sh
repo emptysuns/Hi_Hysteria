@@ -17,7 +17,7 @@ echo  "\033[42;37mDowload:hysteria主程序... \033[0m"
 mkdir -p /etc/hysteria
 wget -O /etc/hysteria/hysteria https://github.com/HyNetwork/hysteria/releases/download/v0.8.5/hysteria-linux-amd64
 chmod 755 /etc/hysteria/hysteria
-wget -O /etc/hysteria/chnroutes.acl https://raw.githubusercontent.com/emptysuns/HiHysteria/main/acl/routes.acl
+wget -O /etc/hysteria/routes.acl https://raw.githubusercontent.com/emptysuns/HiHysteria/main/acl/routes.acl
 echo "\033[32m下载完成！\033[0m"
 echo  "\033[42;37m开始配置: \033[0m"
 echo "\033[32m请输入您的域名(必须是存在的域名，并且解析到此ip):\033[0m"
@@ -50,7 +50,7 @@ cat <<EOF > /etc/hysteria/config.json
       "password": "pekopeko"
     }
   },
-  "acl": "/etc/hysteria/chnroutes.acl",
+  "acl": "/etc/hysteria/routes.acl",
   "recv_window_conn": 33554432,
   "recv_window_client": 134217728,
   "max_conn_client": 4096,
@@ -68,7 +68,7 @@ cat <<EOF > config.json
 "timeout" : 300,
 "disable_udp": false
 },
-"acl": "chnroutes.acl",
+"acl": "routes.acl",
 "obfs": "$obfs",
 "auth_str": "pekopeko",
 "server_name": "$domain",
@@ -87,7 +87,7 @@ After=network.target
 [Service]
 Type=simple
 PIDFile=/run/hysteria.pid
-ExecStart=/etc/hysteria/hysteria --log-level warn -c /etc/hysteria/config.json server >> /etc/hysteria/hysteria.log
+ExecStart=/etc/hysteria/hysteria --log-level warn -c /etc/hysteria/config.json server >> /etc/hysteria/error.log
 #Restart=on-failure
 #RestartSec=10s
 
