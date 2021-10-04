@@ -45,7 +45,7 @@ apt-get install -y wget curl
 
 ```
 sudo su root  #Change to the user root!
-sh <(curl -fsSL https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/install.sh)
+sh <(curl -fsSL https://git.io/hysteria.sh)
 ```
 - 配置过程
 
@@ -162,11 +162,11 @@ systemctl status hysteria -l
 - 卸载
 
 ```
-sh <(curl -fsSL https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/uninstall.sh)
+sh <(curl -fsSL https://git.io/rmhysteria.sh)
 ```
 - 重新安装/升级
 ```
-sh <(curl -fsSL https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/reinstall.sh)
+sh <(curl -fsSL https://git.io/rehysteria.sh)
 ```
 ## 四·结语
 
