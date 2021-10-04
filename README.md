@@ -29,11 +29,23 @@ Hysteria这是一款由go编写的非常优秀的“轻量”代理程序并且�
 
 
 ## 二·使用
+- 安装依赖
+
+```
+# centos
+yum install -y wget curl
+```
+
+```
+# debian/ubuntu
+apt-get install -y wget curl
+```
+
 - 拉取安装
 
 ```
 sudo su root  #Change to the user root!
-wget -P /root -N --no-check-certificate "https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/install.sh" && chmod 700 /root/install.sh && sh /root/install.sh
+sh <(curl -fsSL https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/install.sh)
 ```
 - 配置过程
 
@@ -58,14 +70,16 @@ pekora
 因为暂时没有hysteria的图形界面，所以我简单用批处理写了一个简单的“客户端”，支持自动改代理和清除代理，实际使用没问题，**注意在运行时不要关闭cmd端口**。欢迎其他开发者贡献新的UI或者插件。
 
 
-当出现**安装完毕**字样后，在脚本的所处目录默认是/root，该目录下会生成一个config.json文件，
-将这个文件下载下来并加入[release](https://github.com/emptysuns/Hi_Hysteria/releases/download/0.1/hihysteria_windows0.1.rar)中提供的windows的client,保证这个文件和如下几个文件是同目录的，如下图（请保证这五个文件同目录）：
+当出现**安装完毕**字样后，当前目录下会生成一个config.json文件，
+将这个文件下载下来并加入[**release**](https://github.com/emptysuns/Hi_Hysteria/releases/download/0.1/hihysteria_windows0.1.rar)中提供的简单的windows cmd客户端.
+
+保证这个config.json文件和如下几个文件是同目录的，如下图（**请保证这五个文件同目录**）：
 
 ![image](https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/imgs/dir.png)
 
 
 
-如果无法直接下载用cat打印文本后复制，在如上文件夹新建一个config.json（一定要是这个名称！）:
+如果无法直接下载用cat打印文本后复制，在如上文件夹新建一个config.json（**一定要是这个名称！**）:
 
 ```
 cat /root/config.json
@@ -141,17 +155,18 @@ systemctl stop hysteria
 - 状态
 
 ```
-systemctl status hysteria
+systemctl status hysteria -l
 ```
 
 
 - 卸载
 
 ```
-rm -rf /etc/systemd/system/hysteria.serive
-rm -rf /etc/hysteria/
-rm -rf /root/install.sh
-rm -rf /root/config.json
+sh <(curl -fsSL https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/uninstall.sh)
+```
+- 重新安装/升级
+```
+sh <(curl -fsSL https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/reinstall.sh)
 ```
 ## 四·结语
 
