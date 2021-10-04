@@ -17,7 +17,7 @@ echo  "\033[42;37mDowload:hysteria主程序... \033[0m"
 mkdir -p /etc/hysteria
 wget -O /etc/hysteria/hysteria https://github.com/HyNetwork/hysteria/releases/download/v0.8.5/hysteria-linux-amd64
 chmod 755 /etc/hysteria/hysteria
-wget -O /etc/hysteria/chnroutes.acl https://raw.githubusercontent.com/emptysuns/HiHysteria/main/acl/chnroutes.acl
+wget -O /etc/hysteria/chnroutes.acl https://raw.githubusercontent.com/emptysuns/HiHysteria/main/acl/routes.acl
 echo "\033[32m下载完成！\033[0m"
 echo  "\033[42;37m开始配置: \033[0m"
 echo "\033[32m请输入您的域名(必须是存在的域名，并且解析到此ip):\033[0m"
