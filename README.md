@@ -22,10 +22,17 @@ Hysteria这是一款由go编写的非常优秀的“轻量”代理程序并且�
 
 因为脚本现处于0.x的测试版本，可能会有一些bug，如果遇到请发issue，欢迎star.
 
-## 二·使用
-- 拉取
 
 ```
+(2021/10/04 16:19):更新代理规则、增加arm和mipsle系统适配、增加客户端防呆
+```
+
+
+## 二·使用
+- 拉取安装
+
+```
+sudo su root  #Change to the user root!
 wget -P /root -N --no-check-certificate "https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/install.sh" && chmod 700 /root/install.sh && sh /root/install.sh
 ```
 - 配置过程
@@ -51,10 +58,10 @@ pekora
 因为暂时没有hysteria的图形界面，所以我简单用批处理写了一个简单的“客户端”，支持自动改代理和清除代理，实际使用没问题，**注意在运行时不要关闭cmd端口**。欢迎其他开发者贡献新的UI或者插件。
 
 
-当出现**安装完毕**字样后，在脚本的所处目录默认是/root下会生成一个config.json文件，
+当出现**安装完毕**字样后，在脚本的所处目录默认是/root，该目录下会生成一个config.json文件，
 将这个文件下载下来并加入[release](https://github.com/emptysuns/Hi_Hysteria/releases/download/0.1/hihysteria_windows0.1.rar)中提供的windows的client,保证这个文件和如下几个文件是同目录的，如下图（请保证这五个文件同目录）：
 
-![image](https://cloud.iacg.cf/0:/normal/img/hihysteria/Screenshot_2.png)
+![image](https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/imgs/dir.png)
 
 
 
@@ -87,7 +94,7 @@ cat /root/config.json
 ctrl+c and +v. 保证目录结构如上图！
 ```
 
-运行setup.bat启动
+运行run.bat启动
 
 ![image](https://cloud.iacg.cf/0:/normal/img/hihysteria/mark.png)
 
@@ -95,15 +102,30 @@ ctrl+c and +v. 保证目录结构如上图！
 
 如上图启动成功，但代理并未启用，请手动打开设置->网络->代理,查看配置是否生效
 
-![image](https://cloud.iacg.cf/0:/normal/img/hihysteria/error.png)
+![image](https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/imgs/proxy.png)
 
 - 客户端停止代理
 
-请在运行的该cmd窗口下键盘**直接键入Enter**，切记不要直接关闭cmd窗口，直接关闭后会导致hysteria的程序无法停止并且，代理功能并不能关闭！
+有防呆功能，请在运行的该cmd窗口下键盘
+
+**直接键入Enter关闭客户端！**
+
+**直接键入Enter关闭客户端！**
+
+**直接键入Enter关闭客户端！**
+
+**切记不要直接关闭cmd窗口！**
+
+**切记不要直接关闭cmd窗口！**
+
+**切记不要直接关闭cmd窗口！**
+
+
+直接关闭后会导致hysteria的程序无法停止并且代理功能并不能关闭！
 
 批处理脚本能处理的功能有限请谅解...欢迎提供更好的解决方案
 
-![image](https://cloud.iacg.cf/0:/normal/img/hihysteria/Screenshot_3.png)
+![image](https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/imgs/stop.png)
 
 ## 三·服务端管理
 - 重启
@@ -134,4 +156,3 @@ rm -rf /root/config.json
 ## 四·结语
 
 走udp的quic协议，加了tls和混淆，个人跑了一段时间大流量，未被运营商QoS，落地ip并没有被墙，也不知道什么时候被针对，大家且用且珍惜吧。
-
