@@ -74,7 +74,7 @@ pekora
 
 当出现**安装完毕**字样后，会自动生成配置信息，同时当前目录下会生成一个config.json文件。
 
-可以本地新建一个config.json文件，复制粘贴到本地，也可以直接下载生成的文件到本地。
+可以本地新建一个config.json（**一定要是这个名称！**）文件，复制粘贴到本地，也可以直接下载生成的文件到本地。
 
 ![image](https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/imgs/result.png)
 
@@ -87,7 +87,7 @@ pekora
 
 
 
-如果无法直接下载,使用cat打印config.json后复制，在如上文件夹新建一个config.json（**一定要是这个名称！**）:
+如果本地配置丢失，使用cat打印config.json后复制:
 
 ```
 cat /root/config.json
