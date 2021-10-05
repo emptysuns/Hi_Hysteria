@@ -1,0 +1,1 @@
+createobject("wscript.shell").run "script\back_client.bat",0
