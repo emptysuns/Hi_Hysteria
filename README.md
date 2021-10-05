@@ -126,7 +126,7 @@ ctrl+c and +v.
 
 提供两种运行方法：后台运行（无cmd窗口无感） 和 前台运行（必须得有cmd窗口，但是可查看当前日志）
 
-启动之前请把config.json放到conf夹！
+**启动之前**请把config.json放到conf文件夹！
 
 
 
@@ -163,9 +163,13 @@ ctrl+c and +v.
 
 批处理能力有限，请谅解.
 
-![image](https://cloud.iacg.cf/0:/normal/img/hihysteria/mark.png)<center>启动</center>
+<center><font size=2>启动</font></center>
 
-![image](https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/imgs/stop.png)<center>防呆/关闭</center>
+![image](https://cloud.iacg.cf/0:/normal/img/hihysteria/mark.png)
+
+<center><font size=2>防呆/关闭</font></center>
+
+![image](https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/imgs/stop.png)
 
 
 Tips:前台运行模式下，不小心关掉窗口导致无法上网时，运行back_stop.bat可以清除代理和关闭hysteria
@@ -193,6 +197,7 @@ shell:startup
 打开自启目录将快捷方式**复制**进去，下次开机就会自启动。
 
 ![image](https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/imgs/startup.png)
+<center><font size=2>这里用后台做演示，前台同理</font></center>
 
 ## 三·服务端管理
 - 重启
