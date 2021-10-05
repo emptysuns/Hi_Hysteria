@@ -79,7 +79,7 @@ cat <<EOF > config.json
 "timeout" : 300,
 "disable_udp": false
 },
-"acl": "routes.acl",
+"acl": "acl/routes.acl",
 "obfs": "$obfs",
 "auth_str": "pekopeko",
 "server_name": "$domain",
