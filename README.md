@@ -141,6 +141,10 @@ ctrl+c and +v.
 
 ![image](https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/imgs/tips.png)
 
+停止后台运行：
+
+![image](https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/imgs/back_stop.png)
+
 批处理能力有限，请谅解.
 ******************************************************************************
 
