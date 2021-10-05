@@ -8,4 +8,5 @@ cls
 script\\back.vbs
 echo Hysteria is running Succeesfully!
 echo Please run the back_stop.bat to stop hysteria.(Only this way!)
+echo You can use 'Enter' to close this windows.
 pause>nul

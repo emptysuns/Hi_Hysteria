@@ -137,6 +137,9 @@ ctrl+c and +v.
 
 停止:双击back_stop.bat
 
+运行back_start.bat后，可以回车关闭此窗口，不需保留。
+
+![image](https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/imgs/tips.png)
 
 批处理能力有限，请谅解.
 ******************************************************************************
