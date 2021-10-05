@@ -179,7 +179,7 @@ ctrl+c and +v.
 ![image](https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/imgs/stop.png)
 
 
-Tips:前台运行模式下，不小心关掉窗口导致无法上网时，运行back_stop.bat可以清除代理和关闭hysteria
+**Tips:前台运行模式下，不小心关掉窗口导致无法上网时，运行back_stop.bat可以清除代理和关闭hysteria。**
 
 
 ******************************************************************************
