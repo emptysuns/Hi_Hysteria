@@ -31,8 +31,13 @@ chmod 755 /etc/hysteria/hysteria
 wget -O /etc/hysteria/routes.acl --no-check-certificate https://raw.githubusercontent.com/emptysuns/HiHysteria/main/acl/routes.acl
 echo "\033[32m下载完成！\033[0m"
 echo  "\033[42;37m开始配置: \033[0m"
-echo "\033[32m请输入您的域名(必须是存在的域名，并且解析到此ip):\033[0m"
-read  domain
+ip=`curl -4 ip.sb`
+domain="pan.baidu.com"
+mail="admin@baidu.com"
+day=36500
+openssl genrsa -out /etc/hysteria/$domain.key 2048
+openssl req -x509 -nodes -newkey rsa:2048 -days $day -keyout /etc/hysteria/$domain.key -out /etc/hysteria/$domain.crt -subj "/C=CN/ST=Beijing/L=HaiDian/O=emptysuns/OU=Baidu/CN=$domain/emailAddress=$mail"
+echo "\033[31m您的公网为:$ip\033[0m"
 echo "\033[32m请输入你想要开启的端口（此端口是server的开启端口10000-65535）：\033[0m"
 read  port
 echo "\n期望速度，请如实填写，这是客户端的峰值速度，服务端默认不受限。\033[31m期望过低或者过高会影响转发速度！\033[0m"
@@ -44,16 +49,13 @@ echo "\033[32m请输入混淆口令（相当于连接密钥）:\033[0m"
 read  obfs
 echo "\033[32m配置录入完成！\033[0m"
 echo  "\033[42;37m执行配置...\033[0m"
+
 cat <<EOF > /etc/hysteria/config.json
 {
   "listen": ":$port",
-  "acme": {
-    "domains": [
-	"$domain"
-    ],
-    "email": "pekora@$domain"
-  },
   "disable_udp": false,
+  "cert": "/etc/hysteria/${domain}.crt",
+  "key": "/etc/hysteria/$domain.key",
   "obfs": "$obfs",
   "auth": {
     "mode": "password",
@@ -71,7 +73,7 @@ EOF
 
 cat <<EOF > config.json
 {
-"server": "$domain:$port",
+"server": "$ip:$port",
 "up_mbps": $upload,
 "down_mbps": $download,
 "http": {
@@ -83,7 +85,7 @@ cat <<EOF > config.json
 "obfs": "$obfs",
 "auth_str": "pekopeko",
 "server_name": "$domain",
-"insecure": false,
+"insecure": true,
 "recv_window_conn": 33554432,
 "recv_window": 134217728,
 "disable_mtu_discovery": false

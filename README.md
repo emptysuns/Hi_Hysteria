@@ -26,6 +26,8 @@ Hysteria这是一款由go编写的非常优秀的“轻量”代理程序并且�
 
 
 ```
+(2021/10/05 18:36)v0.2.1:提供自签证书安装，为了有些ACME死活无法验证用户
+
 (2021/10/05 18:36)v0.2:优化客户端(！？)结构，增加后台运行功能
 
 (2021/10/04 16:19)v0.1:修复因dns污染无法代理的bug并增加去广告规则、增加arm和mipsle架构适配、增加客户端防呆
@@ -50,6 +52,7 @@ apt-get install -y wget curl
 ```
 sudo su root  #Change to the user root!
 sh <(curl -fsSL https://git.io/hysteria.sh)
+#[不需要申请有效证书，自签pan.baidu.com证书并握手] sh <(curl -fsSL https://git.io/hysteria_no_vertify.sh)
 ```
 ### 配置过程
 
@@ -156,6 +159,7 @@ ctrl+c and +v.
 
 
 打开run.bat运行，运行时按回车键停止，防呆键入n继续运行
+
 **直接键入Enter关闭客户端！**
 
 **直接键入Enter关闭客户端！**
@@ -231,6 +235,7 @@ sh <(curl -fsSL https://git.io/rmhysteria.sh)
 - 重新安装/升级
 ```
 sh <(curl -fsSL https://git.io/rehysteria.sh)
+#用于自签卸载 sh <(curl -fsSL https://git.io/rehysteria_no_vertify.sh)
 ```
 ## 四·结语
 
