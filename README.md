@@ -52,7 +52,7 @@ apt-get install -y wget curl
 ```
 sudo su root  #Change to the user root!
 sh <(curl -fsSL https://git.io/hysteria.sh)
-#[不需要申请有效证书，自签pan.baidu.com证书并握手] sh <(curl -fsSL https://git.io/hysteria_no_vertify.sh)
+# sh <(curl -fsSL https://git.io/hysteria_no_vertify.sh) #自签pan.baidu.com证书并握手，不推荐
 ```
 ### 配置过程
 
@@ -184,10 +184,7 @@ ctrl+c and +v.
 
 
 **Tips:前台运行模式下，不小心关掉窗口导致无法上网时，运行back_stop.bat可以清除代理和关闭hysteria。**
-<<<<<<< HEAD
-=======
 
->>>>>>> 825192b2e5ef6b0987981a7c024df348711f1175
 
 ******************************************************************************
 
@@ -239,7 +236,7 @@ sh <(curl -fsSL https://git.io/rmhysteria.sh)
 - 重新安装/升级
 ```
 sh <(curl -fsSL https://git.io/rehysteria.sh)
-#用于自签卸载 sh <(curl -fsSL https://git.io/rehysteria_no_vertify.sh)
+# sh <(curl -fsSL https://git.io/rehysteria_no_vertify.sh) #用于自签证书版本卸载 
 ```
 ## 四·结语
 
