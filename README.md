@@ -52,7 +52,7 @@ apt-get install -y wget curl
 ```
 sudo su root  #Change to the user root!
 sh <(curl -fsSL https://git.io/hysteria.sh)
-# sh <(curl -fsSL https://git.io/hysteria_no_vertify.sh) #自签pan.baidu.com证书并握手，不推荐
+# sh <(curl -fsSL https://git.io/hysteria_novertify.sh) #自签pan.baidu.com证书并握手，不推荐
 ```
 ### 配置过程
 
@@ -236,7 +236,7 @@ sh <(curl -fsSL https://git.io/rmhysteria.sh)
 - 重新安装/升级
 ```
 sh <(curl -fsSL https://git.io/rehysteria.sh)
-# sh <(curl -fsSL https://git.io/rehysteria_no_vertify.sh) #用于自签证书版本卸载 
+# sh <(curl -fsSL https://git.io/rehysteria_no_vertify.sh) #用于自签证书    版本卸载 
 ```
 ## 四·结语
 
