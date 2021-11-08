@@ -42,6 +42,7 @@ echo "\033[32m请输入你想要开启的端口（此端口是server端口，请
 read  port
 if [ -z "${port}" ];then
   port=$(($(od -An -N2 -i /dev/random) % (65534 - 10001) + 10001))
+  echo "随机端口：\033[31m$port\033[0m"
 fi
 echo "\033[32m请输入您到此服务器的平均延迟,关系到转发速度（回车默认200ms）:\033[0m"
 read  delay
