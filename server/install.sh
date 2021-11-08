@@ -38,8 +38,11 @@ if [ -z "${domain}" ];then
   ip=`curl -4 ip.sb`
   echo "您的公网为:\033[31m$ip\033[0m"
 fi
-echo "\033[32m请输入你想要开启的端口（此端口是server的开启端口10000-65535）：\033[0m"
+echo "\033[32m请输入你想要开启的端口（此端口是server端口，请提前放行防火墙，建议10000-65535，回车随机）：\033[0m"
 read  port
+if [ -z "${port}" ];then
+  port=$(($(od -An -N2 -i /dev/random) % (65534 - 10001) + 10001))
+fi
 echo "\033[32m请输入您到此服务器的平均延迟,关系到转发速度（回车默认200ms）:\033[0m"
 read  delay
 if [ -z "${delay}" ];then
