@@ -84,9 +84,12 @@ cat <<EOF > /etc/hysteria/config.json
 }
 EOF
 
-if [ "$ip" != "${1#*:[0-9a-fA-F]}" ]; then
+v6str=":"
+result=$(echo $ip | grep ${v6str})
+if [ "$result" != "" ];then
   ip="[$ip]" #ipv6? check
 fi
+
 cat <<EOF > config.json
 {
 "server": "$ip:$port",
