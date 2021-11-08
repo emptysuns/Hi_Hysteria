@@ -20,7 +20,7 @@ Hysteria这是一款由go编写的非常优秀的“轻量”代理程序并且�
 
 该项目仅作学习用途，请查看的访客在5s之内立即删除并停止使用。
 
-由它所引起的任何问题，作者并不不承担风险和任何法律责任。
+由它所引起的任何问题，作者并不承担风险和任何法律责任。
 
 因为脚本现处于0.x的测试版本，可能会有一些bug，如果遇到请发issue，欢迎star，您的⭐是我维护的动力。
 
@@ -54,6 +54,10 @@ apt-get install -y wget curl
 ```
 sudo su root  #Change to the user root!
 sh <(curl -fsSL https://git.io/hysteria.sh)
+<<<<<<< HEAD
+=======
+# sh <(curl -fsSL https://git.io/hysteria_no.sh) #自签pan.baidu.com证书并握手，不推荐
+>>>>>>> 4a12d28578ab27760b5b5f151329c82bad245727
 ```
 ### 配置过程
 
