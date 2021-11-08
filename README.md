@@ -54,10 +54,6 @@ apt-get install -y wget curl
 ```
 sudo su root  #Change to the user root!
 sh <(curl -fsSL https://git.io/hysteria.sh)
-<<<<<<< HEAD
-=======
-# sh <(curl -fsSL https://git.io/hysteria_no.sh) #自签pan.baidu.com证书并握手，不推荐
->>>>>>> 4a12d28578ab27760b5b5f151329c82bad245727
 ```
 ### 配置过程
 
