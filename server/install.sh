@@ -184,6 +184,10 @@ chmod 644 /etc/systemd/system/hysteria.service
 systemctl daemon-reload
 systemctl enable hysteria
 systemctl start hysteria
+crontab -l > ./crontab.tmp
+echo "0 * * * * systemctl restart hysteria" >> ./crontab.tmp
+crontab ./crontab.tmp
+rm -rf ./crontab.tmp
 echo ""
 echo  "\033[42;37m所有安装已经完成，配置文件输出如下且已经在本目录生成（可自行复制粘贴到本地）！\033[0m"
 echo "\nTips:客户端默认只开启http代理!http://127.0.0.1:8888,其他方式请参照文档自行修改客户端config.json\n"
