@@ -9,7 +9,7 @@ echo " ██      ██                    ██                  ██
 ░██     ░██   ██     ░░░░░██  ░██  ░██░░░░  ░██   ░██ ██░░░░██ 
 ░██     ░██  ██      ██████   ░░██ ░░██████░███   ░██░░████████
 ░░      ░░  ░░      ░░░░░░     ░░   ░░░░░░ ░░░    ░░  ░░░░░░░░ "
-echo "\033[32mVersion:\033[0m 0.2.1"
+echo "\033[32mVersion:\033[0m 0.2.2"
 echo "\033[32mGithub:\033[0m https://github.com/emptysuns/HiHysteria"
 echo "\033[35m******************************************************************\033[0m"
 echo "\033[42;37mReady to install!\033[0m\n"
@@ -84,6 +84,9 @@ cat <<EOF > /etc/hysteria/config.json
 }
 EOF
 
+if [ "$ip" != "${1#*:[0-9a-fA-F]}" ]; then
+  ip="[$ip]" #ipv6? check
+fi
 cat <<EOF > config.json
 {
 "server": "$ip:$port",
@@ -104,6 +107,7 @@ cat <<EOF > config.json
 "disable_mtu_discovery": false
 }
 EOF
+
 else
 cat <<EOF > /etc/hysteria/config.json
 {

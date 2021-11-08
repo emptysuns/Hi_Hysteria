@@ -26,7 +26,9 @@ Hysteria这是一款由go编写的非常优秀的“轻量”代理程序并且�
 
 
 ```
-(2021/10/05 18:36)v0.2.1:提供自签证书安装，为了有些ACME死活无法验证用户
+(2021/11/08 19:50)v0.2.2:整合自签/ACME，更改buffer计算提升速度,修复自签ipv6时多符号bug
+
+(2021/11/06 21:16)v0.2.1:提供自签证书安装，为了有些ACME死活无法验证用户
 
 (2021/10/05 18:36)v0.2:优化客户端(！？)结构，增加后台运行功能
 
@@ -52,16 +54,18 @@ apt-get install -y wget curl
 ```
 sudo su root  #Change to the user root!
 sh <(curl -fsSL https://git.io/hysteria.sh)
-# sh <(curl -fsSL https://git.io/hysteria_novertify.sh) #自签pan.baidu.com证书并握手，不推荐
 ```
 ### 配置过程
 
 ```
 开始配置: 
-请输入您的域名(必须是存在的域名，并且解析到此ip):
+请输入您的域名(不输入回车，则默认自签pan.baidu.com证书，不推荐):
 a.com
 请输入你想要开启的端口（此端口是server的开启端口10000-65535）：
 12345
+请输入您到此服务器的平均延迟,关系到转发速度（回车默认200ms）:
+300
+
 期望速度，请如实填写，这是客户端的峰值速度，服务端默认不受限。期望过低或者过高会影响转发速度！
 请输入客户端期望的下行速度:
 50
@@ -236,7 +240,6 @@ sh <(curl -fsSL https://git.io/rmhysteria.sh)
 - 重新安装/升级
 ```
 sh <(curl -fsSL https://git.io/rehysteria.sh)
-# sh <(curl -fsSL https://git.io/rehysteria_no_vertify.sh) #用于自签证书    版本卸载 
 ```
 ## 四·结语
 
