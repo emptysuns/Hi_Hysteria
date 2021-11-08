@@ -31,10 +31,20 @@ chmod 755 /etc/hysteria/hysteria
 wget -O /etc/hysteria/routes.acl --no-check-certificate https://raw.githubusercontent.com/emptysuns/HiHysteria/main/acl/routes.acl
 echo "\033[32m下载完成！\033[0m"
 echo  "\033[42;37m开始配置: \033[0m"
-echo "\033[32m请输入您的域名(必须是存在的域名，并且解析到此ip):\033[0m"
+echo "\033[32m请输入您的域名(不输入回车，则默认自签pan.baidu.com证书，不推荐):\033[0m"
 read  domain
+if [ -z "${domain}" ];then
+	domain="pan.baidu.com"
+  ip=`curl -4 ip.sb`
+  echo "您的公网为:\033[31m$ip\033[0m"
+fi
 echo "\033[32m请输入你想要开启的端口（此端口是server的开启端口10000-65535）：\033[0m"
 read  port
+echo "\033[32m请输入您到此服务器的平均延迟,关系到转发速度（回车默认200ms）:\033[0m"
+read  delay
+if [ -z "${delay}" ];then
+	delay=200
+fi
 echo "\n期望速度，请如实填写，这是客户端的峰值速度，服务端默认不受限。\033[31m期望过低或者过高会影响转发速度！\033[0m"
 echo "\033[32m请输入客户端期望的下行速度:\033[0m"
 read  download
@@ -44,6 +54,57 @@ echo "\033[32m请输入混淆口令（相当于连接密钥）:\033[0m"
 read  obfs
 echo "\033[32m配置录入完成！\033[0m"
 echo  "\033[42;37m执行配置...\033[0m"
+
+r_client=$(($delay * 2 * $download / 1000 * 1024 * 1024))
+r_conn=$(($r_client / 4))
+
+if [ "$domain" = "pan.baidu.com" ];then
+mail="admin@baidu.com"
+day=36500
+openssl genrsa -out /etc/hysteria/$domain.key 2048
+openssl req -x509 -nodes -newkey rsa:2048 -days $day -keyout /etc/hysteria/$domain.key -out /etc/hysteria/$domain.crt -subj "/C=CN/ST=Beijing/L=HaiDian/O=emptysuns/OU=Baidu/CN=$domain/emailAddress=$mail"
+cat <<EOF > /etc/hysteria/config.json
+{
+  "listen": ":$port",
+  "disable_udp": false,
+  "cert": "/etc/hysteria/${domain}.crt",
+  "key": "/etc/hysteria/$domain.key",
+  "obfs": "$obfs",
+  "auth": {
+    "mode": "password",
+    "config": {
+      "password": "pekopeko"
+    }
+  },
+  "acl": "/etc/hysteria/routes.acl",
+  "recv_window_conn": $r_conn,
+  "recv_window_client": $r_client,
+  "max_conn_client": 4096,
+  "disable_mtu_discovery": false
+}
+EOF
+
+cat <<EOF > config.json
+{
+"server": "$ip:$port",
+"up_mbps": $upload,
+"down_mbps": $download,
+"http": {
+"listen": "127.0.0.1:8888",
+"timeout" : 300,
+"disable_udp": false
+},
+"acl": "acl/routes.acl",
+"obfs": "$obfs",
+"auth_str": "pekopeko",
+"server_name": "$domain",
+"insecure": true,
+"recv_window_conn": $r_conn,
+"recv_window": $r_client,
+"disable_mtu_discovery": false
+}
+EOF
+else
 cat <<EOF > /etc/hysteria/config.json
 {
   "listen": ":$port",
@@ -62,8 +123,8 @@ cat <<EOF > /etc/hysteria/config.json
     }
   },
   "acl": "/etc/hysteria/routes.acl",
-  "recv_window_conn": 33554432,
-  "recv_window_client": 134217728,
+  "recv_window_conn": $r_conn,
+  "recv_window_client": $r_client,
   "max_conn_client": 4096,
   "disable_mtu_discovery": false
 }
@@ -84,11 +145,12 @@ cat <<EOF > config.json
 "auth_str": "pekopeko",
 "server_name": "$domain",
 "insecure": false,
-"recv_window_conn": 33554432,
-"recv_window": 134217728,
+"recv_window_conn": $r_conn,
+"recv_window": $r_client,
 "disable_mtu_discovery": false
 }
 EOF
+fi
 
 cat <<EOF >/etc/systemd/system/hysteria.service
 [Unit]
@@ -105,12 +167,13 @@ ExecStart=/etc/hysteria/hysteria --log-level warn -c /etc/hysteria/config.json s
 [Install]
 WantedBy=multi-user.target
 EOF
-sysctl -w net.core.rmem_max=4000000
+sysctl -w net.core.rmem_max=40000000
 sysctl -p
 chmod 644 /etc/systemd/system/hysteria.service
 systemctl daemon-reload
 systemctl enable hysteria
 systemctl start hysteria
+echo ""
 echo  "\033[42;37m所有安装已经完成，配置文件输出如下且已经在本目录生成（可自行复制粘贴到本地）！\033[0m"
 echo "\nTips:客户端默认只开启http代理!http://127.0.0.1:8888,其他方式请参照文档自行修改客户端config.json\n"
 echo "\033[35m↓***********************************↓↓↓copy↓↓↓*******************************↓\033[0m"
