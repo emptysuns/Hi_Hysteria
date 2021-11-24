@@ -185,7 +185,7 @@ systemctl daemon-reload
 systemctl enable hysteria
 systemctl start hysteria
 crontab -l > ./crontab.tmp
-echo "0 * * * * systemctl restart hysteria" >> ./crontab.tmp
+echo "0 4 * * * systemctl restart hysteria" >> ./crontab.tmp
 crontab ./crontab.tmp
 rm -rf ./crontab.tmp
 echo ""
