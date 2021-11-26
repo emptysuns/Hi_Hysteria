@@ -26,6 +26,8 @@ Hysteria这是一款由go编写的非常优秀的“轻量”代理程序并且�
 
 
 ```
+(2021/11/26 10:30)v0.2.3:alpn改成了h3(虽然没什么必要),hysteria版本升级成了0.8.6请重新下载新版”客户端?!“
+
 (2021/11/08 19:50)v0.2.2:整合自签/ACME，更改buffer计算方式提升速度,修复自签ipv6时多符号bug，增加随机端口功能,增加每一天自动重启服务端功能防止内存占用过大
 
 (2021/11/06 21:16)v0.2.1:提供自签证书安装，为了有些ACME死活无法验证用户
@@ -78,7 +80,7 @@ pekora
 
 本项目只介绍如何在windows环境下使用，其他环境请参考[官方原文](https://github.com/HyNetwork/hysteria)。
 
-因为暂时没有hysteria的图形界面，所以我用批处理写了一个简单的“[客户端](https://github.com/emptysuns/Hi_Hysteria/releases/download/0.2/hihysteria_windows0.2.rar)”，支持自动改代理和清除代理，实际使用没问题，**注意在运行时不要关闭cmd端口**。
+因为暂时没有hysteria的图形界面，所以我用批处理写了一个简单的“客户端?!"，支持自动改代理和清除代理，实际使用没问题。
 可自行到[release](https://github.com/emptysuns/Hi_Hysteria/releases)中下载最新版本。
 
 欢迎其他开发者贡献新的UI或者插件。
@@ -230,7 +232,6 @@ systemctl stop hysteria
 ```
 systemctl status hysteria -l
 ```
-
 
 - 卸载
 
