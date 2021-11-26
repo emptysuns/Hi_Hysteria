@@ -80,6 +80,7 @@ cat <<EOF > /etc/hysteria/config.json
       "password": "pekopeko"
     }
   },
+  "alpn": "h3",
   "acl": "/etc/hysteria/routes.acl",
   "recv_window_conn": $r_conn,
   "recv_window_client": $r_client,
@@ -104,6 +105,7 @@ cat <<EOF > config.json
 "timeout" : 300,
 "disable_udp": false
 },
+"alpn": "h3",
 "acl": "acl/routes.acl",
 "obfs": "$obfs",
 "auth_str": "pekopeko",
@@ -116,6 +118,7 @@ cat <<EOF > config.json
 EOF
 
 else
+
 cat <<EOF > /etc/hysteria/config.json
 {
   "listen": ":$port",
@@ -133,6 +136,7 @@ cat <<EOF > /etc/hysteria/config.json
       "password": "pekopeko"
     }
   },
+  "alpn": "h3",
   "acl": "/etc/hysteria/routes.acl",
   "recv_window_conn": $r_conn,
   "recv_window_client": $r_client,
@@ -151,6 +155,7 @@ cat <<EOF > config.json
 "timeout" : 300,
 "disable_udp": false
 },
+"alpn": "h3",
 "acl": "acl/routes.acl",
 "obfs": "$obfs",
 "auth_str": "pekopeko",
@@ -161,6 +166,7 @@ cat <<EOF > config.json
 "disable_mtu_discovery": false
 }
 EOF
+
 fi
 
 cat <<EOF >/etc/systemd/system/hysteria.service
@@ -171,13 +177,14 @@ After=network.target
 [Service]
 Type=simple
 PIDFile=/run/hysteria.pid
-ExecStart=/etc/hysteria/hysteria --log-level warn -c /etc/hysteria/config.json server >> /etc/hysteria/error.log
+ExecStart=/etc/hysteria/hysteria --log-level warn -c /etc/hysteria/config.json server >> /etc/hysteria/warn.log
 #Restart=on-failure
 #RestartSec=10s
 
 [Install]
 WantedBy=multi-user.target
 EOF
+
 sysctl -w net.core.rmem_max=40000000
 sysctl -p
 chmod 644 /etc/systemd/system/hysteria.service
@@ -185,7 +192,7 @@ systemctl daemon-reload
 systemctl enable hysteria
 systemctl start hysteria
 crontab -l > ./crontab.tmp
-echo "0 * * * * systemctl restart hysteria" >> ./crontab.tmp
+echo "0 4 * * * systemctl restart hysteria" >> ./crontab.tmp
 crontab ./crontab.tmp
 rm -rf ./crontab.tmp
 echo ""
