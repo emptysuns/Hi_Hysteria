@@ -10,7 +10,7 @@ echo -e " ██      ██                    ██                  ██
 ░██     ░██  ██      ██████   ░░██ ░░██████░███   ░██░░████████
 ░░      ░░  ░░      ░░░░░░     ░░   ░░░░░░ ░░░    ░░  ░░░░░░░░ "
 echo -e "\033[32mVersion:\033[0m 0.2.3"
-echo -e "\033[32mGithub:\033[0m https://github.com/emptysuns/HiHysteria"
+echo -e "\033[32mGithub:\033[0m https://github.com/emptysuns/Hi_Hysteria"
 echo -e "\033[35m******************************************************************\033[0m"
 echo -e "\033[1;42;40mReady to install!\033[0m\n"
 echo -e "\033[1;42;40mDowload:hysteria主程序... \033[0m"
