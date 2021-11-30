@@ -4,7 +4,9 @@
 > Hysteria 是一个功能丰富的，专为恶劣网络环境进行优化的网络工具（双边加速），比如卫星网络、拥挤的公共 Wi-Fi、在**中国连接国外服务器**等。 基于修改版的 QUIC 协议。
 by:[Hynetwork](https://github.com/HyNetwork)（Thank you!）
 
-Hysteria这是一款由go编写的非常优秀的“轻量”代理程序并且支持acme验证，它很好的解决了在搭建代理服务器时最大的痛点--**线路垃圾**。在魔法咏唱时最难的不是搭建维护，而是在晚高峰时期的交付质量。~~当三大运营商晚高变成了：奠信、连不通、移不动时，你我都有感触。~~ 虽然是走的udp但是因为加了混淆使暂时不会被运营商QoS。
+Hysteria这是一款由go编写的非常优秀的“轻量”代理程序，它很好的解决了在搭建代理服务器时最大的痛点--**线路垃圾**。
+
+在魔法咏唱时最难的不是搭建维护，而是在晚高峰时期的交付质量。~~当三大运营商晚高变成了：奠信、连不通、移不动时，你我都有感触。~~ 虽然是走的udp但是因为加了混淆使暂时不会被运营商QoS。
 
 项目作者提供的速度测试:
 
@@ -12,7 +14,7 @@ Hysteria这是一款由go编写的非常优秀的“轻量”代理程序并且�
 
 50mbps北方电信,北京出口 直连落地vir San Jose机房163线路，22-23点测试YT 1080p60直播流:
 
-![image](https://cloud.iacg.cf/0:/normal/img/hihysteria/speed.png)
+![image](https://cloud.imoeq.cloud/0:/normal/img/hihysteria/speed.png)
 
 ```
 190 dropped of 131329
