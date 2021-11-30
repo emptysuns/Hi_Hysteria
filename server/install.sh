@@ -1,7 +1,7 @@
-#!/bin/sh
+#!/bin/bash
 #Author:https://github.com/emptysuns
-echo "\033[35m******************************************************************\033[0m"
-echo " ██      ██                    ██                  ██          
+echo -e "\033[35m******************************************************************\033[0m"
+echo -e " ██      ██                    ██                  ██          
 ░██     ░██  ██   ██          ░██                 ░░           
 ░██     ░██ ░░██ ██   ██████ ██████  █████  ██████ ██  ██████  
 ░██████████  ░░███   ██░░░░ ░░░██░  ██░░░██░░██░░█░██ ░░░░░░██ 
@@ -30,7 +30,7 @@ fi
 chmod 755 /etc/hysteria/hysteria
 wget -O /etc/hysteria/routes.acl --no-check-certificate https://raw.githubusercontent.com/emptysuns/HiHysteria/main/acl/routes.acl
 echo -e "\033[32m下载完成！\033[0m"
-echo  -e "\033[42;37m开始配置: \033[0m"
+echo -e "\033[42;37m开始配置: \033[0m"
 echo -e "\033[32m请输入您的域名(不输入回车，则默认自签pan.baidu.com证书，不推荐):\033[0m"
 read  domain
 if [ -z "${domain}" ];then
