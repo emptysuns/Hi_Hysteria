@@ -4,7 +4,7 @@
 > Hysteria 是一个功能丰富的，专为恶劣网络环境进行优化的网络工具（双边加速），比如卫星网络、拥挤的公共 Wi-Fi、在**中国连接国外服务器**等。 基于修改版的 QUIC 协议。
 by:[Hynetwork](https://github.com/HyNetwork)（Thank you!）
 
-Hysteria这是一款由go编写的非常优秀的“轻量”代理程序并且支持acme验证，它很好的解决了，在搭建代理服务器时最大的痛点--**线路垃圾**。在魔法咏唱时最难的不是搭建维护，而是在晚高峰时期的交付质量。~~当三大运营商晚高变成了：奠信、连不通、移不动时，你我都有感触。~~ 虽然是走的udp但是因为加了混淆使暂时不会被运营商qos。
+Hysteria这是一款由go编写的非常优秀的“轻量”代理程序并且支持acme验证，它很好的解决了在搭建代理服务器时最大的痛点--**线路垃圾**。在魔法咏唱时最难的不是搭建维护，而是在晚高峰时期的交付质量。~~当三大运营商晚高变成了：奠信、连不通、移不动时，你我都有感触。~~ 虽然是走的udp但是因为加了混淆使暂时不会被运营商QoS。
 
 项目作者提供的速度测试:
 
@@ -55,7 +55,7 @@ apt-get install -y wget curl
 
 ```
 sudo su root  #Change to the user root!
-sh <(curl -fsSL https://git.io/hysteria.sh)
+bash <(curl -fsSL https://git.io/hysteria.sh)
 ```
 ### 配置过程
 
@@ -236,11 +236,11 @@ systemctl status hysteria -l
 - 卸载
 
 ```
-sh <(curl -fsSL https://git.io/rmhysteria.sh)
+bash <(curl -fsSL https://git.io/rmhysteria.sh)
 ```
 - 重新安装/升级
 ```
-sh <(curl -fsSL https://git.io/rehysteria.sh)
+bash <(curl -fsSL https://git.io/rehysteria.sh)
 ```
 ## 四·结语
 
