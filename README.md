@@ -95,7 +95,7 @@ pekora
 可以本地新建一个config.json（**一定要是这个名称！**）文件，复制粘贴到本地**conf**文件夹下，也可以直接下载生成的文件到本地**conf**文件夹下。
 
 
-将config.json加入[**release**](https://github.com/emptysuns/Hi_Hysteria/releases/download/0.2/hihysteria_windows0.2.rar)中提供的简单的windows cmd客户端的解压目录中.
+将config.json加入[**release**](https://github.com/emptysuns/Hi_Hysteria/releases)中提供的简单的windows cmd客户端的解压目录中.
 
 
 
