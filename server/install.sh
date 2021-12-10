@@ -185,7 +185,7 @@ ExecStart=/etc/hysteria/hysteria --log-level warn -c /etc/hysteria/config.json s
 WantedBy=multi-user.target
 EOF
 
-sysctl -w net.core.rmem_max=40000000
+sysctl -w net.core.rmem_max=4000000
 sysctl -p
 chmod 644 /etc/systemd/system/hysteria.service
 systemctl daemon-reload
