@@ -20,7 +20,7 @@ Hysteria这是一款由go编写的非常优秀的“轻量”代理程序，它�
 190 dropped of 131329
 ```
 
-3、加点激励，无对钟国大陆优化线路，洛杉矶shockhosting机房，1c128m ovznat：
+3、加点激励，无对钟国大陆优化线路，洛杉矶shockhosting机房，1c128m ovznat 4k@p60：
 
 ![image](https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/imgs/yt.jpg)
 
