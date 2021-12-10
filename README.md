@@ -25,7 +25,7 @@ Hysteria这是一款由go编写的非常优秀的“轻量”代理程序，它�
 ![image](https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/imgs/yt.jpg)
 
 ```
-139783
+139783 Kbps
 ```
 
 

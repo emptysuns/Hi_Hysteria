@@ -13,11 +13,11 @@ domain_black = urllib.request.urlopen(
 domain_block = urllib.request.urlopen(
     'https://raw.githubusercontent.com/emptysuns/daily/gh-pages/adlist/adlist.txt'
 )
+
 cn_ipv4 = urllib.request.urlopen(
     'http://www.ipdeny.com/ipblocks/data/aggregated/cn-aggregated.zone')
 cn_ipv6 = urllib.request.urlopen(
     'http://www.ipdeny.com/ipv6/ipaddresses/aggregated/cn-aggregated.zone')
-
 cn = chain(cn_ipv4, cn_ipv6)
 
 with open('routes.acl', 'w') as f:
