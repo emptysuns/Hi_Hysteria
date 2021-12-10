@@ -8,17 +8,23 @@ Hysteria这是一款由go编写的非常优秀的“轻量”代理程序，它�
 
 在魔法咏唱时最难的不是搭建维护，而是在晚高峰时期的交付质量。~~当三大运营商晚高变成了：奠信、连不通、移不动时，你我都有感触。~~ 虽然是走的udp但是因为加了混淆使暂时不会被运营商QoS。
 
-项目作者提供的速度测试:
+1、原项目提供的bench:
 
 ![image](https://raw.githubusercontent.com/HyNetwork/hysteria/master/docs/bench/bench.png)
 
-50mbps北方电信,北京出口 直连落地vir San Jose机房163线路，22-23点测试YT 1080p60直播流:
+2、50mbps北方电信,北京出口 直连落地vir San Jose机房163线路，22-23点测试YT 1080p60直播流:
 
 ![image](https://cloud.imoeq.com/0:/normal/img/hihysteria/speed.png)
 
 ```
 190 dropped of 131329
 ```
+
+3、加点激励，无对钟国大陆优化线路，洛杉矶shockhosting机房，1c128m ovznat：
+
+![image](https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/imgs/yt.png)
+
+
 
 该项目仅作学习用途，请查看的访客在5s之内立即删除并停止使用。
 
@@ -61,6 +67,8 @@ bash <(curl -fsSL https://git.io/hysteria.sh)
 ```
 ### 配置过程
 
+**请提前放行防火墙，保证该udp端口可达！**
+
 ```
 开始配置: 
 请输入您的域名(不输入回车，则默认自签pan.baidu.com证书，不推荐):
@@ -95,7 +103,7 @@ pekora
 可以本地新建一个config.json（**一定要是这个名称！**）文件，复制粘贴到本地**conf**文件夹下，也可以直接下载生成的文件到本地**conf**文件夹下。
 
 
-将config.json加入[**release**](https://github.com/emptysuns/Hi_Hysteria/releases/download/0.2/hihysteria_windows0.2.rar)中提供的简单的windows cmd客户端的解压目录中.
+将config.json加入[**release**](https://github.com/emptysuns/Hi_Hysteria/releases)中提供的简单的windows cmd客户端的解压目录中.
 
 
 
