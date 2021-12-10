@@ -1,8 +1,7 @@
 # Author:github.com/emptysuns
 # routes
-# Generated on October 04, 2021
+# Generated on December 10, 2021
 
-proxy domain-suffix hostloc.com
 block domain-suffix 51yes.com
 block domain-suffix taboola.com
 block domain-suffix realsrv.com
