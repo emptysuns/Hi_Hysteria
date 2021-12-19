@@ -188,7 +188,7 @@ Tips:客户端默认只开启http(8888)、socks5代理(8889, user:pekora;passwor
 "insecure": false,
 "recv_window_conn": 10485760,
 "recv_window": 41943040,
-"resolver": "8.8.8.8:53,8.8.4.4:53,1.1.1.1:53,1.0.0.1:53",
+"resolver": "8.8.8.8:53",
 "disable_mtu_discovery": false
 }
 ↑***********************************↑↑↑copy↑↑↑*******************************↑
@@ -261,7 +261,7 @@ cat config.json
 "insecure": false,
 "recv_window_conn": 10485760,
 "recv_window": 41943040,
-"resolver": "8.8.8.8:53,8.8.4.4:53,1.1.1.1:53,1.0.0.1:53",
+"resolver": "8.8.8.8:53",
 "disable_mtu_discovery": false
 }
 

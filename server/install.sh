@@ -104,7 +104,7 @@ cat <<EOF > /etc/hysteria/config.json
   "recv_window_conn": $r_conn,
   "recv_window_client": $r_client,
   "max_conn_client": 4096,
-  "resolver": "8.8.8.8:53,8.8.4.4:53,1.1.1.1:53,1.0.0.1:53",
+  "resolver": "8.8.8.8:53",
   "disable_mtu_discovery": false
 }
 EOF
@@ -141,7 +141,7 @@ cat <<EOF > config.json
 "insecure": true,
 "recv_window_conn": $r_conn,
 "recv_window": $r_client,
-"resolver": "8.8.8.8:53,8.8.4.4:53,1.1.1.1:53,1.0.0.1:53",
+"resolver": "8.8.8.8:53",
 "disable_mtu_discovery": false
 }
 EOF
@@ -171,7 +171,7 @@ cat <<EOF > /etc/hysteria/config.json
   "recv_window_conn": $r_conn,
   "recv_window_client": $r_client,
   "max_conn_client": 4096,
-  "resolver": "8.8.8.8:53,8.8.4.4:53,1.1.1.1:53,1.0.0.1:53",
+  "resolver": "8.8.8.8:53",
   "disable_mtu_discovery": false
 }
 EOF
@@ -202,7 +202,7 @@ cat <<EOF > config.json
 "insecure": false,
 "recv_window_conn": $r_conn,
 "recv_window": $r_client,
-"resolver": "8.8.8.8:53,8.8.4.4:53,1.1.1.1:53,1.0.0.1:53",
+"resolver": "8.8.8.8:53",
 "disable_mtu_discovery": false
 }
 EOF
