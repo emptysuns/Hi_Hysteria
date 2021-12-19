@@ -38,21 +38,57 @@ Hysteria这是一款由go编写的非常优秀的“轻量”代理程序，它�
 
 
 ```
-(2021/12/10 18:59)v0.2.3a: hysteria版本升级成了0.9.0,请重新下载"cmd客户端"，刷新了acl。（注: 因为0.9.0新的特征ipv6_only开启后无法解析ipv4，可以等下个版本所支持的outbound特征，这里就不特意添加了
+(2021/12/19 21:16) v0.2.4: 
+1、hysteria版本升级成了0.9.1，请重新下载"cmd客户端",version:0.2c
+2、增加faketcp模式配置，详情请查看：“使用前注意”条目
+3、outbound被鸽了
 
-(2021/11/26 10:30)v0.2.3: alpn改成了h3(虽然没什么必要),hysteria版本升级成了0.8.6请重新下载"cmd客户端?!"
+(2021/12/10 18:59) v0.2.3a: 
+1、hysteria版本升级成了0.9.0,请重新下载"cmd客户端"，version:0.2b（注: 因为0.9.0新的特征ipv6_only开启后无法解析ipv4，可以等下个版本所支持的outbound特征，这里就不特意添加了
+2、刷新了acl。
 
-(2021/11/08 19:50)v0.2.2: 整合自签/ACME，更改buffer计算方式提升速度,修复自签ipv6时多符号bug，增加随机端口功能,增加每一天自动重启服务端功能防止内存占用过大
+(2021/11/26 10:30) v0.2.3: 
+1、alpn改成了h3(虽然没什么必要)
+2、hysteria版本升级成了0.8.6请重新下载"cmd客户端?!"，version:0.2a
 
-(2021/11/06 21:16)v0.2.1: 提供自签证书安装，为了有些ACME死活无法验证用户
+(2021/11/08 19:50) v0.2.2: 
+1、整合自签/ACME
+2、更改buffer计算方式提升速度
+3、修复自签ipv6时多符号bug
+4、增加随机端口功能
+5、增加每一天自动重启服务端功能防止内存占用过大
 
-(2021/10/05 18:36)v0.2: 优化客户端(！？)结构，增加后台运行功能
+(2021/11/06 21:16) v0.2.1: 
+1、提供自签证书安装，为了有些ACME死活无法验证用户
 
-(2021/10/04 16:19)v0.1: 修复因dns污染无法代理的bug并增加去广告规则、增加arm和mipsle架构适配、增加客户端防呆
+(2021/10/05 18:36) v0.2: 
+1、优化客户端(！？)结构
+2、增加后台运行功能
+
+(2021/10/04 16:19) v0.1: 
+1、修复因dns污染无法代理的bug并增加去广告规则
+2、增加arm和mipsle架构适配
+3、增加客户端防呆
 ```
 
 
 ## 二·使用
+### 使用前注意
+#### 1、hysteria faketcp模式介绍：
+将hysteria的UDP传输过程伪装成TCP，可以躲过运营商和“比较专业”的IDC服务商的QoS设备的对UDP的限速、阻断。
+
+目前faketcp模式客户端只支持在linux类设备使用，**windows无法使用**（可配合udp2raw伪装）。
+
+而且在操作系统中server和client这二者必须都是root用户运行才能开启faketcp。这其中当然也包括安卓，**必须root后才能使用**。
+
+一般情况下运营商不会限制传输，我的建议是：**当下行速度一直被限制在例如128kB/s这种情况非常非常低的速率情况时，确认被限制UDP后再重新安装后开启，它并不能"增速"，反而会增加cpu的开销，给hysteria“减速”，默认传输方式即可**。
+
+#### 2、防火墙问题：
+
+**请提前放行防火墙，保证该udp端口可达！**
+
+对于faketcp模式，则为放行server的tcp端口。
+
 ### 安装依赖
 
 ```
@@ -73,24 +109,96 @@ bash <(curl -fsSL https://git.io/hysteria.sh)
 ```
 ### 配置过程
 
-**请提前放行防火墙，保证该udp端口可达！**
-
 ```
+******************************************************************
+ ██      ██                    ██                  ██          
+░██     ░██  ██   ██          ░██                 ░░           
+░██     ░██ ░░██ ██   ██████ ██████  █████  ██████ ██  ██████  
+░██████████  ░░███   ██░░░░ ░░░██░  ██░░░██░░██░░█░██ ░░░░░░██ 
+░██░░░░░░██   ░██   ░░█████   ░██  ░███████ ░██ ░ ░██  ███████ 
+░██     ░██   ██     ░░░░░██  ░██  ░██░░░░  ░██   ░██ ██░░░░██ 
+░██     ░██  ██      ██████   ░░██ ░░██████░███   ░██░░████████
+░░      ░░  ░░      ░░░░░░     ░░   ░░░░░░ ░░░    ░░  ░░░░░░░░ 
+Version: 0.2.4
+Github: https://github.com/emptysuns/Hi_Hysteria
+******************************************************************
+Ready to install.
+ 
+The hysteria latest version: v0.9.1. Download...
+
+Download completed.
+
 开始配置: 
 请输入您的域名(不输入回车，则默认自签pan.baidu.com证书，不推荐):
 a.com
+是否启用faketcp,输入1启用,默认不启用(回车)：
+
+传输协议:udp
+
 请输入你想要开启的端口（此端口是server端口，请提前放行防火墙，建议10000-65535，回车随机）：
-12345
+
+随机端口：29714
+
 请输入您到此服务器的平均延迟,关系到转发速度（回车默认200ms）:
-300
+100
 
 期望速度，请如实填写，这是客户端的峰值速度，服务端默认不受限。期望过低或者过高会影响转发速度！
-请输入客户端期望的下行速度:
-50
-请输入客户端期望的上行速度:
-10
+请输入客户端期望的下行速度:(默认50mbps):
+200
+请输入客户端期望的上行速度(默认10mbps):
+40
 请输入混淆口令（相当于连接密钥）:
-pekora
+mikomiko
+、
+配置录入完成！
+
+执行配置...
+net.core.rmem_max=4000000
+Created symlink /etc/systemd/system/multi-user.target.wants/hysteria.service → /etc/systemd/system/hysteria.service.
+所有安装已经完成，配置文件输出如下且已经在本目录生成（可自行复制粘贴到本地）！
+
+
+Tips:客户端默认只开启http(8888)、socks5代理(8889, user:pekora;password:pekopeko)!其他方式请参照文档自行修改客户端config.json
+↓***********************************↓↓↓copy↓↓↓*******************************↓
+{
+"server": "a.com:29714",
+"protocol": "udp",
+"up_mbps": 40,
+"down_mbps": 200,
+"http": {
+"listen": "127.0.0.1:8888",
+"timeout" : 300,
+"disable_udp": false
+},
+"socks5": {
+"listen": "127.0.0.1:8889",
+"timeout": 300,
+"disable_udp": false,
+"user": "pekora",
+"password": "pekopeko"
+},
+"alpn": "h3",
+"acl": "acl/routes.acl",
+"obfs": "emptysuns",
+"auth_str": "pekopeko",
+"server_name": "a.com",
+"insecure": false,
+"recv_window_conn": 10485760,
+"recv_window": 41943040,
+"disable_mtu_discovery": false
+}
+↑***********************************↑↑↑copy↑↑↑*******************************↑
+安装完毕
+
+root@1:~# systemctl status hysteria
+● hysteria.service - hysteria:Hello World!
+   Loaded: loaded (/etc/systemd/system/hysteria.service; enabled; vendor preset: enabled)
+   Active: active (running) since Sun 2021-12-19 15:01:35 CET; 13s ago
+ Main PID: 31301 (hysteria)
+    Tasks: 5 (limit: 4915)
+   CGroup: /system.slice/hysteria.service
+           └─31301 /etc/hysteria/hysteria --log-level warn -c /etc/hysteria/config.json server >> /etc/hysteria/warn.log
+
 ```
 ### cmd客户端介绍
 
@@ -260,4 +368,4 @@ bash <(curl -fsSL https://git.io/rehysteria.sh)
 ```
 ## 四·结语
 
-走UDP的QUIC协议，加了tls和混淆，个人跑了一段时间大流量，未被运营商QoS，落地ip并没有被墙，也不知道什么时候被针对，大家且用且珍惜吧。
+魔改UDP的QUIC协议，加了tls和混淆，个人跑了一段时间大流量，未被运营商QoS，落地ip并没有被墙，也不知道什么时候被针对，大家且用且珍惜吧。
