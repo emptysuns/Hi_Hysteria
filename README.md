@@ -181,7 +181,7 @@ Tips:客户端默认只开启http(8888)、socks5代理(8889, user:pekora;passwor
 },
 "alpn": "h3",
 "acl": "acl/routes.acl",
-"obfs": "emptysuns",
+"obfs": "mikomiko",
 "auth_str": "pekopeko",
 "server_name": "a.com",
 "insecure": false,
