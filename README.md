@@ -42,6 +42,7 @@ Hysteria这是一款由go编写的非常优秀的“轻量”代理程序，它�
 1、hysteria版本升级成了0.9.1，请重新下载"cmd客户端",version:0.2c
 2、增加faketcp模式配置，详情请查看：“使用前注意”条目
 3、outbound被鸽了
+4、客户端增加socks5（端口:8889）代理方式,user：pekora;password:pekopeko。可自行修改用户密码
 
 (2021/12/10 18:59) v0.2.3a: 
 1、hysteria版本升级成了0.9.0,请重新下载"cmd客户端"，version:0.2b（注: 因为0.9.0新的特征ipv6_only开启后无法解析ipv4，可以等下个版本所支持的outbound特征，这里就不特意添加了
