@@ -233,21 +233,30 @@ cat config.json
 
 # cat config.json 
 {
-"server": "a.com:12345",
-"up_mbps": 10,
-"down_mbps": 50,
+"server": "a.com:29714",
+"protocol": "udp",
+"up_mbps": 40,
+"down_mbps": 200,
 "http": {
 "listen": "127.0.0.1:8888",
 "timeout" : 300,
 "disable_udp": false
 },
-"acl": "chnroutes.acl",
-"obfs": "pekora",
+"socks5": {
+"listen": "127.0.0.1:8889",
+"timeout": 300,
+"disable_udp": false,
+"user": "pekora",
+"password": "pekopeko"
+},
+"alpn": "h3",
+"acl": "acl/routes.acl",
+"obfs": "emptysuns",
 "auth_str": "pekopeko",
 "server_name": "a.com",
 "insecure": false,
-"recv_window_conn": 15728640,
-"recv_window": 67108864,
+"recv_window_conn": 10485760,
+"recv_window": 41943040,
 "disable_mtu_discovery": false
 }
 
