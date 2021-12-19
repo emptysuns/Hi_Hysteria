@@ -74,15 +74,15 @@ Hysteria这是一款由go编写的非常优秀的“轻量”代理程序，它�
 
 
 ## 二·使用
-### 使用前注意
-#### 1、hysteria faketcp模式介绍：
+### 使用前须知
+#### 1、hysteria faketcp模式介绍(默认不开启，可跳过)：
 将hysteria的UDP传输过程伪装成TCP，可以躲过运营商和“比较专业”的IDC服务商的QoS设备的对UDP的限速、阻断。
 
 目前faketcp模式客户端只支持在linux类设备使用，**windows无法使用**（可配合udp2raw伪装）。
 
 而且在操作系统中server和client这二者必须都是root用户运行才能开启faketcp。这其中当然也包括安卓，**必须root后才能使用**。
 
-一般情况下运营商不会限制传输，我的建议是：**当下行速度一直被限制在例如128kB/s非常非常低的速率情况时，确认被限制UDP后再重新安装后开启，它并不能"增速"，反而会增加cpu的开销，给hysteria“减速”，默认传输方式即可**。
+一般情况下运营商不会限制传输，我的建议是：**当下行速度一直被限制在例如128kB/s这种非常非常低的速率情况时，你确认被限制UDP后再重新安装后开启，它并不能"增速"，反而会增加cpu的开销，给hysteria“减速”，默认传输方式即可**。
 
 #### 2、防火墙问题：
 
@@ -94,18 +94,19 @@ Hysteria这是一款由go编写的非常优秀的“轻量”代理程序，它�
 
 ```
 # centos
+sudo su root  #Change to the user root!
 yum install -y wget curl
 ```
 
 ```
 # debian/ubuntu
+sudo su root  #Change to the user root!
 apt-get install -y wget curl
 ```
 
 ### 拉取安装
 
 ```
-sudo su root  #Change to the user root!
 bash <(curl -fsSL https://git.io/hysteria.sh)
 ```
 ### 配置过程
