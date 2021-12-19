@@ -43,6 +43,7 @@ Hysteria这是一款由go编写的非常优秀的“轻量”代理程序，它�
 2、增加faketcp模式配置，详情请查看：“使用前注意”条目
 3、outbound被鸽了
 4、客户端增加socks5（端口:8889）代理方式,user：pekora;password:pekopeko。可自行修改用户密码
+5、增加自定义dns如8.8.8.8等，防止运营商dns劫持攻击
 
 (2021/12/10 18:59) v0.2.3a: 
 1、hysteria版本升级成了0.9.0,请重新下载"cmd客户端"，version:0.2b（注: 因为0.9.0新的特征ipv6_only开启后无法解析ipv4，可以等下个版本所支持的outbound特征，这里就不特意添加了
@@ -181,12 +182,13 @@ Tips:客户端默认只开启http(8888)、socks5代理(8889, user:pekora;passwor
 },
 "alpn": "h3",
 "acl": "acl/routes.acl",
-"obfs": "emptysuns",
+"obfs": "mikomiko",
 "auth_str": "pekopeko",
 "server_name": "a.com",
 "insecure": false,
 "recv_window_conn": 10485760,
 "recv_window": 41943040,
+"resolver": "8.8.8.8:53,8.8.4.4:53,1.1.1.1:53,1.0.0.1:53",
 "disable_mtu_discovery": false
 }
 ↑***********************************↑↑↑copy↑↑↑*******************************↑
@@ -253,12 +255,13 @@ cat config.json
 },
 "alpn": "h3",
 "acl": "acl/routes.acl",
-"obfs": "emptysuns",
+"obfs": "mikomiko",
 "auth_str": "pekopeko",
 "server_name": "a.com",
 "insecure": false,
 "recv_window_conn": 10485760,
 "recv_window": 41943040,
+"resolver": "8.8.8.8:53,8.8.4.4:53,1.1.1.1:53,1.0.0.1:53",
 "disable_mtu_discovery": false
 }
 
