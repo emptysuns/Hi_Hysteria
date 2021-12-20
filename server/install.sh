@@ -141,7 +141,7 @@ cat <<EOF > config.json
 "insecure": true,
 "recv_window_conn": $r_conn,
 "recv_window": $r_client,
-"resolver": "8.8.8.8:53",
+"resolver": "119.29.29.29:53",
 "disable_mtu_discovery": false
 }
 EOF
@@ -202,7 +202,7 @@ cat <<EOF > config.json
 "insecure": false,
 "recv_window_conn": $r_conn,
 "recv_window": $r_client,
-"resolver": "8.8.8.8:53",
+"resolver": "119.29.29.29:53",
 "disable_mtu_discovery": false
 }
 EOF
