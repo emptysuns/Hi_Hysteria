@@ -21,20 +21,16 @@ Hysteria这是一款由go编写的非常优秀的“轻量”代理程序，它�
 ```
 
 3、无对钟国大陆线路优化，洛杉矶shockhosting机房，1c128m ovznat 4k@p60：
-
 ![image](https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/imgs/yt.jpg)
-
 ```
 139783 Kbps
 ```
-
-
-
 该项目仅作学习用途，请查看的访客在5s之内立即删除并停止使用。
 
 由它所引起的任何问题，作者并不承担风险和任何法律责任。
 
 因为脚本现处于0.x的测试版本，可能会有一些bug，如果遇到请发issue，欢迎star，您的⭐是我维护的动力。
+
 
 
 ```
@@ -44,7 +40,11 @@ Hysteria这是一款由go编写的非常优秀的“轻量”代理程序，它�
 3、outbound被鸽了
 4、客户端增加socks5（端口:8889）代理方式,user：pekora;password:pekopeko。可自行修改用户密码
 5、增加自定义dns如8.8.8.8等，防止运营商dns劫持攻击
+```
 
+<details>
+  <summary>历史改进</summary>
+    <pre><blockcode> 
 (2021/12/10 18:59) v0.2.3a: 
 1、hysteria版本升级成了0.9.0,请重新下载"cmd客户端"，version:0.2b（注: 因为0.9.0新的特征ipv6_only开启后无法解析ipv4，可以等下个版本所支持的outbound特征，这里就不特意添加了
 2、刷新了acl。
@@ -71,25 +71,33 @@ Hysteria这是一款由go编写的非常优秀的“轻量”代理程序，它�
 1、修复因dns污染无法代理的bug并增加去广告规则
 2、增加arm和mipsle架构适配
 3、增加客户端防呆
-```
+  </blockcode></pre>
+</details>
 
 
 ## 二·使用
 ### 使用前须知
-#### 1、防火墙问题：
+#### 防火墙问题：
 
-**请提前放行防火墙，保证该udp端口可达！**
+请提前放行防火墙，保证该udp端口可达！
 
 对于faketcp模式，则为放行server的tcp端口。
 
-#### 2、hysteria faketcp模式介绍(默认不开启，可跳过不查看)：
-将hysteria的UDP传输过程伪装成TCP，可以躲过运营商和“比较专业”的IDC服务商的QoS设备的对UDP的限速、阻断。
+如果使用不使用自签方式，则应该放行TCP 80/443供hysteria内置的ACME验证。
 
-目前faketcp模式客户端只支持在linux类设备使用，**windows无法使用**（可配合udp2raw伪装）。
+#### hysteria faketcp模式介绍：(默认不开启，可跳过不查看)
+
+v0.9.1 支持faketcp，将hysteria的UDP传输过程伪装成TCP，可以躲过运营商和“比较专业”的IDC服务商的QoS设备的对UDP的限速、阻断。
+
+目前faketcp模式客户端只支持在linux类设备使用，**windows无法使用**（但是可配合udp2raw伪装tcp）。
 
 而且在操作系统中server和client这二者必须都是root用户运行才能开启faketcp。这其中当然也包括安卓，**必须root后才能使用**。
 
-一般情况下运营商不会限制hysteria传输，我的建议是：**当下行速度一直被限制在例如128kB/s这种非常非常低的速率情况时，你确认被限制UDP后再重新安装后开启，它并不能"增速"，反而会增加cpu的开销，给hysteria“减速”，默认传输方式即可**。
+由于本身就具有`obfs`选项，能将hysteria/QUIC混淆成不知名的UDP流量可绕过针对性的QoS/DPI检测，一般情况下运营商不会限制hysteria传输，所以我的建议是：
+
+**追求代理性能时不要开启它**。当下行速度一直被限制在例如128kB/s这种非常非常低的速率情况时，你确认被限制UDP后再重新安装后开启，它并不能"增速"，反而会增加cpu的开销，给hysteria“减速”，默认传输方式即可。
+
+**追求稳定性且满足root使用环境时，能开faketcp就开faketcp**。
 
 ### 安装依赖
 
@@ -112,7 +120,9 @@ bash <(curl -fsSL https://git.io/hysteria.sh)
 ```
 ### 配置过程
 
-```
+<details>
+  <summary>演示较长，点我查看</summary>
+    <pre><blockcode> 
 ******************************************************************
  ██      ██                    ██                  ██          
 ░██     ░██  ██   ██          ░██                 ░░           
@@ -152,7 +162,7 @@ a.com
 40
 请输入混淆口令（相当于连接密钥）:
 mikomiko
-、
+
 配置录入完成！
 
 执行配置...
@@ -203,7 +213,9 @@ root@1:~# systemctl status hysteria
    CGroup: /system.slice/hysteria.service
            └─31301 /etc/hysteria/hysteria --log-level warn -c /etc/hysteria/config.json server >> /etc/hysteria/warn.log
 
-```
+  </blockcode></pre>
+</details>
+
 ### cmd客户端介绍
 
 本项目只介绍如何在windows环境下使用，其他环境请参考[官方原文](https://github.com/HyNetwork/hysteria)。
