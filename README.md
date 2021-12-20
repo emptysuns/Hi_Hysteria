@@ -83,7 +83,7 @@ Hysteria这是一款由go编写的非常优秀的“轻量”代理程序，它�
 
 对于faketcp模式，则为放行server的tcp端口。
 
-如果使用不使用自签方式，则应该放行TCP 80/443供hysteria内置的ACME验证。
+如果不使用自签方式，则应该放行TCP 80/443供hysteria内置的ACME验证。
 
 #### hysteria faketcp模式介绍：(默认不开启，可跳过不查看)
 
