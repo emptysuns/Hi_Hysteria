@@ -34,17 +34,28 @@ Hysteria这是一款由go编写的非常优秀的“轻量”代理程序，它�
 
 
 ```
+(2022/01/04 21:59) v0.2.5:
+1、hysteria版本升级成了0.9.3，请重新下载"cmd客户端",version:0.2d
+！
+由于原项目使用github action编译带tun版本时，使用的最新的GLIBC_2.32
+很多系统目前没有很好的支持，有依赖问题
+所以我自己编译了一个，作为暂时的解决办法。
+！
+2、新增wechat视频通话流量伪装
+3、readme中加入各个协议类型介绍
+4、取消obfs选项支持（没必要开启它，当你的网络环境限制QUIC传输，可自行添加），大幅减小cpu的开销，提升速度
+```
+
+<details>
+  <summary>历史改进</summary>
+    <pre><blockcode> 
 (2021/12/19 21:16) v0.2.4: 
 1、hysteria版本升级成了0.9.1，请重新下载"cmd客户端",version:0.2c
 2、增加faketcp模式配置，详情请查看：“使用前注意”条目
 3、outbound被鸽了
 4、客户端增加socks5（端口:8889）代理方式,user：pekora;password:pekopeko。可自行修改用户密码
 5、增加自定义dns如8.8.8.8等，防止运营商dns劫持攻击
-```
 
-<details>
-  <summary>历史改进</summary>
-    <pre><blockcode> 
 (2021/12/10 18:59) v0.2.3a: 
 1、hysteria版本升级成了0.9.0,请重新下载"cmd客户端"，version:0.2b（注: 因为0.9.0新的特征ipv6_only开启后无法解析ipv4，可以等下个版本所支持的outbound特征，这里就不特意添加了
 2、刷新了acl。
@@ -81,23 +92,10 @@ Hysteria这是一款由go编写的非常优秀的“轻量”代理程序，它�
 
 请提前放行防火墙，保证该udp端口可达！
 
-对于faketcp模式，则为放行server的tcp端口。
+仅对于faketcp模式，则为放行server的tcp端口。
 
 如果不使用自签方式，则应该放行TCP 80/443供hysteria内置的ACME验证。
 
-#### hysteria faketcp模式介绍：(默认不开启，可跳过不查看)
-
-v0.9.1 支持faketcp，将hysteria的UDP传输过程伪装成TCP，可以躲过运营商和“比较专业”的IDC服务商的QoS设备的对UDP的限速、阻断。
-
-目前faketcp模式客户端只支持在linux类设备使用，**windows无法使用**（但是可配合udp2raw伪装tcp）。
-
-而且在操作系统中server和client这二者必须都是root用户运行才能开启faketcp。这其中当然也包括安卓，**必须root后才能使用**。
-
-由于本身就具有`obfs`选项，能将hysteria/QUIC混淆成不知名的UDP流量可绕过针对性的QoS/DPI检测，一般情况下运营商不会限制hysteria传输，所以我的建议是：
-
-**追求代理性能时不要开启它**。当下行速度一直被限制在例如128kB/s这种非常非常低的速率情况时，你确认被限制UDP后再重新安装后开启，它并不能"增速"，反而会增加cpu的开销，给hysteria“减速”，默认传输方式即可。
-
-**追求稳定性且满足root使用环境时，能开faketcp就开faketcp**。
 
 ### 安装依赖
 
@@ -118,6 +116,30 @@ apt-get install -y wget curl
 ```
 bash <(curl -fsSL https://git.io/hysteria.sh)
 ```
+
+### 各协议介绍
+#### 1、udp
+可被识别为QUIC流量，直接使用最佳。
+
+脚本0.2.5版本后不再默认加入`obfs`选项了，由于混淆的开销太大，会让cpu性能成为速度的瓶颈。
+
+而且运营商不会单单限速QUIC的传输，长时间测试过程中未被限速过，所以取消掉`obfs`支持。
+
+#### 2、faketcp:
+hysteria v0.9.1 开始支持faketcp，将hysteria的UDP传输过程伪装成TCP，可以躲过运营商和“比较专业”的IDC服务商的QoS设备的对UDP的限速、阻断。
+
+目前faketcp模式客户端只支持在linux类系统root用户内使用包括安卓，**windows无法使用**（但是可配合udp2raw伪装tcp代替）。
+
+所以我的建议是：
+
+**追求代理性能时不要开启它**。当下行速度一直被限制在例如128kB/s这种非常非常低的速率情况时，你确认被限制UDP后再重新安装后开启，它并不能"增速"，反而会增加cpu的开销，给hysteria“减速”。
+
+**追求稳定性且能准备root权限使用环境时**。能开faketcp就开它。
+
+#### 3、wechat-video
+
+伪装成wechat的语音视频通话，可能会绕过少部分国内运营商对udp针对性限速？有待证实。
+
 ### 配置过程
 
 <details>

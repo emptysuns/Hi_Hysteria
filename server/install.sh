@@ -9,7 +9,7 @@ echo -e " ██      ██                    ██                  ██
 ░██     ░██   ██     ░░░░░██  ░██  ░██░░░░  ░██   ░██ ██░░░░██ 
 ░██     ░██  ██      ██████   ░░██ ░░██████░███   ░██░░████████
 ░░      ░░  ░░      ░░░░░░     ░░   ░░░░░░ ░░░    ░░  ░░░░░░░░ "
-echo -e "\033[32mVersion:\033[0m 0.2.4"
+echo -e "\033[32mVersion:\033[0m 0.2.5"
 echo -e "\033[32mGithub:\033[0m https://github.com/emptysuns/Hi_Hysteria"
 echo -e "\033[35m******************************************************************\033[0m"
 echo -e "\033[1;;35mReady to install.\n \033[0m"
@@ -18,7 +18,8 @@ version=`wget -qO- -t1 -T2 --no-check-certificate "https://api.github.com/repos/
 echo -e "The hysteria latest version: \033[31m$version\033[0m. Download..."
 get_arch=`arch`
 if [ $get_arch = "x86_64" ];then
-    wget -q -O /etc/hysteria/hysteria --no-check-certificate https://github.com/HyNetwork/hysteria/releases/download/$version/hysteria-linux-amd64
+    #wget -q -O /etc/hysteria/hysteria --no-check-certificate https://github.com/HyNetwork/hysteria/releases/download/$version/hysteria-linux-amd64
+    wget -q -O /etc/hysteria/hysteria --no-check-certificate https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/client/linux/amd64/v0.9.3/hysteria
 elif [ $get_arch = "aarch64" ];then
     wget -q -O /etc/hysteria/hysteria --no-check-certificate https://github.com/HyNetwork/hysteria/releases/download/$version/hysteria-linux-arm64
 elif [ $get_arch = "mips64" ];then
@@ -38,12 +39,14 @@ if [ -z "${domain}" ];then
   ip=`curl -4 ip.sb`
   echo -e "您的公网为:\033[31m$ip\033[0m\n"
 fi
-echo -e "\033[32m是否启用faketcp,输入1启用,默认不启用(回车)：\033[0m"
+echo -e "\033[32m选择协议类型:\n\n\033[0m\033[33m\033[01m1、udp(QUIC)\n2、faketcp\n3、wechat-video(回车默认)\033[0m\033[32m\n\n输入序号:\033[0m"
 read protocol
-if [ -z "${protocol}" ];then
-  protocol="udp"
-else
+if [ -z "${protocol}" ] || [ $protocol == "3" ];then
+  protocol="wechat-video"
+elif [ $protocol == "2" ];then
   protocol="faketcp"
+else 
+  protocol="udp"
 fi
 echo -e "传输协议:\033[31m$protocol\033[0m\n"
 echo -e "\033[32m请输入你想要开启的端口（此端口是server端口，请提前放行防火墙，建议10000-65535，回车随机）：\033[0m"
@@ -84,7 +87,7 @@ if [ "$domain" = "pan.baidu.com" ];then
 mail="admin@baidu.com"
 day=36500
 openssl genrsa -out /etc/hysteria/$domain.key 2048
-openssl req -x509 -nodes -newkey rsa:2048 -days $day -keyout /etc/hysteria/$domain.key -out /etc/hysteria/$domain.crt -subj "/C=CN/ST=Beijing/L=HaiDian/O=emptysuns/OU=Baidu/CN=$domain/emailAddress=$mail"
+openssl req -x509 -nodes -newkey rsa:2048 -days $day -keyout /etc/hysteria/$domain.key -out /etc/hysteria/$domain.crt -subj "/C=CN/ST=Beijing/L=HaiDian/O=PonyMa/OU=Baidu/CN=$domain/emailAddress=$mail"
 cat <<EOF > /etc/hysteria/config.json
 {
   "listen": ":$port",
