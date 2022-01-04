@@ -39,7 +39,7 @@ Hysteria这是一款由go编写的非常优秀的“轻量”代理程序，它�
 ！
 由于原项目使用github action编译带tun版本时，使用的最新的GLIBC_2.32
 很多系统目前没有很好的支持，有依赖问题
-所以我自己编译了一个，作为暂时的解决办法。
+所以我自己编译了v0.9.3，作为暂时的解决办法。
 ！
 2、新增wechat视频通话流量伪装
 3、readme中加入各个协议类型介绍
@@ -154,50 +154,56 @@ hysteria v0.9.1 开始支持faketcp，将hysteria的UDP传输过程伪装成TCP�
 ░██     ░██   ██     ░░░░░██  ░██  ░██░░░░  ░██   ░██ ██░░░░██ 
 ░██     ░██  ██      ██████   ░░██ ░░██████░███   ░██░░████████
 ░░      ░░  ░░      ░░░░░░     ░░   ░░░░░░ ░░░    ░░  ░░░░░░░░ 
-Version: 0.2.4
+Version: 0.2.5
 Github: https://github.com/emptysuns/Hi_Hysteria
 ******************************************************************
 Ready to install.
  
-The hysteria latest version: v0.9.1. Download...
+The Latest hysteria version: v0.9.3. Download...
 
 Download completed.
 
 开始配置: 
 请输入您的域名(不输入回车，则默认自签pan.baidu.com证书，不推荐):
 a.com
-是否启用faketcp,输入1启用,默认不启用(回车)：
+选择协议类型:
 
-传输协议:udp
+1、udp(QUIC)
+2、faketcp
+3、wechat-video(回车默认)
+
+输入序号:
+
+传输协议:wechat-video
 
 请输入你想要开启的端口（此端口是server端口，请提前放行防火墙，建议10000-65535，回车随机）：
 
-随机端口：29714
+随机端口：40262
 
 请输入您到此服务器的平均延迟,关系到转发速度（回车默认200ms）:
-100
+180
 
 期望速度，请如实填写，这是客户端的峰值速度，服务端默认不受限。期望过低或者过高会影响转发速度！
 请输入客户端期望的下行速度:(默认50mbps):
 200
 请输入客户端期望的上行速度(默认10mbps):
 40
-请输入混淆口令（相当于连接密钥）:
-mikomiko
+请输入认证口令:
+pekopeko
 
 配置录入完成！
 
 执行配置...
-net.core.rmem_max=4000000
-Created symlink /etc/systemd/system/multi-user.target.wants/hysteria.service → /etc/systemd/system/hysteria.service.
+net.core.rmem_max = 4000000
+Created symlink /etc/systemd/system/multi-user.target.wants/hysteria.service -> /etc/systemd/system/hysteria.service.
 所有安装已经完成，配置文件输出如下且已经在本目录生成（可自行复制粘贴到本地）！
 
 
 Tips:客户端默认只开启http(8888)、socks5代理(8889, user:pekora;password:pekopeko)!其他方式请参照文档自行修改客户端config.json
 ↓***********************************↓↓↓copy↓↓↓*******************************↓
 {
-"server": "a.com:29714",
-"protocol": "udp",
+"server": "a.com:40262",
+"protocol": "wechat-video",
 "up_mbps": 40,
 "down_mbps": 200,
 "http": {
@@ -214,27 +220,27 @@ Tips:客户端默认只开启http(8888)、socks5代理(8889, user:pekora;passwor
 },
 "alpn": "h3",
 "acl": "acl/routes.acl",
-"obfs": "mikomiko",
 "auth_str": "pekopeko",
 "server_name": "a.com",
 "insecure": false,
-"recv_window_conn": 10485760,
-"recv_window": 41943040,
+"recv_window_conn": 18874368,
+"recv_window": 75497472,
 "resolver": "119.29.29.29:53",
 "disable_mtu_discovery": false
 }
 ↑***********************************↑↑↑copy↑↑↑*******************************↑
 安装完毕
 
-root@1:~# systemctl status hysteria
-● hysteria.service - hysteria:Hello World!
+root@dedicated:~# systemctl status hysteria
+  hysteria.service - hysteria:Hello World!
    Loaded: loaded (/etc/systemd/system/hysteria.service; enabled; vendor preset: enabled)
-   Active: active (running) since Sun 2021-12-19 15:01:35 CET; 13s ago
- Main PID: 31301 (hysteria)
-    Tasks: 5 (limit: 4915)
+   Active: active (running) since Tue 2022-01-04 10:09:55 EST; 15s ago
+ Main PID: 10086 (hysteria)
+    Tasks: 6 (limit: 1120)
    CGroup: /system.slice/hysteria.service
-           └─31301 /etc/hysteria/hysteria --log-level warn -c /etc/hysteria/config.json server >> /etc/hysteria/warn.log
+           `-10086 /etc/hysteria/hysteria --log-level warn -c /etc/hysteria/config.json server >> /etc/hysteria/warn.log
 
+Jan 04 10:09:55 dedicated systemd[1]: Started hysteria:Hello World!.
   </blockcode></pre>
 </details>
 
@@ -271,8 +277,8 @@ cat config.json
 
 # cat config.json 
 {
-"server": "a.com:29714",
-"protocol": "udp",
+"server": "a.com:40262",
+"protocol": "wechat-video",
 "up_mbps": 40,
 "down_mbps": 200,
 "http": {
@@ -289,12 +295,11 @@ cat config.json
 },
 "alpn": "h3",
 "acl": "acl/routes.acl",
-"obfs": "mikomiko",
 "auth_str": "pekopeko",
 "server_name": "a.com",
 "insecure": false,
-"recv_window_conn": 10485760,
-"recv_window": 41943040,
+"recv_window_conn": 18874368,
+"recv_window": 75497472,
 "resolver": "119.29.29.29:53",
 "disable_mtu_discovery": false
 }

@@ -15,11 +15,11 @@ echo -e "\033[35m***************************************************************
 echo -e "\033[1;;35mReady to install.\n \033[0m"
 mkdir -p /etc/hysteria
 version=`wget -qO- -t1 -T2 --no-check-certificate "https://api.github.com/repos/HyNetwork/hysteria/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'`
-echo -e "The hysteria latest version: \033[31m$version\033[0m. Download..."
+echo -e "The Latest hysteria version: \033[31m$version\033[0m. Download..."
 get_arch=`arch`
 if [ $get_arch = "x86_64" ];then
     #wget -q -O /etc/hysteria/hysteria --no-check-certificate https://github.com/HyNetwork/hysteria/releases/download/$version/hysteria-linux-amd64
-    wget -q -O /etc/hysteria/hysteria --no-check-certificate https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/client/linux/amd64/v0.9.3/hysteria
+    wget -q -O /etc/hysteria/hysteria --no-check-certificate https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/client/linux/amd64/v0.9.3/hysteria #tmp
 elif [ $get_arch = "aarch64" ];then
     wget -q -O /etc/hysteria/hysteria --no-check-certificate https://github.com/HyNetwork/hysteria/releases/download/$version/hysteria-linux-arm64
 elif [ $get_arch = "mips64" ];then
@@ -37,7 +37,7 @@ read  domain
 if [ -z "${domain}" ];then
 	domain="pan.baidu.com"
   ip=`curl -4 ip.sb`
-  echo -e "您的公网为:\033[31m$ip\033[0m\n"
+  echo -e "您的公网ip为:\033[31m$ip\033[0m\n"
 fi
 echo -e "\033[32m选择协议类型:\n\n\033[0m\033[33m\033[01m1、udp(QUIC)\n2、faketcp\n3、wechat-video(回车默认)\033[0m\033[32m\n\n输入序号:\033[0m"
 read protocol
@@ -75,9 +75,9 @@ if [ -z "${upload}" ];then
 	upload=10
   echo -e "客户端上行速度：\033[31m$upload\033[0mbps\n"
 fi
-echo -e "\033[32m请输入混淆口令（相当于连接密钥）:\033[0m"
-read  obfs
-echo -e "\033[32m、\n配置录入完成！\n\033[0m"
+echo -e "\033[32m请输入认证口令:\033[0m"
+read  auth_str
+echo -e "\033[32m\n配置录入完成！\n\033[0m"
 echo  -e "\033[1;33;40m执行配置...\033[0m"
 
 r_client=$(($delay * 2 * $download / 1000 * 1024 * 1024))
@@ -95,11 +95,10 @@ cat <<EOF > /etc/hysteria/config.json
   "disable_udp": false,
   "cert": "/etc/hysteria/${domain}.crt",
   "key": "/etc/hysteria/$domain.key",
-  "obfs": "$obfs",
   "auth": {
     "mode": "password",
     "config": {
-      "password": "pekopeko"
+      "password": "$auth_str"
     }
   },
   "alpn": "h3",
@@ -108,7 +107,7 @@ cat <<EOF > /etc/hysteria/config.json
   "recv_window_client": $r_client,
   "max_conn_client": 4096,
   "resolver": "8.8.8.8:53",
-  "disable_mtu_discovery": false
+  "disable_mtu_discovery": true
 }
 EOF
 
@@ -138,8 +137,7 @@ cat <<EOF > config.json
 },
 "alpn": "h3",
 "acl": "acl/routes.acl",
-"obfs": "$obfs",
-"auth_str": "pekopeko",
+"auth_str": "$auth_str",
 "server_name": "$domain",
 "insecure": true,
 "recv_window_conn": $r_conn,
@@ -162,11 +160,10 @@ cat <<EOF > /etc/hysteria/config.json
     "email": "pekora@$domain"
   },
   "disable_udp": false,
-  "obfs": "$obfs",
   "auth": {
     "mode": "password",
     "config": {
-      "password": "pekopeko"
+      "password": "$auth_str"
     }
   },
   "alpn": "h3",
@@ -175,7 +172,7 @@ cat <<EOF > /etc/hysteria/config.json
   "recv_window_client": $r_client,
   "max_conn_client": 4096,
   "resolver": "8.8.8.8:53",
-  "disable_mtu_discovery": false
+  "disable_mtu_discovery": true
 }
 EOF
 
@@ -199,8 +196,7 @@ cat <<EOF > config.json
 },
 "alpn": "h3",
 "acl": "acl/routes.acl",
-"obfs": "$obfs",
-"auth_str": "pekopeko",
+"auth_str": "$auth_str",
 "server_name": "$domain",
 "insecure": false,
 "recv_window_conn": $r_conn,
