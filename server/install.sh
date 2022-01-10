@@ -9,7 +9,7 @@ echo -e " ██      ██                    ██                  ██
 ░██     ░██   ██     ░░░░░██  ░██  ░██░░░░  ░██   ░██ ██░░░░██ 
 ░██     ░██  ██      ██████   ░░██ ░░██████░███   ░██░░████████
 ░░      ░░  ░░      ░░░░░░     ░░   ░░░░░░ ░░░    ░░  ░░░░░░░░ "
-echo -e "\033[32mVersion:\033[0m 0.2.5"
+echo -e "\033[32mVersion:\033[0m 0.2.6"
 echo -e "\033[32mGithub:\033[0m https://github.com/emptysuns/Hi_Hysteria"
 echo -e "\033[35m******************************************************************\033[0m"
 echo -e "\033[1;;35mReady to install.\n \033[0m"
@@ -18,8 +18,7 @@ version=`wget -qO- -t1 -T2 --no-check-certificate "https://api.github.com/repos/
 echo -e "The Latest hysteria version: \033[31m$version\033[0m. Download..."
 get_arch=`arch`
 if [ $get_arch = "x86_64" ];then
-    #wget -q -O /etc/hysteria/hysteria --no-check-certificate https://github.com/HyNetwork/hysteria/releases/download/$version/hysteria-linux-amd64
-    wget -q -O /etc/hysteria/hysteria --no-check-certificate https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/client/linux/amd64/v0.9.3/hysteria #tmp
+    wget -q -O /etc/hysteria/hysteria --no-check-certificate https://github.com/HyNetwork/hysteria/releases/download/$version/hysteria-linux-amd64
 elif [ $get_arch = "aarch64" ];then
     wget -q -O /etc/hysteria/hysteria --no-check-certificate https://github.com/HyNetwork/hysteria/releases/download/$version/hysteria-linux-arm64
 elif [ $get_arch = "mips64" ];then
@@ -29,13 +28,12 @@ else
     exit
 fi
 chmod 755 /etc/hysteria/hysteria
-wget -q -O  /etc/hysteria/routes.acl --no-check-certificate https://raw.githubusercontent.com/emptysuns/HiHysteria/main/acl/routes.acl
 echo -e "\033[1;;35m\nDownload completed.\n\033[0m"
 echo -e "\033[1;33;40m开始配置: \033[0m"
-echo -e "\033[32m请输入您的域名(不输入回车，则默认自签pan.baidu.com证书，不推荐):\033[0m"
+echo -e "\033[32m请输入您的域名(不输入回车，则默认自签wechat.com证书，不推荐):\033[0m"
 read  domain
 if [ -z "${domain}" ];then
-	domain="pan.baidu.com"
+	domain="wechat.com"
   ip=`curl -4 ip.sb`
   echo -e "您的公网ip为:\033[31m$ip\033[0m\n"
 fi
@@ -73,7 +71,7 @@ echo -e "\033[32m请输入客户端期望的上行速度(默认10mbps):\033[0m"
 read  upload
 if [ -z "${upload}" ];then
 	upload=10
-  echo -e "客户端上行速度：\033[31m$upload\033[0mbps\n"
+  echo -e "客户端上行速度：\033[31m$upload\033[0mmbps\n"
 fi
 echo -e "\033[32m请输入认证口令:\033[0m"
 read  auth_str
@@ -83,17 +81,26 @@ echo  -e "\033[1;33;40m执行配置...\033[0m"
 r_client=$(($delay * 2 * $download / 1000 * 1024 * 1024))
 r_conn=$(($r_client / 4))
 
-if [ "$domain" = "pan.baidu.com" ];then
-mail="admin@baidu.com"
-day=36500
-openssl genrsa -out /etc/hysteria/$domain.key 2048
-openssl req -x509 -nodes -newkey rsa:2048 -days $day -keyout /etc/hysteria/$domain.key -out /etc/hysteria/$domain.crt -subj "/C=CN/ST=Beijing/L=HaiDian/O=PonyMa/OU=Baidu/CN=$domain/emailAddress=$mail"
+if [ "$domain" = "wechat.com" ];then
+mail="admin@qq.com"
+days=36500
+
+echo -e "\033[1;;35mSIGN...\n \033[0m"
+openssl genrsa -out /etc/hysteria/$domain.ca.key 2048
+
+openssl req -new -x509 -days $days -key /etc/hysteria/$domain.ca.key -subj "/C=CN/ST=GuangDong/L=ShenZhen/O=PonyMa/OU=Tecent/emailAddress=$mail/CN=Tencent Root CA" -out /etc/hysteria/$domain.ca.crt
+
+openssl req -newkey rsa:2048 -nodes -keyout /etc/hysteria/$domain.key -subj "/C=CN/ST=GuangDong/L=ShenZhen/O=PonyMa/OU=Tecent/emailAddress=$mail/CN=Tencent Root CA" -out /etc/hysteria/$domain.csr
+
+openssl x509 -req -extfile <(printf "subjectAltName=DNS:$domain,DNS:$domain") -days $days -in /etc/hysteria/$domain.csr -CA /etc/hysteria/$domain.ca.crt -CAkey /etc/hysteria/$domain.ca.key -CAcreateserial -out /etc/hysteria/$domain.crt
+echo -e "\033[1;;35mOK.\n \033[0m"
+
 cat <<EOF > /etc/hysteria/config.json
 {
   "listen": ":$port",
   "protocol": "$protocol",
   "disable_udp": false,
-  "cert": "/etc/hysteria/${domain}.crt",
+  "cert": "/etc/hysteria/$domain.crt",
   "key": "/etc/hysteria/$domain.key",
   "auth": {
     "mode": "password",
@@ -102,7 +109,6 @@ cat <<EOF > /etc/hysteria/config.json
     }
   },
   "alpn": "h3",
-  "acl": "/etc/hysteria/routes.acl",
   "recv_window_conn": $r_conn,
   "recv_window_client": $r_client,
   "max_conn_client": 4096,
@@ -137,9 +143,11 @@ cat <<EOF > config.json
 },
 "alpn": "h3",
 "acl": "acl/routes.acl",
+"mmdb": "acl/Country.mmdb",
+"ca": "ca/$domain.ca.crt",
 "auth_str": "$auth_str",
 "server_name": "$domain",
-"insecure": true,
+"insecure": false,
 "recv_window_conn": $r_conn,
 "recv_window": $r_client,
 "resolver": "119.29.29.29:53",
@@ -167,7 +175,6 @@ cat <<EOF > /etc/hysteria/config.json
     }
   },
   "alpn": "h3",
-  "acl": "/etc/hysteria/routes.acl",
   "recv_window_conn": $r_conn,
   "recv_window_client": $r_client,
   "max_conn_client": 4096,
@@ -196,6 +203,7 @@ cat <<EOF > config.json
 },
 "alpn": "h3",
 "acl": "acl/routes.acl",
+"mmdb": "acl/Country.mmdb",
 "auth_str": "$auth_str",
 "server_name": "$domain",
 "insecure": false,
@@ -216,7 +224,7 @@ After=network.target
 [Service]
 Type=simple
 PIDFile=/run/hysteria.pid
-ExecStart=/etc/hysteria/hysteria --log-level warn -c /etc/hysteria/config.json server >> /etc/hysteria/warn.log
+ExecStart=/etc/hysteria/hysteria --log-level warn -c /etc/hysteria/config.json server
 #Restart=on-failure
 #RestartSec=10s
 

@@ -2,7 +2,6 @@
 
 ## 一·简介
 > Hysteria 是一个功能丰富的，专为恶劣网络环境进行优化的网络工具（双边加速），比如卫星网络、拥挤的公共 Wi-Fi、在**中国连接国外服务器**等。 基于修改版的 QUIC 协议。
-by:[Hynetwork](https://github.com/HyNetwork)（Thank you!）
 
 Hysteria这是一款由go编写的非常优秀的“轻量”代理程序，它很好的解决了在搭建富强魔法服务器时最大的痛点——**线路拉跨**。
 
@@ -34,6 +33,15 @@ Hysteria这是一款由go编写的非常优秀的“轻量”代理程序，它�
 
 
 ```
+(2022/01/10 17:40) v0.2.6:
+1、hi_hysteria 0.2e
+2、acl规则合并使用geoip替代（期待geosite
+3、自签改为wechat.com,取消允许不安全链接,详细查看关于自签说明
+```
+
+<details>
+  <summary>历史改进</summary>
+    <pre><blockcode> 
 (2022/01/04 21:59) v0.2.5:
 1、hysteria版本升级成了0.9.3，请重新下载"cmd客户端",version:0.2d
 ！
@@ -44,17 +52,16 @@ Hysteria这是一款由go编写的非常优秀的“轻量”代理程序，它�
 2、新增wechat视频通话流量伪装
 3、readme中加入各个协议类型介绍
 4、取消obfs选项支持（没必要开启它，当你的网络环境限制QUIC传输，可自行添加），大幅减小cpu的开销，提升速度
-```
 
-<details>
-  <summary>历史改进</summary>
-    <pre><blockcode> 
+
+
 (2021/12/19 21:16) v0.2.4: 
 1、hysteria版本升级成了0.9.1，请重新下载"cmd客户端",version:0.2c
 2、增加faketcp模式配置，详情请查看：“使用前注意”条目
 3、outbound被鸽了
 4、客户端增加socks5（端口:8889）代理方式,user：pekora;password:pekopeko。可自行修改用户密码
 5、增加自定义dns如8.8.8.8等，防止运营商dns劫持攻击
+
 
 (2021/12/10 18:59) v0.2.3a: 
 1、hysteria版本升级成了0.9.0,请重新下载"cmd客户端"，version:0.2b（注: 因为0.9.0新的特征ipv6_only开启后无法解析ipv4，可以等下个版本所支持的outbound特征，这里就不特意添加了
@@ -154,18 +161,23 @@ hysteria v0.9.1 开始支持faketcp，将hysteria的UDP传输过程伪装成TCP�
 ░██     ░██   ██     ░░░░░██  ░██  ░██░░░░  ░██   ░██ ██░░░░██ 
 ░██     ░██  ██      ██████   ░░██ ░░██████░███   ░██░░████████
 ░░      ░░  ░░      ░░░░░░     ░░   ░░░░░░ ░░░    ░░  ░░░░░░░░ 
-Version: 0.2.5
+Version: 0.2.6
 Github: https://github.com/emptysuns/Hi_Hysteria
 ******************************************************************
 Ready to install.
  
-The Latest hysteria version: v0.9.3. Download...
+The Latest hysteria version: v0.9.4. Download...
 
 Download completed.
 
 开始配置: 
-请输入您的域名(不输入回车，则默认自签pan.baidu.com证书，不推荐):
-a.com
+请输入您的域名(不输入回车，则默认自签wechat.com证书，不推荐):
+
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100    15  100    15    0     0    197      0 --:--:-- --:--:-- --:--:--   197
+您的公网ip为:1.2.3.4
+
 选择协议类型:
 
 1、udp(QUIC)
@@ -178,7 +190,7 @@ a.com
 
 请输入你想要开启的端口（此端口是server端口，请提前放行防火墙，建议10000-65535，回车随机）：
 
-随机端口：40262
+随机端口：18361
 
 请输入您到此服务器的平均延迟,关系到转发速度（回车默认200ms）:
 180
@@ -194,6 +206,26 @@ pekopeko
 配置录入完成！
 
 执行配置...
+SIGN...
+ 
+Generating RSA private key, 2048 bit long modulus (2 primes)
+............+++++
+........................................................................................+++++
+e is 65537 (0x010001)
+Can't load /root/.rnd into RNG
+140145405641152:error:2406F079:random number generator:RAND_load_file:Cannot open file:../crypto/rand/randfile.c:88:Filename=/root/.rnd
+Can't load /root/.rnd into RNG
+140628479689152:error:2406F079:random number generator:RAND_load_file:Cannot open file:../crypto/rand/randfile.c:88:Filename=/root/.rnd
+Generating a RSA private key
+...................................+++++
+...................+++++
+writing new private key to '/etc/hysteria/wechat.com.key'
+-----
+Signature ok
+subject=C = CN, ST = GuangDong, L = ShenZhen, O = PonyMa, OU = Tecent, emailAddress = admin@qq.com, CN = Tencent Root CA
+Getting CA Private Key
+OK.
+ 
 net.core.rmem_max = 4000000
 Created symlink /etc/systemd/system/multi-user.target.wants/hysteria.service -> /etc/systemd/system/hysteria.service.
 所有安装已经完成，配置文件输出如下且已经在本目录生成（可自行复制粘贴到本地）！
@@ -202,7 +234,7 @@ Created symlink /etc/systemd/system/multi-user.target.wants/hysteria.service -> 
 Tips:客户端默认只开启http(8888)、socks5代理(8889, user:pekora;password:pekopeko)!其他方式请参照文档自行修改客户端config.json
 ↓***********************************↓↓↓copy↓↓↓*******************************↓
 {
-"server": "a.com:40262",
+"server": "1.2.3.4:18361",
 "protocol": "wechat-video",
 "up_mbps": 40,
 "down_mbps": 200,
@@ -220,8 +252,10 @@ Tips:客户端默认只开启http(8888)、socks5代理(8889, user:pekora;passwor
 },
 "alpn": "h3",
 "acl": "acl/routes.acl",
+"mmdb": "acl/Country.mmdb",
+"ca": "ca/wechat.com.ca.crt",
 "auth_str": "pekopeko",
-"server_name": "a.com",
+"server_name": "wechat.com",
 "insecure": false,
 "recv_window_conn": 18874368,
 "recv_window": 75497472,
@@ -232,15 +266,16 @@ Tips:客户端默认只开启http(8888)、socks5代理(8889, user:pekora;passwor
 安装完毕
 
 root@dedicated:~# systemctl status hysteria
-  hysteria.service - hysteria:Hello World!
+* hysteria.service - hysteria:Hello World!
    Loaded: loaded (/etc/systemd/system/hysteria.service; enabled; vendor preset: enabled)
-   Active: active (running) since Tue 2022-01-04 10:09:55 EST; 15s ago
- Main PID: 10086 (hysteria)
+   Active: active (running) since Mon 2022-01-10 04:17:23 EST; 15s ago
+ Main PID: 29691 (hysteria)
     Tasks: 6 (limit: 1120)
    CGroup: /system.slice/hysteria.service
-           `-10086 /etc/hysteria/hysteria --log-level warn -c /etc/hysteria/config.json server >> /etc/hysteria/warn.log
+           `-29691 /etc/hysteria/hysteria --log-level warn -c /etc/hysteria/config.json server
 
-Jan 04 10:09:55 dedicated systemd[1]: Started hysteria:Hello World!.
+Jan 10 04:17:23 dedicated systemd[1]: Started hysteria:Hello World!.
+
   </blockcode></pre>
 </details>
 
@@ -273,11 +308,9 @@ Jan 04 10:09:55 dedicated systemd[1]: Started hysteria:Hello World!.
 如果本地配置丢失?使用cat打印config.json后复制:
 
 ```
-cat config.json
-
 # cat config.json 
 {
-"server": "a.com:40262",
+"server": "1.2.3.4:18361",
 "protocol": "wechat-video",
 "up_mbps": 40,
 "down_mbps": 200,
@@ -295,15 +328,16 @@ cat config.json
 },
 "alpn": "h3",
 "acl": "acl/routes.acl",
+"mmdb": "acl/Country.mmdb",
+"ca": "ca/wechat.com.ca.crt",
 "auth_str": "pekopeko",
-"server_name": "a.com",
+"server_name": "wechat.com",
 "insecure": false,
 "recv_window_conn": 18874368,
 "recv_window": 75497472,
 "resolver": "119.29.29.29:53",
 "disable_mtu_discovery": false
 }
-
 
 ctrl+c and +v.
 ```
@@ -393,6 +427,13 @@ shell:startup
 ![image](https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/imgs/startup.png)
 <center><font size=2>这里用后台做演示，前台同理</font></center>
 
+### 自签证书
+`0.2.6`版本后取消自签证书时的允许不安全链接支持，防止MIMT攻击
+
+对于cmd客户端来说，请手动复制CA`/etc/hysteria/wechat.com.ca.crt`到cmd客户端的`ca/`文件夹下使用，和正常签发的证书同样安全
+
+如果你不介意有攻击的可能性的话，修改改客户端config.json`"insecure": false`为`true`关闭证书验证(~~我反正是觉得被攻击的几率极小给关了，自己判断吧~~
+
 ## 三·服务端管理
 - 重启
 
@@ -422,3 +463,11 @@ bash <(curl -fsSL https://git.io/rehysteria.sh)
 ## 四·结语
 
 魔改UDP的QUIC协议，加了tls和混淆，个人跑了一段时间大流量，未被运营商QoS，落地ip并没有被墙，也不知道什么时候被针对，大家且用且珍惜吧。
+
+## 五·鸣谢
+
+
+[@HyNetwork/hysteria](https://github.com/HyNetwork/hysteria)
+
+
+[@Loyalsoldier/geoip](https://github.com/Loyalsoldier/geoip)
