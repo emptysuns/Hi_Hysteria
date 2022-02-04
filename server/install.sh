@@ -9,7 +9,7 @@ echo -e " ██      ██                    ██                  ██
 ░██     ░██   ██     ░░░░░██  ░██  ░██░░░░  ░██   ░██ ██░░░░██ 
 ░██     ░██  ██      ██████   ░░██ ░░██████░███   ░██░░████████
 ░░      ░░  ░░      ░░░░░░     ░░   ░░░░░░ ░░░    ░░  ░░░░░░░░ "
-echo -e "\033[32mVersion:\033[0m 0.2.6"
+echo -e "\033[32mVersion:\033[0m 0.2.7"
 echo -e "\033[32mGithub:\033[0m https://github.com/emptysuns/Hi_Hysteria"
 echo -e "\033[35m******************************************************************\033[0m"
 echo -e "\033[1;;35mReady to install.\n \033[0m"
@@ -93,6 +93,8 @@ openssl req -new -x509 -days $days -key /etc/hysteria/$domain.ca.key -subj "/C=C
 openssl req -newkey rsa:2048 -nodes -keyout /etc/hysteria/$domain.key -subj "/C=CN/ST=GuangDong/L=ShenZhen/O=PonyMa/OU=Tecent/emailAddress=$mail/CN=Tencent Root CA" -out /etc/hysteria/$domain.csr
 
 openssl x509 -req -extfile <(printf "subjectAltName=DNS:$domain,DNS:$domain") -days $days -in /etc/hysteria/$domain.csr -CA /etc/hysteria/$domain.ca.crt -CAkey /etc/hysteria/$domain.ca.key -CAcreateserial -out /etc/hysteria/$domain.crt
+
+rm /etc/hysteria/${domain}.ca.key /etc/hysteria/${domain}.ca.srl /etc/hysteria/${domain}.csr
 echo -e "\033[1;;35mOK.\n \033[0m"
 
 cat <<EOF > /etc/hysteria/config.json
@@ -112,8 +114,7 @@ cat <<EOF > /etc/hysteria/config.json
   "recv_window_conn": $r_conn,
   "recv_window_client": $r_client,
   "max_conn_client": 4096,
-  "resolver": "8.8.8.8:53",
-  "disable_mtu_discovery": true
+  "resolver": "8.8.8.8:53"
 }
 EOF
 
@@ -151,7 +152,8 @@ cat <<EOF > config.json
 "recv_window_conn": $r_conn,
 "recv_window": $r_client,
 "resolver": "119.29.29.29:53",
-"disable_mtu_discovery": false
+"retry": 5,
+"retry_interval": 3
 }
 EOF
 
@@ -178,8 +180,7 @@ cat <<EOF > /etc/hysteria/config.json
   "recv_window_conn": $r_conn,
   "recv_window_client": $r_client,
   "max_conn_client": 4096,
-  "resolver": "8.8.8.8:53",
-  "disable_mtu_discovery": true
+  "resolver": "8.8.8.8:53"
 }
 EOF
 
@@ -210,7 +211,8 @@ cat <<EOF > config.json
 "recv_window_conn": $r_conn,
 "recv_window": $r_client,
 "resolver": "119.29.29.29:53",
-"disable_mtu_discovery": false
+"retry": 5,
+"retry_interval": 3
 }
 EOF
 
@@ -242,6 +244,7 @@ crontab -l > ./crontab.tmp
 echo  "0 4 * * * systemctl restart hysteria" >> ./crontab.tmp
 crontab ./crontab.tmp
 rm -rf ./crontab.tmp
+systemctl status hysteria
 echo  -e "\033[1;33;40m所有安装已经完成，配置文件输出如下且已经在本目录生成（可自行复制粘贴到本地）！\033[0m\n"
 echo -e "\nTips:客户端默认只开启http(8888)、socks5代理(8889, user:pekora;password:pekopeko)!其他方式请参照文档自行修改客户端config.json"
 echo -e "\033[35m↓***********************************↓↓↓copy↓↓↓*******************************↓\033[0m"
