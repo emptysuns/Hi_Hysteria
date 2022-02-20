@@ -9,7 +9,7 @@ echo -e " ██      ██                    ██                  ██
 ░██     ░██   ██     ░░░░░██  ░██  ░██░░░░  ░██   ░██ ██░░░░██ 
 ░██     ░██  ██      ██████   ░░██ ░░██████░███   ░██░░████████
 ░░      ░░  ░░      ░░░░░░     ░░   ░░░░░░ ░░░    ░░  ░░░░░░░░ "
-echo -e "\033[32mVersion:\033[0m 0.2.7"
+echo -e "\033[32mVersion:\033[0m 0.2.8"
 echo -e "\033[32mGithub:\033[0m https://github.com/emptysuns/Hi_Hysteria"
 echo -e "\033[35m******************************************************************\033[0m"
 echo -e "\033[1;;35mReady to install.\n \033[0m"
@@ -34,7 +34,7 @@ echo -e "\033[32m请输入您的域名(不输入回车，则默认自签wechat.c
 read  domain
 if [ -z "${domain}" ];then
 	domain="wechat.com"
-  ip=`curl -4 ip.sb`
+  ip=`curl -4 -s ip.sb`
   echo -e "您的公网ip为:\033[31m$ip\033[0m\n"
 fi
 echo -e "\033[32m选择协议类型:\n\n\033[0m\033[33m\033[01m1、udp(QUIC)\n2、faketcp\n3、wechat-video(回车默认)\033[0m\033[32m\n\n输入序号:\033[0m"
@@ -114,6 +114,7 @@ cat <<EOF > /etc/hysteria/config.json
   "recv_window_conn": $r_conn,
   "recv_window_client": $r_client,
   "max_conn_client": 4096,
+  "disable_mtu_discovery": false,
   "resolver": "8.8.8.8:53"
 }
 EOF
@@ -145,12 +146,12 @@ cat <<EOF > config.json
 "alpn": "h3",
 "acl": "acl/routes.acl",
 "mmdb": "acl/Country.mmdb",
-"ca": "ca/$domain.ca.crt",
 "auth_str": "$auth_str",
 "server_name": "$domain",
-"insecure": false,
+"insecure": true,
 "recv_window_conn": $r_conn,
 "recv_window": $r_client,
+"disable_mtu_discovery": false,
 "resolver": "119.29.29.29:53",
 "retry": 5,
 "retry_interval": 3
@@ -180,6 +181,7 @@ cat <<EOF > /etc/hysteria/config.json
   "recv_window_conn": $r_conn,
   "recv_window_client": $r_client,
   "max_conn_client": 4096,
+  "disable_mtu_discovery": false,
   "resolver": "8.8.8.8:53"
 }
 EOF
@@ -210,12 +212,12 @@ cat <<EOF > config.json
 "insecure": false,
 "recv_window_conn": $r_conn,
 "recv_window": $r_client,
+"disable_mtu_discovery": false,
 "resolver": "119.29.29.29:53",
 "retry": 5,
 "retry_interval": 3
 }
 EOF
-
 fi
 
 cat <<EOF >/etc/systemd/system/hysteria.service
@@ -240,14 +242,21 @@ chmod 644 /etc/systemd/system/hysteria.service
 systemctl daemon-reload
 systemctl enable hysteria
 systemctl start hysteria
+echo -e "\033[1;;35m\nwait...\n\033[0m"
+sleep 3
+status=`systemctl is-active hysteria`
+if [ "${status}" = "active" ];then
 crontab -l > ./crontab.tmp
 echo  "0 4 * * * systemctl restart hysteria" >> ./crontab.tmp
 crontab ./crontab.tmp
 rm -rf ./crontab.tmp
-systemctl status hysteria
 echo  -e "\033[1;33;40m所有安装已经完成，配置文件输出如下且已经在本目录生成（可自行复制粘贴到本地）！\033[0m\n"
-echo -e "\nTips:客户端默认只开启http(8888)、socks5代理(8889, user:pekora;password:pekopeko)!其他方式请参照文档自行修改客户端config.json"
+echo -e "\nTips:客户端默认只开启http(8888)、socks5(8889, user:pekora;password:pekopeko)代理!其他方式请参照文档自行修改客户端config.json"
 echo -e "\033[35m↓***********************************↓↓↓copy↓↓↓*******************************↓\033[0m"
 cat ./config.json
 echo -e "\033[35m↑***********************************↑↑↑copy↑↑↑*******************************↑\033[0m"
 echo  -e "\033[1;33;40m安装完毕\033[0m\n"
+else
+echo  -e "\033[1;33;40msystemd启动hysteria失败!请手动运行:/etc/hysteria/hysteria -c /etc/hysteria/config.json server查看错误日志反馈到issue!\033[0m\n"
+exit
+fi
