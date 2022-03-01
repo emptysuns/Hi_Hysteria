@@ -1,4 +1,9 @@
 ```
+(2022/02/20 17:26) v0.2.8:
+1、hysteria->0.9.7 hi_hysteria_cmd 0.2g
+2、PMTUD又回来了，建议升级
+3、自签证书时改回默认“允许不安全连接”，具体参考下方介绍
+
 (2022/02/04 15:42) v0.2.7:（希望更新到此版本,不向后兼容）
 1、update hysteria->0.9.6,hi_hysteria 0.2f
 2、上游quic-go不修bug，hysteria暂时禁用了PMTUD，删掉了原来的 disable_mtu_discovery选项，永远为true，缓解断流问题

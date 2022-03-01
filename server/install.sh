@@ -1,5 +1,6 @@
 #!/bin/bash
 #Author:https://github.com/emptysuns
+export LANG=en_US.UTF-8
 echo -e "\033[35m******************************************************************\033[0m"
 echo -e " ██      ██                    ██                  ██          
 ░██     ░██  ██   ██          ░██                 ░░           
@@ -9,7 +10,7 @@ echo -e " ██      ██                    ██                  ██
 ░██     ░██   ██     ░░░░░██  ░██  ░██░░░░  ░██   ░██ ██░░░░██ 
 ░██     ░██  ██      ██████   ░░██ ░░██████░███   ░██░░████████
 ░░      ░░  ░░      ░░░░░░     ░░   ░░░░░░ ░░░    ░░  ░░░░░░░░ "
-echo -e "\033[32mVersion:\033[0m 0.2.8"
+echo -e "\033[32mVersion:\033[0m 0.2.9"
 echo -e "\033[32mGithub:\033[0m https://github.com/emptysuns/Hi_Hysteria"
 echo -e "\033[35m******************************************************************\033[0m"
 echo -e "\033[1;;35mReady to install.\n \033[0m"
@@ -37,16 +38,7 @@ if [ -z "${domain}" ];then
   ip=`curl -4 -s ip.sb`
   echo -e "您的公网ip为:\033[31m$ip\033[0m\n"
 fi
-echo -e "\033[32m选择协议类型:\n\n\033[0m\033[33m\033[01m1、udp(QUIC)\n2、faketcp\n3、wechat-video(回车默认)\033[0m\033[32m\n\n输入序号:\033[0m"
-read protocol
-if [ -z "${protocol}" ] || [ $protocol == "3" ];then
-  protocol="wechat-video"
-elif [ $protocol == "2" ];then
-  protocol="faketcp"
-else 
-  protocol="udp"
-fi
-echo -e "传输协议:\033[31m$protocol\033[0m\n"
+
 echo -e "\033[32m请输入你想要开启的端口（此端口是server端口，请提前放行防火墙，建议10000-65535，回车随机）：\033[0m"
 read  port
 if [ -z "${port}" ];then
@@ -54,20 +46,34 @@ if [ -z "${port}" ];then
   echo -e "随机端口：\033[31m$port\033[0m\n"
 fi
 
+echo -e "\033[32m选择协议类型:\n\n\033[0m\033[33m\033[01m1、udp(QUIC)\n2、faketcp\n3、wechat-video(回车默认)\033[0m\033[32m\n\n输入序号:\033[0m"
+read protocol
+if [ -z "${protocol}" ] || [ $protocol == "3" ];then
+  protocol="wechat-video"
+  iptables -I INPUT -p udp --dport ${port} -m comment --comment "allow udp(hihysteria)" -j ACCEPT
+elif [ $protocol == "2" ];then
+  protocol="faketcp"
+  iptables -I INPUT -p tcp --dport ${port}  -m comment --comment "allow tcp(hihysteria)" -j ACCEPT
+else 
+  protocol="udp"
+  iptables -I INPUT -p udp --dport ${port} -m comment --comment "allow udp(hihysteria)" -j ACCEPT
+fi
+echo -e "传输协议:\033[31m$protocol\033[0m\n"
+
 echo -e "\033[32m请输入您到此服务器的平均延迟,关系到转发速度（回车默认200ms）:\033[0m"
 read  delay
 if [ -z "${delay}" ];then
-	delay=200
   echo -e "delay：\033[31m$delay\033[0m\n"
+  delay=200
 fi
-echo -e "\n期望速度，请如实填写，这是客户端的峰值速度，服务端默认不受限。\033[31m期望过低或者过高会影响转发速度！\033[0m"
+echo -e "\n期望速度，请如实填写，这是客户端的峰值速度，服务端默认不受限。\033[31m期望过低或者过高会影响转发速度！Tips:自动*1.25做冗余.\033[0m"
 echo -e "\033[32m请输入客户端期望的下行速度:(默认50mbps):\033[0m"
 read  download
 if [ -z "${download}" ];then
 	download=50
   echo -e "客户端下行速度：\033[31m$download\033[0mmbps\n"
 fi
-echo -e "\033[32m请输入客户端期望的上行速度(默认10mbps):\033[0m" 
+echo -e "\033[32m请输入客户端期望的上行速度*1.25(默认10mbps):\033[0m" 
 read  upload
 if [ -z "${upload}" ];then
 	upload=10
@@ -78,6 +84,8 @@ read  auth_str
 echo -e "\033[32m\n配置录入完成！\n\033[0m"
 echo  -e "\033[1;33;40m执行配置...\033[0m"
 
+download=$(($download + $download / 4))
+upload=$(($upload + $upload / 4))
 r_client=$(($delay * 2 * $download / 1000 * 1024 * 1024))
 r_conn=$(($r_client / 4))
 
@@ -159,7 +167,8 @@ cat <<EOF > config.json
 EOF
 
 else
-
+iptables -I INPUT -p tcp --dport 80  -m comment --comment "allow tcp(hihysteria)" -j ACCEPT
+iptables -I INPUT -p tcp --dport 443  -m comment --comment "allow tcp(hihysteria)" -j ACCEPT
 cat <<EOF > /etc/hysteria/config.json
 {
   "listen": ":$port",
