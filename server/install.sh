@@ -66,7 +66,7 @@ if [ -z "${delay}" ];then
   echo -e "delay：\033[31m$delay\033[0m\n"
   delay=200
 fi
-echo -e "\n期望速度，请如实填写，这是客户端的峰值速度，服务端默认不受限。\033[31m期望过低或者过高会影响转发速度！Tips:自动*1.25做冗余.\033[0m"
+echo -e "\n期望速度，这是客户端的峰值速度，服务端默认不受限。\033[31mTips:脚本会自动*1.25做冗余，您期望过低或者过高会影响转发效率,请如实填写!\033[0m"
 echo -e "\033[32m请输入客户端期望的下行速度:(默认50mbps):\033[0m"
 read  download
 if [ -z "${download}" ];then
@@ -245,8 +245,10 @@ ExecStart=/etc/hysteria/hysteria --log-level warn -c /etc/hysteria/config.json s
 WantedBy=multi-user.target
 EOF
 
-sysctl -w net.core.rmem_max=4000000
+sysctl -w net.core.rmem_max=8000000
 sysctl -p
+netfilter-persistent save
+netfilter-persistent reload
 chmod 644 /etc/systemd/system/hysteria.service
 systemctl daemon-reload
 systemctl enable hysteria

@@ -12,4 +12,6 @@ iptables -L INPUT --line-numbers | grep hihysteria | awk '{print $1}' | while re
 do
 iptables -D INPUT 1
 done
+netfilter-persistent save
+netfilter-persistent reload
 echo -e "\033[1;33;40mUninstall complete!\033[0m\n"

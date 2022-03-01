@@ -35,8 +35,8 @@ Hysteria这是一款由go编写的非常优秀的“轻量”代理程序，它�
 ```
 (2022/02/20 17:26) v0.2.9:（旧客户端不兼容新服务端，建议一起更新）
 1、hysteria->1.0.1 hi_hysteria_cmd 0.2h，跳过1.0.0版本，s5出栈有bug
-1.0.1版本新增分片重组，性能进一步增强
-新的s5 outbound可配合warp或者xray进行分流，但目前没好的想法先鸽了。
+1.0.1版本新增udp大包的分片和重组，效率进一步增强
+新的s5 outbound可配合warp或者xray进行分流，但目前没好的想法，先鸽了。
 2、新增自动放行防火墙
 ```
 [历史改进](https://github.com/emptysuns/Hi_Hysteria/blob/main/md/log.md)
@@ -62,13 +62,13 @@ Hysteria这是一款由go编写的非常优秀的“轻量”代理程序，它�
 ```
 # centos
 sudo su root  #Change to the user root!
-yum install -y wget curl
+yum install -y wget curl netfilter-persistent
 ```
 
 ```
 # debian/ubuntu
 sudo su root  #Change to the user root!
-apt-get install -y wget curl
+apt-get install -y wget curl netfilter-persistent
 ```
 
 ### 拉取安装
