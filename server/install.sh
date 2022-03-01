@@ -73,7 +73,7 @@ if [ -z "${download}" ];then
 	download=50
   echo -e "客户端下行速度：\033[31m$download\033[0mmbps\n"
 fi
-echo -e "\033[32m请输入客户端期望的上行速度*1.25(默认10mbps):\033[0m" 
+echo -e "\033[32m请输入客户端期望的上行速度(默认10mbps):\033[0m" 
 read  upload
 if [ -z "${upload}" ];then
 	upload=10
