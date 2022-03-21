@@ -4,7 +4,7 @@
 
 对于cmd“客户端”来说，在使用自签证书时，而且希望和正常证书一样安全时，请参考:
 
-1. 手动复制server 自签的CA`/etc/hysteria/wechat.com.ca.crt`到cmd客户端的`ca/`文件夹下
+1. 手动复制server 自签的CA`/etc/hihys/wechat.com.ca.crt`到cmd客户端的`ca/`文件夹下
 
 2. 修改config.json `"insecure": true`为`false`
 
