@@ -30,14 +30,21 @@ Hysteria这是一款由go编写的非常优秀的“轻量”代理程序，它�
 
 因为脚本现处于0.x的测试版本，可能会有一些bug，如果遇到请发issue，欢迎star，您的⭐是我维护的动力。
 
-**如果您有好的功能建议，请不要忘记开个issue提出来欧～～～**
+适配ubuntu/debian, centos操作系统,misple/arm/x86架构。
+
+windows使用请仔细阅读[cmd客户端(伪)介绍](https://github.com/emptysuns/Hi_Hysteria/blob/main/md/cmd.md)其他平台看[这里](https://github.com/emptysuns/Hi_Hysteria/blob/main/md/others.md)。
+
 
 ```
-(2022/02/20 17:26) v0.2.9:（旧客户端不兼容新服务端，建议一起更新）
-1、hysteria->1.0.1 hi_hysteria_cmd 0.2h，跳过1.0.0版本，s5出栈有bug
-1.0.1版本新增udp大包的分片和重组，效率进一步增强
-新的s5 outbound可配合warp或者xray进行分流，但目前没好的想法，先鸽了。
-2、新增自动放行防火墙
+(2022/03/21) 0.3.0(此次改进较多):
+1· 新增"菜单"功能，更新到0.3.0版本，后使用hihys命令即可调出菜单
+2. 将依赖的安装集中到的脚本内，无需手动安装了，并且完善系统检测流程
+3. 新增生成小火箭一键链接
+4. 优化脚本提示，重写了部分代码，更加方便增加新的功能
+5. 完善readme介绍部分，使之更加易懂，加入passwall的example图片
+6. 加入"高级玩法(伪"，介绍一些别的玩法
+7. 守护进程名称用hihys替代掉了hysteria
+8. 取消了S5默认带密码的配置
 ```
 [历史改进](https://github.com/emptysuns/Hi_Hysteria/blob/main/md/log.md)
 
@@ -57,19 +64,6 @@ Hysteria这是一款由go编写的非常优秀的“轻量”代理程序，它�
 
 #### 6. [部分其他平台？](https://github.com/emptysuns/Hi_Hysteria/blob/main/md/others.md)
 
-### 安装依赖
-
-```
-# centos
-sudo su root  #Change to the user root!
-yum install -y wget curl netfilter-persistent
-```
-
-```
-# debian/ubuntu
-sudo su root  #Change to the user root!
-apt-get install -y wget curl netfilter-persistent
-```
 
 ### 拉取安装
 
@@ -78,36 +72,93 @@ bash <(curl -fsSL https://git.io/hysteria.sh)
 ```
 
 ### 配置过程
+首次安装后: `hihys`命令调出菜单
+```
+-------------------------------------------
+|**********      Hi Hysteria       **********|
+|**********   Author: emptysuns  ************|
+|**********     Version: 0.3.0     **********|
+ -------------------------------------------
 
+Tips:hihys 命令再次运行本脚本.
+.............................................
+
+####################
+1)安装 hysteria
+
+2)卸载 hysteria
+####################
+3)启动 hysteria
+
+4)暂停 hysteria
+
+5)重新启动 hysteria
+####################
+6)检测 hysteria运行状态
+
+7)查看当前配置
+
+8)重新安装/升级
+
+
+
+0)退出
+.............................................
+请选择:
+```
+**脚本每次更新都可能会发生改变，请一定要展开并仔细参考演示过程，避免发生不必要的错误！**
 <details>
   <summary>演示较长，点我查看</summary>
     <pre><blockcode> 
-******************************************************************
- ██      ██                    ██                  ██
-░██     ░██  ██   ██          ░██                 ░░
-░██     ░██ ░░██ ██   ██████ ██████  █████  ██████ ██  ██████  
-░██████████  ░░███   ██░░░░ ░░░██░  ██░░░██░░██░░█░██ ░░░░░░██
-░██░░░░░░██   ░██   ░░█████   ░██  ░███████ ░██ ░ ░██  ███████
-░██     ░██   ██     ░░░░░██  ░██  ░██░░░░  ░██   ░██ ██░░░░██
-░██     ░██  ██      ██████   ░░██ ░░██████░███   ░██░░████████
-░░      ░░  ░░      ░░░░░░     ░░   ░░░░░░ ░░░    ░░  ░░░░░░░░
-Version: 0.2.9
-Github: https://github.com/emptysuns/Hi_Hysteria
-******************************************************************
+请选择:1
 Ready to install.
 
-The Latest hysteria version: v1.0.1. Download...
+The Latest hysteria version:v1.0.1
+Download...
 
 Download completed.
 
+Update.wait...
+Hit:1 <http://archive.ubuntu.com/ubuntu> bionic InRelease
+Hit:2 <http://security.ubuntu.com/ubuntu> bionic-security InRelease
+Hit:4 <http://archive.ubuntu.com/ubuntu> bionic-updates InRelease
+Hit:5 <http://archive.ubuntu.com/ubuntu> bionic-backports InRelease
+Hit:3 <https://packagecloud.io/ookla/speedtest-cli/ubuntu> bionic InRelease
+Reading package lists... Done
+Building dependency tree
+Reading state information... Done
+57 packages can be upgraded. Run 'apt list --upgradable' to see them.
+
+Done.
+Install wget curl netfilter-persistent
+*wget
+Reading package lists...
+Building dependency tree...
+Reading state information...
+wget is already the newest version (1.19.4-1ubuntu2.2).
+0 upgraded, 0 newly installed, 0 to remove and 57 not upgraded.
+*curl
+Reading package lists...
+Building dependency tree...
+Reading state information...
+curl is already the newest version (7.58.0-2ubuntu3.16).
+0 upgraded, 0 newly installed, 0 to remove and 57 not upgraded.
+*netfilter-persistent
+Reading package lists...
+Building dependency tree...
+Reading state information...
+netfilter-persistent is already the newest version (1.0.4+nmu2ubuntu1.1).
+0 upgraded, 0 newly installed, 0 to remove and 57 not upgraded.
+
+Done.
 开始配置:
-请输入您的域名(不输入回车，则默认自签wechat.com证书，不推荐):
+请输入您的域名(不输入回车,则默认自签wechat.com证书,不推荐):
 
-您的公网ip为:1.2.3.4
+您选择自签wechat证书.公网ip:1.2.3.4
 
-请输入你想要开启的端口（此端口是server端口，请提前放行防火墙，建议10000-65535，回车随机）：
+请输入你想要开启的端口,此端口是server端口,建议10000-65535.(默认随机)
 
-随机端口：50294
+随机端口:20882
 
 选择协议类型:
 
@@ -116,40 +167,55 @@ Download completed.
 3、wechat-video(回车默认)
 
 输入序号:
-3
+
 传输协议:wechat-video
 
-请输入您到此服务器的平均延迟,关系到转发速度（回车默认200ms）:
-180
+请输入您到此服务器的平均延迟,关系到转发速度(默认200,单位:ms):
 
-期望速度，请如实填写，这是客户端的峰值速度，服务端默认不受限。期望过低或者过高会影响转发速度！
-请输入客户端期望的下行速度:(默认50mbps):
-200
-请输入客户端期望的上行速度(默认10mbps):
-40
+delay:200 ms
+
+期望速度,这是客户端的峰值速度,服务端默认不受限。Tips:脚本会自动*1.25做冗余，您期望过低或者过高会影响转发效率,请如实填写!
+请输入客户端期望的下行速度:(默认50,单位:mbps):
+
+客户端下行速度：50 mbps
+
+请输入客户端期望的上行速度(默认10,单位:mbps):
+
+客户端上行速度：50 mbps
+
 请输入认证口令:
-pekomiko
 
-配置录入完成！
+此选项不能省略,请重新输入!
+请输入认证口令:
+
+此选项不能省略,请重新输入!
+请输入认证口令:
+pekopeko
+
+配置录入完成!
 
 执行配置...
 SIGN...
+
+Signature ok
+subject=C = CN, ST = GuangDong, L = ShenZhen, O = PonyMa, OU = Tecent, emailAddress = admin@qq.com, CN = Tencent Root CA
+Getting CA Private Key
 OK.
 
-net.core.rmem_max = 4000000
-Created symlink /etc/systemd/system/multi-user.target.wants/hysteria.service → /etc/systemd/system/hysteria.service.
+net.core.rmem_max = 8000000
+Created symlink /etc/systemd/system/multi-user.target.wants/hihys.service -> /etc/systemd/system/hihys.service.
 
 wait...
 
-所有安装已经完成，配置文件输出如下且已经在本目录生成（可自行复制粘贴到本地）！
+配置文件输出如下且已经在本目录生成(可自行复制粘贴到本地)
 
-Tips:客户端默认只开启http(8888)、socks5(8889, user:pekora;password:pekopeko)代理!其他方式请参照文档自行修改客户端config.json
-↓***********************************↓↓↓copy↓↓↓*******************************↓
+Tips:客户端默认只开启http(8888)、socks5(8889)代理!其他方式请参照文档自行修改客户端config.json
+***********************************↓↓↓copy↓↓↓*******************************↓
 {
-"server": "1.2.3.4:50294",
+"server": "1.2.3.4:20882",
 "protocol": "wechat-video",
-"up_mbps": 50,
-"down_mbps": 250,
+"up_mbps": 12,
+"down_mbps": 62,
 "http": {
 "listen": "127.0.0.1:8888",
 "timeout" : 300,
@@ -158,24 +224,26 @@ Tips:客户端默认只开启http(8888)、socks5(8889, user:pekora;password:peko
 "socks5": {
 "listen": "127.0.0.1:8889",
 "timeout": 300,
-"disable_udp": false,
-"user": "pekora",
-"password": "pekopeko"
+"disable_udp": false
 },
 "alpn": "h3",
 "acl": "acl/routes.acl",
 "mmdb": "acl/Country.mmdb",
-"auth_str": "pekomiko",
+"auth_str": "pekopeko",
 "server_name": "wechat.com",
 "insecure": true,
-"recv_window_conn": 23592960,
-"recv_window": 94371840,
+"recv_window_conn": 6291456,
+"recv_window": 25165824,
 "disable_mtu_discovery": false,
 "resolver": "119.29.29.29:53",
-"retry": 5,
+"retry": 3,
 "retry_interval": 3
 }
 ↑***********************************↑↑↑copy↑↑↑*******************************↑
+
+Shadowrocket一键链接:
+hysteria://1.2.3.4:20882?protocol=wechat-video&auth=pekopeko&peer=wechat.com&insecure=1&upmbps=12&downmbps=62&alpn=h3#Hys-1.2.3.4
+
 安装完毕
 
 
@@ -194,40 +262,33 @@ Jan 10 04:17:23 dedicated systemd[1]: Started hysteria:Hello World!.
 </details>
 
 
-## 三·服务端管理
-- 重启
+## 三·高级玩法(伪
 
-```
-systemctl restart hysteria
-```
-- 停止
+#### 1. [借用其他支持Socks5的GUI，来获得一个图形界面](https://github.com/emptysuns/Hi_Hysteria/blob/main/md/firewall.md)
 
-```
-systemctl stop hysteria
-```
-- 状态
 
-```
-systemctl status hysteria -l
-```
-
-- 卸载
-
-```
-bash <(curl -fsSL https://git.io/rmhysteria.sh)
-```
-- 重新安装/升级
-```
-bash <(curl -fsSL https://git.io/rehysteria.sh)
-```
 ## 四·结语
 
 魔改UDP的QUIC协议，加了tls和混淆的话，个人跑了一段时间大流量，未被运营商QoS，落地ip并没有被墙，也不知道什么时候被针对，大家且用且珍惜吧。
 
-## 五·鸣谢
+## 五·Todo
+**如果您有好的功能建议，请不要忘记开个issue提出来欧～～～欢迎PR来完成Todo或者给我纠正我的渣代码。**
+* [x] 检测端口是否被占用
+* [ ] 利用xray s5 inbound来支持按域名分流(warp)
+* [x] 生成分享链接
+* [ ] 客户端自动更新
+* [x] hihys替换掉hysteria
+* [ ] 规范化脚本代码
+* [ ] 利用docker安装?(不知道是否有必要)
+* [ ] cmd客户端的“便捷性”优化...
+
+## 六·鸣谢
 
 
 [@HyNetwork/hysteria](https://github.com/HyNetwork/hysteria)
 
 
 [@Loyalsoldier/geoip](https://github.com/Loyalsoldier/geoip)
+
+
+[@mack-a/v2ray-agent](https://github.com/mack-a/v2ray-agent)

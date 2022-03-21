@@ -106,7 +106,7 @@ ctrl+c and +v.
 
 <center><font size=2>启动</font></center>
 
-![image](https://cloud.iacg.cf/0:/normal/img/hihysteria/mark.png)
+![image](https://cloud.imoeq.com/0:/normal/img/hihysteria/mark.png)
 
 <center><font size=2>防呆/关闭</font></center>
 
