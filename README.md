@@ -264,7 +264,7 @@ Jan 10 04:17:23 dedicated systemd[1]: Started hysteria:Hello World!.
 
 ## 三·高级玩法(伪
 
-#### 1. [借用其他支持Socks5的GUI，来获得一个图形界面](https://github.com/emptysuns/Hi_Hysteria/blob/main/md/firewall.md)
+#### 1. [借用其他支持Socks5的GUI，来获得一个图形界面](https://github.com/emptysuns/Hi_Hysteria/blob/main/md/gui.md)
 
 
 ## 四·结语
