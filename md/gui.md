@@ -29,7 +29,7 @@ hysteria支持socks5 来入栈，而现在几乎所有主流的代理软件的UI
 
     如果是`8888`则再点一次`自动配置系统代理`就行了
 
-    ![image](https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/imgs/ChangeProxy.png)
+    ![image](https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/imgs/changeProxy.png)
 
     
     这终究之一种另类的玩法，就不单单为这个做优化了，如果希望长期使用"**鸠占鹊巢**"，可以自己修改`back_start.sh` and `back_stop.sh`，删掉如下所有发生修改的注册表项，让cmd客户端不再自动配置系统http代理。
