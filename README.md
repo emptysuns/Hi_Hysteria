@@ -64,10 +64,13 @@ windows使用请仔细阅读[cmd客户端(伪)介绍](https://github.com/emptysu
 
 #### 6. [部分其他平台？](https://github.com/emptysuns/Hi_Hysteria/blob/main/md/others.md)
 
+#### 7. [如何设置我的延迟、上行/下行速度？](https://github.com/emptysuns/Hi_Hysteria/blob/main/md/speed.md)
+
 
 ### 拉取安装
 
 ```
+su - root #Change to root
 bash <(curl -fsSL https://git.io/hysteria.sh)
 ```
 
@@ -247,14 +250,14 @@ hysteria://1.2.3.4:20882?protocol=wechat-video&auth=pekopeko&peer=wechat.com&ins
 安装完毕
 
 
-root@dedicated:~# systemctl status hysteria
+root@dedicated:~# systemctl status hihys
 * hysteria.service - hysteria:Hello World!
    Loaded: loaded (/etc/systemd/system/hysteria.service; enabled; vendor preset: enabled)
    Active: active (running) since Mon 2022-01-10 04:17:23 EST; 15s ago
  Main PID: 29691 (hysteria)
     Tasks: 6 (limit: 1120)
    CGroup: /system.slice/hysteria.service
-           `-29691 /etc/hysteria/hysteria --log-level warn -c /etc/hysteria/config.json server
+           `-29691 /etc/hihys/hysteria --log-level warn -c /etc/hihys/config.json server
 
 Jan 10 04:17:23 dedicated systemd[1]: Started hysteria:Hello World!.
 
