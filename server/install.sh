@@ -71,7 +71,7 @@ function checkSystemForUpdate() {
 	fi
 
 	if [[ -z ${release} ]]; then
-		echoContent red "\n本脚本不支持此系统，请将下方日志反馈给开发者\n"
+		echoContent red "\n本脚本不支持此系统,请将下方日志反馈给开发者\n"
 		echoContent yellow "$(cat /etc/issue)"
 		echoContent yellow "$(cat /proc/version)"
 		exit 0
@@ -250,13 +250,13 @@ function install()
     read protocol
     if [ -z "${protocol}" ] || [ $protocol == "3" ];then
     protocol="wechat-video"
-    iptables -I INPUT -p udp --dport ${port} -m comment --comment "allow udp(hihyteria)" -j ACCEPT
+    iptables -I INPUT -p udp --dport ${port} -m comment --comment "allow udp(hihysteria)" -j ACCEPT
     elif [ $protocol == "2" ];then
     protocol="faketcp"
-    iptables -I INPUT -p tcp --dport ${port}  -m comment --comment "allow tcp(hihyteria)" -j ACCEPT
+    iptables -I INPUT -p tcp --dport ${port}  -m comment --comment "allow tcp(hihysteria)" -j ACCEPT
     else 
     protocol="udp"
-    iptables -I INPUT -p udp --dport ${port} -m comment --comment "allow udp(hihyteria)" -j ACCEPT
+    iptables -I INPUT -p udp --dport ${port} -m comment --comment "allow udp(hihysteria)" -j ACCEPT
     fi
     echo -e "传输协议:"`echoColor red ${protocol}`"\n"
 
@@ -382,8 +382,8 @@ EOF
 		u_host=${domain}
 		u_domain=${domain}
 		sec="0"
-        iptables -I INPUT -p tcp --dport 80  -m comment --comment "allow tcp(hihyteria)" -j ACCEPT
-        iptables -I INPUT -p tcp --dport 443  -m comment --comment "allow tcp(hihyteria)" -j ACCEPT
+        iptables -I INPUT -p tcp --dport 80  -m comment --comment "allow tcp(hihysteria)" -j ACCEPT
+        iptables -I INPUT -p tcp --dport 443  -m comment --comment "allow tcp(hihysteria)" -j ACCEPT
 		cat <<EOF > /etc/hihy/config.json
 {
 "listen": ":$port",
