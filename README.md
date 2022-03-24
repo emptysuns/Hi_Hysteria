@@ -36,15 +36,12 @@ windows使用请仔细阅读[cmd客户端(伪)介绍](https://github.com/emptysu
 
 
 ```
-(2022/03/21) 0.3.0(此次改进较多):
-1· 新增"菜单"功能，更新到0.3.0版本，后使用hihys命令即可调出菜单
-2. 将依赖的安装集中到的脚本内，无需手动安装了，并且完善系统检测流程
-3. 新增生成小火箭一键链接
-4. 优化脚本提示，重写了部分代码，更加方便增加新的功能
-5. 完善readme介绍部分，使之更加易懂，加入passwall的example图片
-6. 加入"高级玩法(伪"，介绍一些别的玩法
-7. 守护进程名称用hihys替代掉了hysteria
-8. 取消了S5默认带密码的配置
+(2022/03/24) 0.3.1:
+1. 将守护进程名再次改为hihy, 相较于原来的hihys和hysteria更加好记住
+2. 修复0.3.0无法卸载之前版本的hysteria的bug
+3. 创建守护进程之前增加配置检测功能，防止ACME不通过的用户反复横跳.
+4. 将菜单变得清晰
+
 ```
 [历史改进](https://github.com/emptysuns/Hi_Hysteria/blob/main/md/log.md)
 
@@ -56,7 +53,7 @@ windows使用请仔细阅读[cmd客户端(伪)介绍](https://github.com/emptysu
 #### 2. [自签证书](https://github.com/emptysuns/Hi_Hysteria/blob/main/md/certificate.md)
 
 
-#### 3. [限制UDP的服务商排雷列表【2022/02/20更新】](https://github.com/emptysuns/Hi_Hysteria/blob/main/md/blacklist.md)
+#### 3. [限制UDP的服务商排雷列表【2022/03/21更新】](https://github.com/emptysuns/Hi_Hysteria/blob/main/md/blacklist.md)
 
 #### 4. [hysteria各个协议介绍](https://github.com/emptysuns/Hi_Hysteria/blob/main/md/protocol.md)
 
@@ -75,38 +72,38 @@ bash <(curl -fsSL https://git.io/hysteria.sh)
 ```
 
 ### 配置过程
-首次安装后: `hihys`命令调出菜单
+首次安装后: `hihy`命令调出菜单
 ```
 -------------------------------------------
 |**********      Hi Hysteria       **********|
-|**********   Author: emptysuns  ************|
-|**********     Version: 0.3.0     **********|
+|**********    Author: emptysuns ************|
+|**********     Version: 0.3.1     **********|
  -------------------------------------------
 
-Tips:hihys 命令再次运行本脚本.
-.............................................
+Tips:hihy 命令再次运行本脚本.
+............................................. 
 
-####################
-1)安装 hysteria
+############################### 
 
-2)卸载 hysteria
-####################
-3)启动 hysteria
+..................... 
+1)安装 hysteria 
+2)卸载 hysteria 
 
-4)暂停 hysteria
+..................... 
+3)启动 hysteria 
+4)暂停 hysteria 
+5)重新启动 hysteria 
+6)检测 hysteria运行状态 
 
-5)重新启动 hysteria
-####################
-6)检测 hysteria运行状态
+..................... 
+7)查看当前配置 
+8)重新安装/升级 
 
-7)查看当前配置
-
-8)重新安装/升级
+############################### 
 
 
-
-0)退出
-.............................................
+0)退出 
+............................................. 
 请选择:
 ```
 **脚本每次更新都可能会发生改变，请一定要展开并仔细参考演示过程，避免发生不必要的错误！**
@@ -130,7 +127,7 @@ Hit:3 <https://packagecloud.io/ookla/speedtest-cli/ubuntu> bionic InRelease
 Reading package lists... Done
 Building dependency tree
 Reading state information... Done
-57 packages can be upgraded. Run 'apt list --upgradable' to see them.
+58 packages can be upgraded. Run 'apt list --upgradable' to see them.
 
 Done.
 Install wget curl netfilter-persistent
@@ -139,19 +136,19 @@ Reading package lists...
 Building dependency tree...
 Reading state information...
 wget is already the newest version (1.19.4-1ubuntu2.2).
-0 upgraded, 0 newly installed, 0 to remove and 57 not upgraded.
+0 upgraded, 0 newly installed, 0 to remove and 58 not upgraded.
 *curl
 Reading package lists...
 Building dependency tree...
 Reading state information...
 curl is already the newest version (7.58.0-2ubuntu3.16).
-0 upgraded, 0 newly installed, 0 to remove and 57 not upgraded.
+0 upgraded, 0 newly installed, 0 to remove and 58 not upgraded.
 *netfilter-persistent
 Reading package lists...
 Building dependency tree...
 Reading state information...
 netfilter-persistent is already the newest version (1.0.4+nmu2ubuntu1.1).
-0 upgraded, 0 newly installed, 0 to remove and 57 not upgraded.
+0 upgraded, 0 newly installed, 0 to remove and 58 not upgraded.
 
 Done.
 开始配置:
@@ -161,7 +158,7 @@ Done.
 
 请输入你想要开启的端口,此端口是server端口,建议10000-65535.(默认随机)
 
-随机端口:20882
+随机端口:19571
 
 选择协议类型:
 
@@ -170,28 +167,17 @@ Done.
 3、wechat-video(回车默认)
 
 输入序号:
-
-传输协议:wechat-video
+2
+传输协议:faketcp
 
 请输入您到此服务器的平均延迟,关系到转发速度(默认200,单位:ms):
-
-delay:200 ms
+100
 
 期望速度,这是客户端的峰值速度,服务端默认不受限。Tips:脚本会自动*1.25做冗余，您期望过低或者过高会影响转发效率,请如实填写!
 请输入客户端期望的下行速度:(默认50,单位:mbps):
-
-客户端下行速度：50 mbps
-
+200
 请输入客户端期望的上行速度(默认10,单位:mbps):
-
-客户端上行速度：50 mbps
-
-请输入认证口令:
-
-此选项不能省略,请重新输入!
-请输入认证口令:
-
-此选项不能省略,请重新输入!
+40
 请输入认证口令:
 pekopeko
 
@@ -205,20 +191,21 @@ subject=C = CN, ST = GuangDong, L = ShenZhen, O = PonyMa, OU = Tecent, emailAddr
 Getting CA Private Key
 OK.
 
+wait,test config...
+
+Test ok.
 net.core.rmem_max = 8000000
-Created symlink /etc/systemd/system/multi-user.target.wants/hihys.service -> /etc/systemd/system/hihys.service.
-
-wait...
-
+install.sh: line 206: 20988 Killed                  /etc/hihy/appS -c /etc/hihy/config.json server > /tmp/hihy_debug.info 2>&1
+Created symlink /etc/systemd/system/multi-user.target.wants/hihy.service → /etc/systemd/system/hihy.service.
 配置文件输出如下且已经在本目录生成(可自行复制粘贴到本地)
 
 Tips:客户端默认只开启http(8888)、socks5(8889)代理!其他方式请参照文档自行修改客户端config.json
 ***********************************↓↓↓copy↓↓↓*******************************↓
 {
-"server": "1.2.3.4:20882",
-"protocol": "wechat-video",
-"up_mbps": 12,
-"down_mbps": 62,
+"server": "1.2.3.4:19571",
+"protocol": "faketcp",
+"up_mbps": 50,
+"down_mbps": 250,
 "http": {
 "listen": "127.0.0.1:8888",
 "timeout" : 300,
@@ -235,8 +222,8 @@ Tips:客户端默认只开启http(8888)、socks5(8889)代理!其他方式请参�
 "auth_str": "pekopeko",
 "server_name": "wechat.com",
 "insecure": true,
-"recv_window_conn": 6291456,
-"recv_window": 25165824,
+"recv_window_conn": 13107200,
+"recv_window": 52428800,
 "disable_mtu_discovery": false,
 "resolver": "119.29.29.29:53",
 "retry": 3,
@@ -244,20 +231,20 @@ Tips:客户端默认只开启http(8888)、socks5(8889)代理!其他方式请参�
 }
 ↑***********************************↑↑↑copy↑↑↑*******************************↑
 
-Shadowrocket一键链接:
-hysteria://1.2.3.4:20882?protocol=wechat-video&auth=pekopeko&peer=wechat.com&insecure=1&upmbps=12&downmbps=62&alpn=h3#Hys-1.2.3.4
+Shadowrocket/Sagernet/Passwall一键链接:
+hysteria://1.2.3.4:19571?protocol=faketcp&auth=pekopeko&peer=wechat.com&insecure=1&upmbps=50&downmbps=250&alpn=h3#Hys-1.2.3.4
 
 安装完毕
 
+root@dedicated:~# systemctl status hihy
 
-root@dedicated:~# systemctl status hihys
-* hysteria.service - hysteria:Hello World!
+* hihy.service - hysteria:Hello World!
    Loaded: loaded (/etc/systemd/system/hysteria.service; enabled; vendor preset: enabled)
    Active: active (running) since Mon 2022-01-10 04:17:23 EST; 15s ago
- Main PID: 29691 (hysteria)
+ Main PID: 29691 (hihy)
     Tasks: 6 (limit: 1120)
-   CGroup: /system.slice/hysteria.service
-           `-29691 /etc/hihys/hysteria --log-level warn -c /etc/hihys/config.json server
+   CGroup: /system.slice/hihy.service
+           `-29691 /etc/hihy/appS --log-level warn -c /etc/hihy/config.json server
 
 Jan 10 04:17:23 dedicated systemd[1]: Started hysteria:Hello World!.
 
@@ -270,20 +257,25 @@ Jan 10 04:17:23 dedicated systemd[1]: Started hysteria:Hello World!.
 #### 1. [借用其他支持Socks5的GUI，来获得一个图形界面](https://github.com/emptysuns/Hi_Hysteria/blob/main/md/gui.md)
 
 
-## 四·结语
+## 四·Todo
 
-魔改UDP的QUIC协议，加了tls和混淆的话，个人跑了一段时间大流量，未被运营商QoS，落地ip并没有被墙，也不知道什么时候被针对，大家且用且珍惜吧。
-
-## 五·Todo
 **如果您有好的功能建议，请不要忘记开个issue提出来欧～～～欢迎PR来完成Todo或者给我纠正我的渣代码。**
+
 * [x] 检测端口是否被占用
 * [ ] 利用xray s5 inbound来支持按域名分流(warp)
 * [x] 生成分享链接
 * [ ] 客户端自动更新
-* [x] hihys替换掉hysteria
+* [x] hihy替换掉hysteria
 * [ ] 规范化脚本代码
 * [ ] 利用docker安装?(不知道是否有必要)
-* [ ] cmd客户端的“便捷性”优化...
+* [ ] cmd客户端的优化,利用一键链接导入非复制config.json,增加多配置切换管理(奇怪的方向越走越远...)
+* [ ] 多密码支持
+* [ ] 利用base64加密替换原来的auth_str
+
+## 五·结语
+
+魔改UDP的QUIC协议，加了tls和混淆的话，个人跑了一段时间大流量，未被运营商QoS，落地ip并没有被墙，也不知道什么时候被针对，大家且用且珍惜吧。
+
 
 ## 六·鸣谢
 

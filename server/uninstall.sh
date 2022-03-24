@@ -1,14 +1,31 @@
 #!/bin/bash
-systemctl stop hihys
-systemctl disable hihys
-rm -r /etc/systemd/system/hihys.service
+
+function rmhy(){
+    n=$1
+    systemctl stop ${n}
+    systemctl disable ${n}
+    rm /etc/systemd/system/${n}.service
+    rm -r /etc/${n}
+    rm /usr/bin/${n}
+    crontab -l > /tmp/crontab.tmp
+    sed -i '/0 4 \* \* \* systemctl restart ${n}/d' /tmp/crontab.tmp
+    crontab /tmp/crontab.tmp
+    rm /tmp/crontab.tmp
+}
+
+if [ -f "/etc/systemd/system/hihys.service" ]; then
+  rmhy "hihys"
+fi
+
+if [ -f "/etc/systemd/system/hysteria.service" ]; then
+  rmhy "hysteria"
+fi
+
+if [ -f "/etc/systemd/system/hihy.service" ]; then
+  rmhy "hihy"
+fi
+
 systemctl daemon-reload
-rm -r /etc/hihys/
-rm /usr/bin/hihys
-crontab -l > ./crontab.tmp
-sed -i '/0 4 \* \* \* systemctl restart hysteria/d' ./crontab.tmp
-crontab ./crontab.tmp
-rm ./crontab.tmp
 iptables-save |  sed -e '/hihysteria/d' | iptables-restore
 netfilter-persistent save
-echo -e "\033[1;33;40mUninstall complete!\033[0m\n"
+echo -e "\033[1;33;40mUninstall completed!\033[0m\n"
