@@ -16,7 +16,7 @@ hysteria支持socks5 来入栈，而现在几乎所有主流的代理软件的UI
 
 
 1. 使用hihysteria cmd客户端，测试`run.bat`运行成功,能正常使用hysteria进行代理。
-![image](https://cloud.imoeq.com/0:/normal/img/hihysteria/mark.png)
+![image](https://cloud.iacg.cf/0:/normal/img/hihysteria/mark.png)
 
 2. 回车关闭`前台运行模式`，双击`back_start.bat`启动后台运行模式。
 

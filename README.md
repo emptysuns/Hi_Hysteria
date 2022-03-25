@@ -13,7 +13,7 @@ Hysteria这是一款由go编写的非常优秀的“轻量”代理程序，它�
 
 2、50mbps北方电信,北京出口 直连落地vir San Jose机房163线路，22-23点测试YT 1080p60直播流:
 
-![image](https://cloud.imoeq.com/0:/normal/img/hihysteria/speed.png)
+![image](https://cloud.iacg.cf/0:/normal/img/hihysteria/speed.png)
 
 ```
 190 dropped of 131329
