@@ -78,13 +78,15 @@ function checkSystemForUpdate() {
 	fi
     echoColor purple "\nUpdate.wait..."
     ${upgrade}
-    echoColor purple "\nDone.\nInstall wget curl netfilter-persistent"
+    echoColor purple "\nDone.\nInstall wget curl netfilter-persistent lsof"
 	echoColor green "*wget"
 	${installType} "wget"
 	echoColor green "*curl"
 	${installType} "curl"
 	echoColor green "*netfilter-persistent"
 	${installType} "netfilter-persistent"
+	echoColor green "*lsof"
+	${installType} "lsof"
     echoColor purple "\nDone."
     
 }
@@ -116,6 +118,43 @@ function hihy(){
 	fi	
 }
 
+function changeIp64(){
+    if [ ! -f "/etc/hihy/config.json" ]; then
+  		echoColor red "未正常安装hihy!"
+        exit
+	fi 
+	now=`cat /etc/hihy/config.json | grep "resolve_preference"`
+    case ${now} in 
+		*"64"*)
+			echoColor purple "当前ipv6优先"
+            echoColor yellow " ->设置ipv4优先级高于ipv6?(Y/N,默认N)"
+            read input
+            if [ -z "${input}" ];then
+                echoColor green "Ignore."
+                exit
+            else
+                sed -i 's/"resolve_preference": "64"/"resolve_preference": "46"/g' /etc/hihy/config.json
+                systemctl restart hihy
+                echoColor green "Done.Ipv4 first now."
+            fi
+            
+		;;
+		*"46"*)
+			echoColor purple "当前ipv4优先"
+            echoColor yellow " ->设置ipv6优先级高于ipv4?(Y/N,默认N)"
+            read input
+            if [ -z "${input}" ];then
+                echoColor green "Ignore."
+                exit
+            else
+                sed -i 's/"resolve_preference": "46",/"resolve_preference": "64",/g' /etc/hihy/config.json
+                systemctl restart hihy
+                echoColor green "Done.Ipv6 first now."
+            fi
+        ;;
+	esac
+}
+
 function menu()
 {
 hihy
@@ -124,7 +163,7 @@ cat << EOF
  -------------------------------------------
 |**********      Hi Hysteria       **********|
 |**********    Author: emptysuns ************|
-|**********     Version: `echoColor red "0.3.1"`    **********|
+|**********     Version: `echoColor red "0.3.2"`    **********|
  -------------------------------------------
 
 Tips:`echoColor green "hihy"`命令再次运行本脚本.
@@ -133,18 +172,17 @@ Tips:`echoColor green "hihy"`命令再次运行本脚本.
 `echoColor purple "###############################"`
 
 `echoColor skyBlue "....................."`
-`echoColor yellow "1)安装 hysteria"`
-`echoColor red "2)卸载 hysteria"`
-
+`echoColor yellow "1) 安装 hysteria"`
+`echoColor red "2) 卸载 hysteria"`
 `echoColor skyBlue "....................."`
-`echoColor yellow "3)启动 hysteria"`
-`echoColor red "4)暂停 hysteria"`
-`echoColor yellow "5)重新启动 hysteria"`
-`echoColor yellow "6)检测 hysteria运行状态"`
-
+`echoColor yellow "3) 启动 hysteria"`
+`echoColor red "4) 暂停 hysteria"`
+`echoColor yellow "5) 重新启动 hysteria"`
+`echoColor yellow "6) 检测 hysteria运行状态"`
 `echoColor skyBlue "....................."`
-`echoColor yellow "7)查看当前配置"`
-`echoColor skyBlue "8)重新安装/升级"`
+`echoColor yellow "7) 查看当前配置"`
+`echoColor skyBlue "8) 重新安装/升级"`
+`echoColor yellow "9) 切换ipv4/ipv6优先级"`
 
 `echoColor purple "###############################"`
 
@@ -181,6 +219,9 @@ case $input in
 	;;
 	8)
 		reinstall
+    ;;
+    9)
+        changeIp64
     ;;
 	0)
 		exit
@@ -317,7 +358,7 @@ function install()
         openssl x509 -req -extfile <(printf "subjectAltName=DNS:$domain,DNS:$domain") -days $days -in /etc/hihy/$domain.csr -CA /etc/hihy/$domain.ca.crt -CAkey /etc/hihy/$domain.ca.key -CAcreateserial -out /etc/hihy/$domain.crt
 
         rm /etc/hihy/${domain}.ca.key /etc/hihy/${domain}.ca.srl /etc/hihy/${domain}.csr
-        echoColor purple "OK.\n"
+        echoColor purple "SUCCESS.\n"
 
 cat <<EOF > /etc/hihy/config.json
 {
@@ -337,6 +378,7 @@ cat <<EOF > /etc/hihy/config.json
 "recv_window_client": $r_client,
 "max_conn_client": 4096,
 "disable_mtu_discovery": false,
+"resolve_preference": "46",
 "resolver": "8.8.8.8:53"
 }
 EOF
@@ -406,6 +448,7 @@ EOF
 "recv_window_client": $r_client,
 "max_conn_client": 4096,
 "disable_mtu_discovery": false,
+"resolve_preference": "46",
 "resolver": "8.8.8.8:53"
 }
 EOF
@@ -474,7 +517,7 @@ EOF
 			exit
 			;;
 		*"Server up and running"*) 
-			echoColor purple "Test ok."
+			echoColor purple "Test success."
 			pIDa=`lsof -i :${port}|grep -v "PID" | awk '{print $2}'`
 			kill -9 ${pIDa}
 			;;

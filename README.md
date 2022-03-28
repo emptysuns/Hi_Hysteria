@@ -36,12 +36,10 @@ windows使用请仔细阅读[cmd客户端(伪)介绍](https://github.com/emptysu
 
 
 ```
-(2022/03/24) 0.3.1:
-1. 将守护进程名再次改为hihy, 相较于原来的hihys和hysteria更加好记住
-2. 修复0.3.0无法卸载之前版本的hysteria的bug
-3. 创建守护进程之前增加配置检测功能，防止ACME不通过的用户反复横跳.
-4. 将菜单变得清晰
-
+(2022/03/28) 0.3.2:
+1. update hysteria to 1.0.2
+2. 支持调整ipv4/ipv6优先级
+3. 修复没有lsof时安装失败的bug
 ```
 [历史改进](https://github.com/emptysuns/Hi_Hysteria/blob/main/md/log.md)
 
@@ -77,7 +75,7 @@ bash <(curl -fsSL https://git.io/hysteria.sh)
 -------------------------------------------
 |**********      Hi Hysteria       **********|
 |**********    Author: emptysuns ************|
-|**********     Version: 0.3.1     **********|
+|**********     Version: 0.3.2     **********|
  -------------------------------------------
 
 Tips:hihy 命令再次运行本脚本.
@@ -86,18 +84,17 @@ Tips:hihy 命令再次运行本脚本.
 ############################### 
 
 ..................... 
-1)安装 hysteria 
-2)卸载 hysteria 
-
+1) 安装 hysteria 
+2) 卸载 hysteria 
 ..................... 
-3)启动 hysteria 
-4)暂停 hysteria 
-5)重新启动 hysteria 
-6)检测 hysteria运行状态 
-
+3) 启动 hysteria 
+4) 暂停 hysteria 
+5) 重新启动 hysteria 
+6) 检测 hysteria运行状态 
 ..................... 
-7)查看当前配置 
-8)重新安装/升级 
+7) 查看当前配置 
+8) 重新安装/升级
+9) 切换ipv4/ipv6优先级
 
 ############################### 
 
