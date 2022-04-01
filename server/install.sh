@@ -1,3 +1,5 @@
+#!/bin/bash
+hihyV="0.3.3"
 function echoColor() {
 	case $1 in
 		# 红色
@@ -100,12 +102,13 @@ function reinstall(){
 }
 
 function printMsg(){
-	echoColor yellowBlack "配置文件输出如下且已经在本目录生成(可自行复制粘贴到本地)"
-	echoColor green "\n\nTips:客户端默认只开启http(8888)、socks5(8889)代理!其他方式请参照文档自行修改客户端config.json"
+	cp -P /etc/hihy/result/hihyClient.json ./config.json
+	echoColor yellowBlack "配置文件输出如下且已经在本目录生成(直接下载本目录生成的config.json[推荐]/自行复制粘贴到本地)"
+	echoColor green "\nTips:客户端默认只开启http(8888)、socks5(8889)代理!其他方式请参照hysteria文档自行修改客户端config.json"
 	echoColor purple "***********************************↓↓↓copy↓↓↓*******************************↓"
 	cat ./config.json
 	echoColor purple "↑***********************************↑↑↑copy↑↑↑*******************************↑\n"
-	url=`cat /etc/hihy/url.txt`
+	url=`cat /etc/hihy/result/url.txt`
 	echo -e "Shadowrocket/Sagernet/Passwall一键链接:"
 	echoColor green ${url}
 	echo -e "\n"
@@ -119,7 +122,7 @@ function hihy(){
 }
 
 function changeIp64(){
-    if [ ! -f "/etc/hihy/config.json" ]; then
+    if [ ! -f "/etc/hihy/conf/hihyServer.json" ]; then
   		echoColor red "未正常安装hihy!"
         exit
 	fi 
@@ -133,7 +136,7 @@ function changeIp64(){
                 echoColor green "Ignore."
                 exit
             else
-                sed -i 's/"resolve_preference": "64"/"resolve_preference": "46"/g' /etc/hihy/config.json
+                sed -i 's/"resolve_preference": "64"/"resolve_preference": "46"/g' /etc/hihy/conf/hihyServer.json
                 systemctl restart hihy
                 echoColor green "Done.Ipv4 first now."
             fi
@@ -147,7 +150,7 @@ function changeIp64(){
                 echoColor green "Ignore."
                 exit
             else
-                sed -i 's/"resolve_preference": "46",/"resolve_preference": "64",/g' /etc/hihy/config.json
+                sed -i 's/"resolve_preference": "46",/"resolve_preference": "64",/g' /etc/hihy/conf/hihyServer.json
                 systemctl restart hihy
                 echoColor green "Done.Ipv6 first now."
             fi
@@ -155,115 +158,9 @@ function changeIp64(){
 	esac
 }
 
-function menu()
-{
-hihy
-clear
-cat << EOF
- -------------------------------------------
-|**********      Hi Hysteria       **********|
-|**********    Author: emptysuns ************|
-|**********     Version: `echoColor red "0.3.2"`    **********|
- -------------------------------------------
-
-Tips:`echoColor green "hihy"`命令再次运行本脚本.
-`echoColor skyBlue "............................................."`
-
-`echoColor purple "###############################"`
-
-`echoColor skyBlue "....................."`
-`echoColor yellow "1) 安装 hysteria"`
-`echoColor red "2) 卸载 hysteria"`
-`echoColor skyBlue "....................."`
-`echoColor yellow "3) 启动 hysteria"`
-`echoColor red "4) 暂停 hysteria"`
-`echoColor yellow "5) 重新启动 hysteria"`
-`echoColor yellow "6) 检测 hysteria运行状态"`
-`echoColor skyBlue "....................."`
-`echoColor yellow "7) 查看当前配置"`
-`echoColor skyBlue "8) 重新安装/升级"`
-`echoColor yellow "9) 切换ipv4/ipv6优先级"`
-
-`echoColor purple "###############################"`
-
-
-`echoColor red "0)退出"`
-`echoColor skyBlue "............................................."`
-EOF
-read -p "请选择:" input
-case $input in
-	1)	
-		install
-	;;
-	2)
-		uninstall
-	;;
-	3)
-		systemctl start hihy
-		echoColor green "启动成功"
-	;;
-	4)
-		systemctl stop hihy
-		echoColor green "暂停成功"
-	;;
-    5)
-        systemctl restart hihy
-		echoColor green "重启成功"
-
-    ;;
-    6)
-        checkStatus
-	;;
-	7)
-		printMsg
-	;;
-	8)
-		reinstall
-    ;;
-    9)
-        changeIp64
-    ;;
-	0)
-		exit
-	;;
-	*)
-		echo "Input Error ,Please again !!!"
-		exit 1
-	;;
-    esac
-}
-
-
-function checkStatus(){
-	status=`systemctl is-active hihy`
-    if [ "${status}" = "active" ];then
-		echoColor green "hysteria正常运行"
-	else
-		echoColor red "dead!hysteria未正常运行!"
-	fi
-}
-
-function install()
-{	
-    echoColor purple "Ready to install.\n"
-    mkdir -p /etc/hihy
-    version=`wget -qO- -t1 -T2 --no-check-certificate "https://api.github.com/repos/HyNetwork/hysteria/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'`
-    echo -e "The Latest hysteria version:"`echoColor red "${version}"`"\nDownload..."
-    get_arch=`arch`
-    if [ $get_arch = "x86_64" ];then
-        wget -q -O /etc/hihy/appS --no-check-certificate https://github.com/HyNetwork/hysteria/releases/download/$version/hysteria-linux-amd64
-    elif [ $get_arch = "aarch64" ];then
-        wget -q -O /etc/hihy/appS --no-check-certificate https://github.com/HyNetwork/hysteria/releases/download/$version/hysteria-linux-arm64
-    elif [ $get_arch = "mips64" ];then
-        wget -q -O /etc/hihy/appS --no-check-certificate https://github.com/HyNetwork/hysteria/releases/download/$version/hysteria-linux-mipsle
-    else
-        echoColor yellowBlack "Error[OS Message]:${get_arch}\nPlease open a issue to https://github.com/emptysuns/Hi_Hysteria !"
-        exit
-    fi
-	echoColor purple "\nDownload completed."
-	checkSystemForUpdate
-    chmod 755 /etc/hihy/appS
-    echoColor yellowBlack "开始配置:"
+function setHysteriaConfig(){
+	mkdir -p /etc/hihy/bin /etc/hihy/conf /etc/hihy/cert  /etc/hihy/result
+	echoColor yellowBlack "开始配置:"
     echoColor green "请输入您的域名(不输入回车,则默认自签wechat.com证书,不推荐):"
     read  domain
     if [ -z "${domain}" ];then
@@ -335,47 +232,47 @@ function install()
 	done
     echoColor green "\n配置录入完成!\n"
     echoColor yellowBlack "执行配置..."
-
     download=$(($download + $download / 4))
     upload=$(($upload + $upload / 4))
     r_client=$(($delay * 2 * $download / 1000 * 1024 * 1024))
     r_conn=$(($r_client / 4))
 
-    if [ "$domain" = "wechat.com" ];then
+    if [ "${domain}" = "wechat.com" ];then
+		v6str=":" #Is ipv6?
+        result=$(echo ${ip} | grep ${v6str})
+        if [ "${result}" != "" ];then
+            ip="[${ip}]" 
+        fi
 		u_host=${ip}
 		u_domain="wechat.com"
 		sec="1"
         mail="admin@qq.com"
         days=36500
-
         echoColor purple "SIGN...\n"
-        openssl genrsa -out /etc/hihy/$domain.ca.key 2048
-
-        openssl req -new -x509 -days $days -key /etc/hihy/$domain.ca.key -subj "/C=CN/ST=GuangDong/L=ShenZhen/O=PonyMa/OU=Tecent/emailAddress=$mail/CN=Tencent Root CA" -out /etc/hihy/$domain.ca.crt
-
-        openssl req -newkey rsa:2048 -nodes -keyout /etc/hihy/$domain.key -subj "/C=CN/ST=GuangDong/L=ShenZhen/O=PonyMa/OU=Tecent/emailAddress=$mail/CN=Tencent Root CA" -out /etc/hihy/$domain.csr
-
-        openssl x509 -req -extfile <(printf "subjectAltName=DNS:$domain,DNS:$domain") -days $days -in /etc/hihy/$domain.csr -CA /etc/hihy/$domain.ca.crt -CAkey /etc/hihy/$domain.ca.key -CAcreateserial -out /etc/hihy/$domain.crt
-
-        rm /etc/hihy/${domain}.ca.key /etc/hihy/${domain}.ca.srl /etc/hihy/${domain}.csr
+        openssl genrsa -out /etc/hihy/cert/${domain}.ca.key 2048
+        openssl req -new -x509 -days ${days} -key /etc/hihy/cert/${domain}.ca.key -subj "/C=CN/ST=GuangDong/L=ShenZhen/O=PonyMa/OU=Tecent/emailAddress=${mail}/CN=Tencent Root CA" -out /etc/hihy/cert/${domain}.ca.crt
+        openssl req -newkey rsa:2048 -nodes -keyout /etc/hihy/cert/${domain}.key -subj "/C=CN/ST=GuangDong/L=ShenZhen/O=PonyMa/OU=Tecent/emailAddress=${mail}/CN=Tencent Root CA" -out /etc/hihy/cert/${domain}.csr
+        openssl x509 -req -extfile <(printf "subjectAltName=DNS:${domain},DNS:${domain}") -days ${days} -in /etc/hihy/cert/${domain}.csr -CA /etc/hihy/cert/${domain}.ca.crt -CAkey /etc/hihy/cert/${domain}.ca.key -CAcreateserial -out /etc/hihy/cert/${domain}.crt
+        rm /etc/hihy/cert/${domain}.ca.key /etc/hihy/cert/${domain}.ca.srl /etc/hihy/cert/${domain}.csr
+		mv /etc/hihy/cert/${domain}.ca.crt /etc/hihy/result
         echoColor purple "SUCCESS.\n"
 
-cat <<EOF > /etc/hihy/config.json
+cat <<EOF > /etc/hihy/conf/hihyServer.json
 {
-"listen": ":$port",
-"protocol": "$protocol",
+"listen": ":${port}",
+"protocol": "${protocol}",
 "disable_udp": false,
-"cert": "/etc/hihy/$domain.crt",
-"key": "/etc/hihy/$domain.key",
+"cert": "/etc/hihy/cert/${domain}.crt",
+"key": "/etc/hihy/cert/${domain}.key",
 "auth": {
 	"mode": "password",
 	"config": {
-	"password": "$auth_str"
+	"password": "${auth_str}"
 	}
 },
 "alpn": "h3",
-"recv_window_conn": $r_conn,
-"recv_window_client": $r_client,
+"recv_window_conn": ${r_conn},
+"recv_window_client": ${r_client},
 "max_conn_client": 4096,
 "disable_mtu_discovery": false,
 "resolve_preference": "46",
@@ -383,18 +280,12 @@ cat <<EOF > /etc/hihy/config.json
 }
 EOF
 
-        v6str=":"
-        result=$(echo $ip | grep ${v6str})
-        if [ "$result" != "" ];then
-            ip="[$ip]" #ipv6? check
-        fi
-
-cat <<EOF > config.json
+cat <<EOF > /etc/hihy/result/hihyClient.json
 {
-"server": "$ip:$port",
-"protocol": "$protocol",
-"up_mbps": $upload,
-"down_mbps": $download,
+"server": "${ip}:${port}",
+"protocol": "${protocol}",
+"up_mbps": ${upload},
+"down_mbps": ${download},
 "http": {
 "listen": "127.0.0.1:8888",
 "timeout" : 300,
@@ -408,11 +299,11 @@ cat <<EOF > config.json
 "alpn": "h3",
 "acl": "acl/routes.acl",
 "mmdb": "acl/Country.mmdb",
-"auth_str": "$auth_str",
-"server_name": "$domain",
+"auth_str": "${auth_str}",
+"server_name": "${domain}",
 "insecure": true,
-"recv_window_conn": $r_conn,
-"recv_window": $r_client,
+"recv_window_conn": ${r_conn},
+"recv_window": ${r_client},
 "disable_mtu_discovery": false,
 "resolver": "119.29.29.29:53",
 "retry": 3,
@@ -426,26 +317,26 @@ EOF
 		sec="0"
         iptables -I INPUT -p tcp --dport 80  -m comment --comment "allow tcp(hihysteria)" -j ACCEPT
         iptables -I INPUT -p tcp --dport 443  -m comment --comment "allow tcp(hihysteria)" -j ACCEPT
-		cat <<EOF > /etc/hihy/config.json
+		cat <<EOF > /etc/hihy/conf/hihyServer.json
 {
-"listen": ":$port",
-"protocol": "$protocol",
+"listen": ":${port}",
+"protocol": "${protocol}",
 "acme": {
     "domains": [
-    "$domain"
+    "${domain}"
     ],
-    "email": "pekora@$domain"
+    "email": "pekora@${domain}"
 },
 "disable_udp": false,
 "auth": {
     "mode": "password",
     "config": {
-    "password": "$auth_str"
+    "password": "${auth_str}"
     }
 },
 "alpn": "h3",
-"recv_window_conn": $r_conn,
-"recv_window_client": $r_client,
+"recv_window_conn": ${r_conn},
+"recv_window_client": ${r_client},
 "max_conn_client": 4096,
 "disable_mtu_discovery": false,
 "resolve_preference": "46",
@@ -453,12 +344,12 @@ EOF
 }
 EOF
 
-		cat <<EOF > config.json
+		cat <<EOF > /etc/hihy/result/hihyClient.json
 {
-"server": "$domain:$port",
-"protocol": "$protocol",
-"up_mbps": $upload,
-"down_mbps": $download,
+"server": "${domain}:${port}",
+"protocol": "${protocol}",
+"up_mbps": ${upload},
+"down_mbps": ${download},
 "http": {
 "listen": "127.0.0.1:8888",
 "timeout" : 300,
@@ -472,11 +363,11 @@ EOF
 "alpn": "h3",
 "acl": "acl/routes.acl",
 "mmdb": "acl/Country.mmdb",
-"auth_str": "$auth_str",
-"server_name": "$domain",
+"auth_str": "${auth_str}",
+"server_name": "${domain}",
 "insecure": false,
-"recv_window_conn": $r_conn,
-"recv_window": $r_client,
+"recv_window_conn": ${r_conn},
+"recv_window": ${r_client},
 "disable_mtu_discovery": false,
 "resolver": "119.29.29.29:53",
 "retry": 3,
@@ -485,30 +376,15 @@ EOF
 EOF
     fi
 
-	cat <<EOF >/etc/systemd/system/hihy.service
-[Unit]
-Description=hysteria:Hello World!
-After=network.target
-
-[Service]
-Type=simple
-PIDFile=/run/hihy.pid
-ExecStart=/etc/hihy/appS --log-level warn -c /etc/hihy/config.json server
-#Restart=on-failure
-#RestartSec=10s
-
-[Install]
-WantedBy=multi-user.target
-EOF
-	echo -e "\033[1;;35m\nwait,test config...\n\033[0m"
-	/etc/hihy/appS -c /etc/hihy/config.json server > /tmp/hihy_debug.info 2>&1 &
+	echo -e "\033[1;;35m\nWait,test config...\n\033[0m"
+	/etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server > /tmp/hihy_debug.info 2>&1 &
 	sleep 10
 	msg=`cat /tmp/hihy_debug.info`
 	case ${msg} in 
 		*"Failed to get a certificate with ACME"*)
 			echoColor red "域名:${u_host},申请证书失败!请查看服务器提供的面板防火墙是否开启(TCP:80,443)\n或者域名是否正确解析到此ip(不要开CDN!)\n如果无法满足以上两点,请重新安装使用自签证书."
-			rm /etc/hihy/config.json
-			rm ./config.json
+			rm /etc/hihy/conf/hihyServer.json
+			rm /etc/hihy/result/hihyClient.json
 			rm /etc/systemd/system/hihy.service
 			exit
 			;;
@@ -521,13 +397,224 @@ EOF
 			pIDa=`lsof -i :${port}|grep -v "PID" | awk '{print $2}'`
 			kill -9 ${pIDa}
 			;;
-		*) 
-			echoColor red "未知错误:请手动运行:`echoColor green "/etc/hihy/appS -c /etc/hihy/config.json server"`"
+		*) 	
+			pIDa=`lsof -i :${port}|grep -v "PID" | awk '{print $2}'`
+			kill -9 ${pIDa}
+			echoColor red "未知错误:请手动运行:`echoColor green "/etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server"`"
 			echoColor red "查看错误日志,反馈到issue!"
 			exit
 			;;
 	esac
 	rm /tmp/hihy_debug.info
+	url="hysteria://${u_host}:${port}?protocol=${protocol}&auth=${auth_str}&peer=${u_domain}&insecure=${sec}&upmbps=${upload}&downmbps=${download}&alpn=h3#Hys-${u_host}"
+	echo ${url} > /etc/hihy/result/url.txt
+	#clear
+}
+
+function downloadHysteriaCore(){
+	version=`wget -qO- -t1 -T2 --no-check-certificate "https://api.github.com/repos/HyNetwork/hysteria/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'`
+	echo -e "The Latest hysteria version:"`echoColor red "${version}"`"\nDownload..."
+    get_arch=`arch`
+    if [ $get_arch = "x86_64" ];then
+        wget -q -O /etc/hihy/bin/appS --no-check-certificate https://github.com/HyNetwork/hysteria/releases/download/${version}/hysteria-linux-amd64
+    elif [ $get_arch = "aarch64" ];then
+        wget -q -O /etc/hihy/bin/appS --no-check-certificate https://github.com/HyNetwork/hysteria/releases/download/${version}/hysteria-linux-arm64
+    elif [ $get_arch = "mips64" ];then
+        wget -q -O /etc/hihy/bin/appS --no-check-certificate https://github.com/HyNetwork/hysteria/releases/download/${version}/hysteria-linux-mipsle
+    else
+        echoColor yellowBlack "Error[OS Message]:${get_arch}\nPlease open a issue to https://github.com/emptysuns/Hi_Hysteria !"
+        exit
+    fi
+	chmod 755 /etc/hihy/bin/appS
+	echoColor purple "\nDownload completed."
+}
+
+function updateHysteriaCore(){
+	if [ -f "/etc/hihy/bin/appS" ]; then
+		localV=`/etc/hihy/bin/appS -v | cut -d " " -f 3`
+		remoteV=`wget -qO- -t1 -T2 --no-check-certificate "https://api.github.com/repos/HyNetwork/hysteria/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'`
+		echo -e "Local version:"`echoColor red "${localV}"`
+		echo -e "Remote version:"`echoColor red "${remoteV}"`
+		if [ "${localV}" = "${remoteV}" ];then
+			echoColor green "Already the latest version.Ignore."
+		else
+			if [ "${status}" = "active" ];then #如果是正常运行情况下将先停止守护进程再自动更新后重启，否则只负责更新
+				systemctl stop hihy
+				downloadHysteriaCore
+				systemctl start hihy
+			else
+				downloadHysteriaCore
+			fi
+			echoColor green "Done."
+		fi
+	else
+		echoColor red "hysteria core not found."
+		exit
+	fi
+}
+
+function changeServerConfig(){
+	systemctl stop hihy
+	iptables-save |  sed -e '/hihysteria/d' | iptables-restore
+	updateHysteriaCore
+	setHysteriaConfig
+	systemctl start hihy
+	printMsg
+	echoColor yellowBlack "重新配置完成."
+	
+}
+
+function hihyUpdate(){
+	localV=`/etc/hihy/bin/appS -v | cut -d " " -f 3`
+	remoteV=`wget -qO- -t1 -T2 --no-check-certificate "https://api.github.com/repos/HyNetwork/hysteria/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'`
+	if [ "${localV}" = "${remoteV}" ];then
+		echoColor green "Already the latest version.Ignore."
+	else
+		wget -q -O /usr/bin/hihy --no-check-certificate https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/server/install.sh
+		chmod +x /usr/bin/hihy
+		echoColor green "Done."
+	fi
+
+}
+
+function hihyNotify(){
+	localV=`cat /usr/bin/hihy | grep "hihyV" | cut -d "=" -f 2` 
+	remoteV=`curl -fsSL https://git.io/hysteria.sh | grep "hihyV" | cut -d "=" -f 2`
+	if [ "${localV}" != "${remoteV}" ];then
+		echoColor red "[Update] hihy有更新,version:v${remoteV}\ndetail: https://github.com/emptysuns/Hi_Hysteria"
+	fi
+
+}
+
+function hyCoreNotify(){
+	if [ -f "/etc/hihy/bin/appS" ]; then
+  		localV=`/etc/hihy/bin/appS -v | cut -d " " -f 3`
+		remoteV=`wget -qO- -t1 -T2 --no-check-certificate "https://api.github.com/repos/HyNetwork/hysteria/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'`
+		if [ "${localV}" != "${remoteV}" ];then
+			echoColor purple "[Update] hysteria有更新,version:${remoteV}. detail: https://github.com/HyNetwork/hysteria/blob/master/CHANGELOG.md"
+		fi
+	fi
+}
+
+function menu()
+{
+hihy
+clear
+cat << EOF
+ -------------------------------------------
+|**********      Hi Hysteria       **********|
+|**********    Author: emptysuns ************|
+|**********     Version: `echoColor red "${hihyV}"`    **********|
+ -------------------------------------------
+Tips:`echoColor green "hihy"`命令再次运行本脚本.
+`echoColor skyBlue "............................................."`
+`hihyNotify`
+`hyCoreNotify`
+`echoColor purple "###############################"`
+
+`echoColor skyBlue "....................."`
+`echoColor yellow "1) 安装 hysteria"`
+`echoColor red "2) 卸载 hysteria"`
+`echoColor skyBlue "....................."`
+`echoColor yellow "3) 启动 hysteria"`
+`echoColor red "4) 暂停 hysteria"`
+`echoColor yellow "5) 重新启动 hysteria"`
+`echoColor yellow "6) 运行状态"`
+`echoColor yellow "7) hysteria core更新"`
+`echoColor skyBlue "....................."`
+`echoColor yellow "8) 查看当前配置"`
+`echoColor skyBlue "9) 重新配置hysteria"`
+`echoColor yellow "10) 切换ipv4/ipv6优先级"`
+`echoColor yellow "11) 检测hihy更新"`
+
+`echoColor purple "###############################"`
+
+
+`echoColor red "0)退出"`
+`echoColor skyBlue "............................................."`
+EOF
+read -p "请选择:" input
+case $input in
+	1)	
+		install
+	;;
+	2)
+		uninstall
+	;;
+	3)
+		systemctl start hihy
+		echoColor green "启动成功"
+	;;
+	4)
+		systemctl stop hihy
+		echoColor green "暂停成功"
+	;;
+    5)
+        systemctl restart hihy
+		echoColor green "重启成功"
+
+    ;;
+    6)
+        checkStatus
+	;;
+	7)
+		updateHysteriaCore
+	;;
+	8)
+		printMsg
+    ;;
+    9)
+        changeServerConfig
+    ;;
+	10)
+        changeIp64
+    ;;
+	11)
+        hihyUpdate
+    ;;
+	0)
+		exit
+	;;
+	*)
+		echoColor red "Input Error ,Please again !!!"
+		exit 1
+	;;
+    esac
+}
+
+
+function checkStatus(){
+	status=`systemctl is-active hihy`
+    if [ "${status}" = "active" ];then
+		echoColor green "hysteria正常运行"
+	else
+		echoColor red "dead!hysteria未正常运行!"
+	fi
+}
+
+function install()
+{	
+	mkdir -p /etc/hihy/bin /etc/hihy/conf /etc/hihy/cert  /etc/hihy/result
+    echoColor purple "Ready to install.\n"
+    version=`wget -qO- -t1 -T2 --no-check-certificate "https://api.github.com/repos/HyNetwork/hysteria/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'`
+    checkSystemForUpdate
+	downloadHysteriaCore
+	setHysteriaConfig
+    cat <<EOF >/etc/systemd/system/hihy.service
+[Unit]
+Description=hysteria:Hello World!
+After=network.target
+
+[Service]
+Type=simple
+PIDFile=/run/hihy.pid
+ExecStart=/etc/hihy/bin/appS --log-level warn -c /etc/hihy/conf/hihyServer.json server
+#Restart=on-failure
+#RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target
+EOF
 	netfilter-persistent save
     sysctl -w net.core.rmem_max=8000000
     sysctl -p
@@ -539,9 +626,6 @@ EOF
 	echo  "0 4 * * * systemctl restart hihy" >> /tmp/crontab.tmp
 	crontab /tmp/crontab.tmp
 	rm /tmp/crontab.tmp
-	url="hysteria://${u_host}:${port}?protocol=${protocol}&auth=${auth_str}&peer=${u_domain}&insecure=${sec}&upmbps=${upload}&downmbps=${download}&alpn=h3#Hys-${u_host}"
-	echo ${url} > /etc/hihy/url.txt
-	#clear
 	printMsg
 	echoColor yellowBlack "安装完毕"
 }

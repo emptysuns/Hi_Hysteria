@@ -36,10 +36,11 @@ windows使用请仔细阅读[cmd客户端(伪)介绍](https://github.com/emptysu
 
 
 ```
-(2022/03/28) 0.3.2:
-1. update hysteria to 1.0.2
-2. 支持调整ipv4/ipv6优先级
-3. 修复没有lsof时安装失败的bug
+(2022/04/01) 0.3.3:[请通过"重新安装/升级"选项更新]
+1. 修复无法打印配置文件的bug
+2. 增加“修改当前配置”选项，无需重复安装
+3. 增加hihy和hysteria更新的提示以及手动更新选项
+4. 优化server端的目录结构，为以后更新做铺垫
 ```
 [历史改进](https://github.com/emptysuns/Hi_Hysteria/blob/main/md/log.md)
 
@@ -70,16 +71,16 @@ bash <(curl -fsSL https://git.io/hysteria.sh)
 ```
 
 ### 配置过程
-首次安装后: `hihy`命令调出菜单
+首次安装后: `hihy`命令调出菜单,如更新了hihy脚本，请执行选项`9`或者`12`,获得最新的配置
 ```
--------------------------------------------
+ -------------------------------------------
 |**********      Hi Hysteria       **********|
 |**********    Author: emptysuns ************|
-|**********     Version: 0.3.2     **********|
+|**********     Version: 0.3.3     **********|
  -------------------------------------------
-
 Tips:hihy 命令再次运行本脚本.
 ............................................. 
+
 
 ############################### 
 
@@ -90,11 +91,14 @@ Tips:hihy 命令再次运行本脚本.
 3) 启动 hysteria 
 4) 暂停 hysteria 
 5) 重新启动 hysteria 
-6) 检测 hysteria运行状态 
+6) 运行状态 
+7) hysteria core更新 
 ..................... 
-7) 查看当前配置 
-8) 重新安装/升级
-9) 切换ipv4/ipv6优先级
+8) 查看当前配置 
+9) 重新配置hysteria 
+10) 切换ipv4/ipv6优先级 
+11) 检测hihy更新 
+12) 完全重置所有配置 
 
 ############################### 
 
@@ -110,44 +114,50 @@ Tips:hihy 命令再次运行本脚本.
 请选择:1
 Ready to install.
 
-The Latest hysteria version:v1.0.1
-Download...
-
-Download completed.
-
 Update.wait...
-Hit:1 <http://archive.ubuntu.com/ubuntu> bionic InRelease
-Hit:2 <http://security.ubuntu.com/ubuntu> bionic-security InRelease
+Hit:1 <http://security.ubuntu.com/ubuntu> bionic-security InRelease
+Hit:3 <http://archive.ubuntu.com/ubuntu> bionic InRelease
 Hit:4 <http://archive.ubuntu.com/ubuntu> bionic-updates InRelease
-Hit:5 <http://archive.ubuntu.com/ubuntu> bionic-backports InRelease
-Hit:3 <https://packagecloud.io/ookla/speedtest-cli/ubuntu> bionic InRelease
+Get:5 <http://archive.ubuntu.com/ubuntu> bionic-backports InRelease [74.6 kB]
+Hit:2 <https://packagecloud.io/ookla/speedtest-cli/ubuntu> bionic InRelease
+Fetched 74.6 kB in 2s (35.6 kB/s)
 Reading package lists... Done
 Building dependency tree
 Reading state information... Done
-58 packages can be upgraded. Run 'apt list --upgradable' to see them.
+64 packages can be upgraded. Run 'apt list --upgradable' to see them.
 
 Done.
-Install wget curl netfilter-persistent
+Install wget curl netfilter-persistent lsof
 *wget
 Reading package lists...
 Building dependency tree...
 Reading state information...
 wget is already the newest version (1.19.4-1ubuntu2.2).
-0 upgraded, 0 newly installed, 0 to remove and 58 not upgraded.
+0 upgraded, 0 newly installed, 0 to remove and 64 not upgraded.
 *curl
 Reading package lists...
 Building dependency tree...
 Reading state information...
 curl is already the newest version (7.58.0-2ubuntu3.16).
-0 upgraded, 0 newly installed, 0 to remove and 58 not upgraded.
+0 upgraded, 0 newly installed, 0 to remove and 64 not upgraded.
 *netfilter-persistent
 Reading package lists...
 Building dependency tree...
 Reading state information...
 netfilter-persistent is already the newest version (1.0.4+nmu2ubuntu1.1).
-0 upgraded, 0 newly installed, 0 to remove and 58 not upgraded.
+0 upgraded, 0 newly installed, 0 to remove and 64 not upgraded.
+*lsof
+Reading package lists...
+Building dependency tree...
+Reading state information...
+lsof is already the newest version (4.89+dfsg-0.1).
+0 upgraded, 0 newly installed, 0 to remove and 64 not upgraded.
 
 Done.
+The Latest hysteria version:v1.0.2
+Download...
+
+Download completed.
 开始配置:
 请输入您的域名(不输入回车,则默认自签wechat.com证书,不推荐):
 
@@ -155,7 +165,7 @@ Done.
 
 请输入你想要开启的端口,此端口是server端口,建议10000-65535.(默认随机)
 
-随机端口:19571
+随机端口:34249
 
 选择协议类型:
 
@@ -164,17 +174,22 @@ Done.
 3、wechat-video(回车默认)
 
 输入序号:
-2
-传输协议:faketcp
+
+传输协议:wechat-video
 
 请输入您到此服务器的平均延迟,关系到转发速度(默认200,单位:ms):
-100
+
+delay:200 ms
 
 期望速度,这是客户端的峰值速度,服务端默认不受限。Tips:脚本会自动*1.25做冗余，您期望过低或者过高会影响转发效率,请如实填写!
 请输入客户端期望的下行速度:(默认50,单位:mbps):
-200
+
+客户端下行速度：50 mbps
+
 请输入客户端期望的上行速度(默认10,单位:mbps):
-40
+
+客户端上行速度：50 mbps
+
 请输入认证口令:
 pekopeko
 
@@ -183,26 +198,21 @@ pekopeko
 执行配置...
 SIGN...
 
-Signature ok
-subject=C = CN, ST = GuangDong, L = ShenZhen, O = PonyMa, OU = Tecent, emailAddress = admin@qq.com, CN = Tencent Root CA
-Getting CA Private Key
-OK.
+Wait,test config...
 
-wait,test config...
-
-Test ok.
+Test success.
 net.core.rmem_max = 8000000
-install.sh: line 206: 20988 Killed                  /etc/hihy/appS -c /etc/hihy/config.json server > /tmp/hihy_debug.info 2>&1
+install.sh: line 600:  4003 Killed                  /etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server > /tmp/hihy_debug.info 2>&1
 Created symlink /etc/systemd/system/multi-user.target.wants/hihy.service → /etc/systemd/system/hihy.service.
-配置文件输出如下且已经在本目录生成(可自行复制粘贴到本地)
+配置文件输出如下且已经在本目录生成(直接下载本目录生成的config.json[推荐]/自行复制粘贴到本地)
 
-Tips:客户端默认只开启http(8888)、socks5(8889)代理!其他方式请参照文档自行修改客户端config.json
+Tips:客户端默认只开启http(8888)、socks5(8889)代理!其他方式请参照hysteria文档自行修改客户端config.json
 ***********************************↓↓↓copy↓↓↓*******************************↓
 {
-"server": "1.2.3.4:19571",
-"protocol": "faketcp",
-"up_mbps": 50,
-"down_mbps": 250,
+"server": "1.2.3.4:34249",
+"protocol": "wechat-video",
+"up_mbps": 12,
+"down_mbps": 62,
 "http": {
 "listen": "127.0.0.1:8888",
 "timeout" : 300,
@@ -216,11 +226,11 @@ Tips:客户端默认只开启http(8888)、socks5(8889)代理!其他方式请参�
 "alpn": "h3",
 "acl": "acl/routes.acl",
 "mmdb": "acl/Country.mmdb",
-"auth_str": "pekopeko",
+"auth_str": "emptysuns",
 "server_name": "wechat.com",
 "insecure": true,
-"recv_window_conn": 13107200,
-"recv_window": 52428800,
+"recv_window_conn": 6291456,
+"recv_window": 25165824,
 "disable_mtu_discovery": false,
 "resolver": "119.29.29.29:53",
 "retry": 3,
@@ -229,7 +239,7 @@ Tips:客户端默认只开启http(8888)、socks5(8889)代理!其他方式请参�
 ↑***********************************↑↑↑copy↑↑↑*******************************↑
 
 Shadowrocket/Sagernet/Passwall一键链接:
-hysteria://1.2.3.4:19571?protocol=faketcp&auth=pekopeko&peer=wechat.com&insecure=1&upmbps=50&downmbps=250&alpn=h3#Hys-1.2.3.4
+hysteria://1.2.3.4:34249?protocol=wechat-video&auth=pekopeko&peer=wechat.com&insecure=1&upmbps=12&downmbps=62&alpn=h3#Hys-1.2.3.4
 
 安装完毕
 
@@ -256,7 +266,9 @@ Jan 10 04:17:23 dedicated systemd[1]: Started hysteria:Hello World!.
 
 ## 四·Todo
 
-**如果您有好的功能建议，请不要忘记开个issue提出来欧～～～欢迎PR来完成Todo或者给我纠正我的渣代码。**
+**如果您有好的功能建议，请不要忘记开个issue提出来欧～～～欢迎PR来完成Todo或者给我纠正我的渣代码**
+
+**我的爱好是写bug （￣▽￣）~*
 
 * [x] 检测端口是否被占用
 * [ ] 利用xray s5 inbound来支持按域名分流(warp)
@@ -268,6 +280,7 @@ Jan 10 04:17:23 dedicated systemd[1]: Started hysteria:Hello World!.
 * [ ] cmd客户端的优化,利用一键链接导入非复制config.json,增加多配置切换管理(奇怪的方向越走越远...)
 * [ ] 多密码支持
 * [ ] 利用base64加密替换原来的auth_str
+* [ ] 兼容v2rayN,放弃cmd的更新
 
 ## 五·结语
 
