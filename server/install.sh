@@ -465,8 +465,8 @@ function changeServerConfig(){
 }
 
 function hihyUpdate(){
-	localV=`/etc/hihy/bin/appS -v | cut -d " " -f 3`
-	remoteV=`wget -qO- -t1 -T2 --no-check-certificate "https://api.github.com/repos/HyNetwork/hysteria/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'`
+	localV=${hihyV}
+	remoteV=`curl -fsSL https://git.io/hysteria.sh | sed  -n 2p | cut -d '"' -f 2`
 	if [ "${localV}" = "${remoteV}" ];then
 		echoColor green "Already the latest version.Ignore."
 	else
@@ -478,8 +478,8 @@ function hihyUpdate(){
 }
 
 function hihyNotify(){
-	localV=`cat /usr/bin/hihy | grep "hihyV" | cut -d "=" -f 2` 
-	remoteV=`curl -fsSL https://git.io/hysteria.sh | grep "hihyV" | cut -d "=" -f 2`
+	localV=${hihyV}
+	remoteV=`curl -fsSL https://git.io/hysteria.sh | sed  -n 2p | cut -d '"' -f 2`
 	if [ "${localV}" != "${remoteV}" ];then
 		echoColor red "[Update] hihy有更新,version:v${remoteV}\ndetail: https://github.com/emptysuns/Hi_Hysteria"
 	fi
