@@ -526,6 +526,7 @@ Tips:`echoColor green "hihy"`命令再次运行本脚本.
 `echoColor skyBlue "9) 重新配置hysteria"`
 `echoColor yellow "10) 切换ipv4/ipv6优先级"`
 `echoColor yellow "11) 检测hihy更新"`
+`echoColor red "12) 完全重置所有配置"`
 
 `echoColor purple "###############################"`
 
@@ -571,6 +572,9 @@ case $input in
     ;;
 	11)
         hihyUpdate
+    ;;
+	12)
+        reinstall
     ;;
 	0)
 		exit

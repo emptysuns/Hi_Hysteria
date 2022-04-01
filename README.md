@@ -268,7 +268,7 @@ Jan 10 04:17:23 dedicated systemd[1]: Started hysteria:Hello World!.
 
 **如果您有好的功能建议，请不要忘记开个issue提出来欧～～～欢迎PR来完成Todo或者给我纠正我的渣代码**
 
-**我的爱好是写bug （￣▽￣）~*
+**我的爱好是写bug （￣▽￣）~**
 
 * [x] 检测端口是否被占用
 * [ ] 利用xray s5 inbound来支持按域名分流(warp)
