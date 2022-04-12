@@ -470,6 +470,10 @@ function updateHysteriaCore(){
 }
 
 function changeServerConfig(){
+	if [ -f "/etc/systemd/system/hihy.service" ]; then
+		echoColor red "请先安装hysteria,再去修改配置..."
+		exit
+	fi
 	systemctl stop hihy
 	iptables-save |  sed -e '/hihysteria/d' | iptables-restore
 	updateHysteriaCore
