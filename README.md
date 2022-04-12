@@ -36,11 +36,10 @@ windows使用请仔细阅读[cmd客户端(伪)介绍](https://github.com/emptysu
 
 
 ```
-(2022/04/01) 0.3.3:[请通过"重新安装/升级"选项更新]
-1. 修复无法打印配置文件的bug
-2. 增加“修改当前配置”选项，无需重复安装
-3. 增加hihy和hysteria更新的提示以及手动更新选项
-4. 优化server端的目录结构，为以后更新做铺垫
+(2022/04/12) 0.3.4:[请通过"重新安装/升级"选项更新]
+1. 修复断流问题
+2. 对齐菜单
+3. 增加命令检测而不是每次修改配置时重复install
 ```
 [历史改进](https://github.com/emptysuns/Hi_Hysteria/blob/main/md/log.md)
 
@@ -76,31 +75,30 @@ bash <(curl -fsSL https://git.io/hysteria.sh)
  -------------------------------------------
 |**********      Hi Hysteria       **********|
 |**********    Author: emptysuns ************|
-|**********     Version: 0.3.3     **********|
+|**********     Version: 0.3.4     **********|
  -------------------------------------------
 Tips:hihy 命令再次运行本脚本.
 ............................................. 
-
-
 ############################### 
 
 ..................... 
-1) 安装 hysteria 
-2) 卸载 hysteria 
+1)  安装 hysteria 
+2)  卸载 hysteria 
 ..................... 
-3) 启动 hysteria 
-4) 暂停 hysteria 
-5) 重新启动 hysteria 
-6) 运行状态 
-7) hysteria core更新 
+3)  启动 hysteria 
+4)  暂停 hysteria 
+5)  重新启动 hysteria 
+6)  运行状态 
 ..................... 
-8) 查看当前配置 
-9) 重新配置hysteria 
+7)  hysteria core更新 
+8)  查看当前配置 
+9)  重新配置hysteria 
 10) 切换ipv4/ipv6优先级 
 11) 检测hihy更新 
 12) 完全重置所有配置 
 
 ############################### 
+[Update] hihy有更新,version:v0.3.4,建议更新并查看日志: https://github.com/emptysuns/Hi_Hysteria 
 
 
 0)退出 

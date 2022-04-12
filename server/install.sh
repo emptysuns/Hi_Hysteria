@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="0.3.3"
+hihyV="0.3.4"
 function echoColor() {
 	case $1 in
 		# 红色
@@ -82,13 +82,29 @@ function checkSystemForUpdate() {
     ${upgrade}
     echoColor purple "\nDone.\nInstall wget curl netfilter-persistent lsof"
 	echoColor green "*wget"
-	${installType} "wget"
+	if ! [ -x "$(command -v wget)" ]; then
+		${installType} "wget"
+	else
+		echoColor purple 'Installed.Ignore.' >&2
+	fi
 	echoColor green "*curl"
-	${installType} "curl"
+	if ! [ -x "$(command -v curl)" ]; then
+		${installType} "curl"
+	else
+		echoColor purple 'Installed.Ignore.' >&2
+	fi
 	echoColor green "*netfilter-persistent"
-	${installType} "netfilter-persistent"
+	if ! [ -x "$(command -v netfilter-persistent)" ]; then
+		${installType} "netfilter-persistent"
+	else
+		echoColor purple 'Installed.Ignore.' >&2
+	fi
 	echoColor green "*lsof"
-	${installType} "lsof"
+	if ! [ -x "$(command -v lsof)" ]; then
+		${installType} "lsof"
+	else
+		echoColor purple 'Installed.Ignore.' >&2
+	fi
     echoColor purple "\nDone."
     
 }
@@ -274,7 +290,7 @@ cat <<EOF > /etc/hihy/conf/hihyServer.json
 "recv_window_conn": ${r_conn},
 "recv_window_client": ${r_client},
 "max_conn_client": 4096,
-"disable_mtu_discovery": false,
+"disable_mtu_discovery": true,
 "resolve_preference": "46",
 "resolver": "8.8.8.8:53"
 }
@@ -304,7 +320,7 @@ cat <<EOF > /etc/hihy/result/hihyClient.json
 "insecure": true,
 "recv_window_conn": ${r_conn},
 "recv_window": ${r_client},
-"disable_mtu_discovery": false,
+"disable_mtu_discovery": true,
 "resolver": "119.29.29.29:53",
 "retry": 3,
 "retry_interval": 3
@@ -338,7 +354,7 @@ EOF
 "recv_window_conn": ${r_conn},
 "recv_window_client": ${r_client},
 "max_conn_client": 4096,
-"disable_mtu_discovery": false,
+"disable_mtu_discovery": true,
 "resolve_preference": "46",
 "resolver": "8.8.8.8:53"
 }
@@ -368,7 +384,7 @@ EOF
 "insecure": false,
 "recv_window_conn": ${r_conn},
 "recv_window": ${r_client},
-"disable_mtu_discovery": false,
+"disable_mtu_discovery": true,
 "resolver": "119.29.29.29:53",
 "retry": 3,
 "retry_interval": 3
@@ -481,7 +497,7 @@ function hihyNotify(){
 	localV=${hihyV}
 	remoteV=`curl -fsSL https://git.io/hysteria.sh | sed  -n 2p | cut -d '"' -f 2`
 	if [ "${localV}" != "${remoteV}" ];then
-		echoColor red "[Update] hihy有更新,version:v${remoteV}\ndetail: https://github.com/emptysuns/Hi_Hysteria"
+		echoColor yellowBlack "[Update] hihy有更新,version:v${remoteV},建议更新并查看日志: https://github.com/emptysuns/Hi_Hysteria"
 	fi
 
 }
@@ -508,30 +524,29 @@ cat << EOF
  -------------------------------------------
 Tips:`echoColor green "hihy"`命令再次运行本脚本.
 `echoColor skyBlue "............................................."`
-`hihyNotify`
-`hyCoreNotify`
 `echoColor purple "###############################"`
 
 `echoColor skyBlue "....................."`
-`echoColor yellow "1) 安装 hysteria"`
-`echoColor red "2) 卸载 hysteria"`
+`echoColor yellow "1)  安装 hysteria"`
+`echoColor magenta "2)  卸载 hysteria"`
 `echoColor skyBlue "....................."`
-`echoColor yellow "3) 启动 hysteria"`
-`echoColor red "4) 暂停 hysteria"`
-`echoColor yellow "5) 重新启动 hysteria"`
-`echoColor yellow "6) 运行状态"`
-`echoColor yellow "7) hysteria core更新"`
+`echoColor yellow "3)  启动 hysteria"`
+`echoColor magenta "4)  暂停 hysteria"`
+`echoColor yellow "5)  重新启动 hysteria"`
+`echoColor yellow "6)  运行状态"`
 `echoColor skyBlue "....................."`
-`echoColor yellow "8) 查看当前配置"`
-`echoColor skyBlue "9) 重新配置hysteria"`
+`echoColor yellow "7)  更新hysteria core"`
+`echoColor yellow "8)  查看当前配置"`
+`echoColor skyBlue "9)  重新配置hysteria"`
 `echoColor yellow "10) 切换ipv4/ipv6优先级"`
-`echoColor yellow "11) 检测hihy更新"`
+`echoColor yellow "11) 更新hihy"`
 `echoColor red "12) 完全重置所有配置"`
 
 `echoColor purple "###############################"`
+`hihyNotify`
+`hyCoreNotify`
 
-
-`echoColor red "0)退出"`
+`echoColor magenta "0)退出"`
 `echoColor skyBlue "............................................."`
 EOF
 read -p "请选择:" input
