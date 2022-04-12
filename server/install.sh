@@ -470,7 +470,7 @@ function updateHysteriaCore(){
 }
 
 function changeServerConfig(){
-	if [ -f "/etc/systemd/system/hihy.service" ]; then
+	if [ ! -f "/etc/systemd/system/hihy.service" ]; then
 		echoColor red "请先安装hysteria,再去修改配置..."
 		exit
 	fi
