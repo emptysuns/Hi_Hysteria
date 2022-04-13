@@ -142,7 +142,7 @@ function changeIp64(){
   		echoColor red "未正常安装hihy!"
         exit
 	fi 
-	now=`cat /etc/hihy/config.json | grep "resolve_preference"`
+	now=`cat /etc/hihy/conf/hihyServer.json | grep "resolve_preference"`
     case ${now} in 
 		*"64"*)
 			echoColor purple "当前ipv6优先"
