@@ -454,6 +454,7 @@ function updateHysteriaCore(){
 		if [ "${localV}" = "${remoteV}" ];then
 			echoColor green "Already the latest version.Ignore."
 		else
+			status=`systemctl is-active hihy`
 			if [ "${status}" = "active" ];then #如果是正常运行情况下将先停止守护进程再自动更新后重启，否则只负责更新
 				systemctl stop hihy
 				downloadHysteriaCore
@@ -461,7 +462,7 @@ function updateHysteriaCore(){
 			else
 				downloadHysteriaCore
 			fi
-			echoColor green "Done."
+			echoColor green "Hysteria Core update done."
 		fi
 	else
 		echoColor red "hysteria core not found."
