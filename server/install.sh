@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="0.3.4"
+hihyV="0.3.5"
 function echoColor() {
 	case $1 in
 		# 红色
@@ -73,9 +73,9 @@ function checkSystemForUpdate() {
 	fi
 
 	if [[ -z ${release} ]]; then
-		echoContent red "\n本脚本不支持此系统,请将下方日志反馈给开发者\n"
-		echoContent yellow "$(cat /etc/issue)"
-		echoContent yellow "$(cat /proc/version)"
+		echoColor red "\n本脚本不支持此系统,请将下方日志反馈给开发者\n"
+		echoColor yellow "$(cat /etc/issue)"
+		echoColor yellow "$(cat /proc/version)"
 		exit 0
 	fi
     echoColor purple "\nUpdate.wait..."
@@ -189,13 +189,13 @@ function setHysteriaConfig(){
 		echoColor green "请输入你想要开启的端口,此端口是server端口,建议10000-65535.(默认随机)"
 		read  port
 		if [ -z "${port}" ];then
-		port=$(($(od -An -N2 -i /dev/random) % (65534 - 10001) + 10001))
-		echo -e "随机端口:"`echoColor red ${port}`"\n"
+			port=$(($(od -An -N2 -i /dev/random) % (65534 - 10001) + 10001))
+			echo -e "随机端口:"`echoColor red ${port}`"\n"
 		fi
 		pIDa=`lsof -i :${port}|grep -v "PID" | awk '{print $2}'`
 		if [ "$pIDa" != "" ];
 		then
-			echoColor red "端口被占用!请重新输入!"
+			echoColor red "端口${port}被占用,PID:${pIDa}!请重新输入或者运行kill -9 ${pIDa}后重新安装!"
 		else
 			break
 		fi
@@ -203,14 +203,14 @@ function setHysteriaConfig(){
     echo -e "\033[32m选择协议类型:\n\n\033[0m\033[33m\033[01m1、udp(QUIC)\n2、faketcp\n3、wechat-video(回车默认)\033[0m\033[32m\n\n输入序号:\033[0m"
     read protocol
     if [ -z "${protocol}" ] || [ $protocol == "3" ];then
-    protocol="wechat-video"
-    iptables -I INPUT -p udp --dport ${port} -m comment --comment "allow udp(hihysteria)" -j ACCEPT
+		protocol="wechat-video"
+		allowPort udp ${port}
     elif [ $protocol == "2" ];then
-    protocol="faketcp"
-    iptables -I INPUT -p tcp --dport ${port}  -m comment --comment "allow tcp(hihysteria)" -j ACCEPT
+		protocol="faketcp"
+		allowPort tcp ${port}
     else 
-    protocol="udp"
-    iptables -I INPUT -p udp --dport ${port} -m comment --comment "allow udp(hihysteria)" -j ACCEPT
+    	protocol="udp"
+		allowPort udp ${port}
     fi
     echo -e "传输协议:"`echoColor red ${protocol}`"\n"
 
@@ -331,8 +331,8 @@ EOF
 		u_host=${domain}
 		u_domain=${domain}
 		sec="0"
-        iptables -I INPUT -p tcp --dport 80  -m comment --comment "allow tcp(hihysteria)" -j ACCEPT
-        iptables -I INPUT -p tcp --dport 443  -m comment --comment "allow tcp(hihysteria)" -j ACCEPT
+		allowPort tcp 80
+		allowPort tcp 443
 		cat <<EOF > /etc/hihy/conf/hihyServer.json
 {
 "listen": ":${port}",
@@ -437,6 +437,8 @@ function downloadHysteriaCore(){
         wget -q -O /etc/hihy/bin/appS --no-check-certificate https://github.com/HyNetwork/hysteria/releases/download/${version}/hysteria-linux-arm64
     elif [ $get_arch = "mips64" ];then
         wget -q -O /etc/hihy/bin/appS --no-check-certificate https://github.com/HyNetwork/hysteria/releases/download/${version}/hysteria-linux-mipsle
+	elif [ $get_arch = "s390x" ];then
+		wget -q -O /etc/hihy/bin/appS --no-check-certificate https://github.com/HyNetwork/hysteria/releases/download/${version}/hysteria-tun-linux-s390x
     else
         echoColor yellowBlack "Error[OS Message]:${get_arch}\nPlease open a issue to https://github.com/emptysuns/Hi_Hysteria !"
         exit
@@ -513,6 +515,110 @@ function hyCoreNotify(){
 		remoteV=`wget -qO- -t1 -T2 --no-check-certificate "https://api.github.com/repos/HyNetwork/hysteria/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'`
 		if [ "${localV}" != "${remoteV}" ];then
 			echoColor purple "[Update] hysteria有更新,version:${remoteV}. detail: https://github.com/HyNetwork/hysteria/blob/master/CHANGELOG.md"
+		fi
+	fi
+}
+
+
+function checkStatus(){
+	status=`systemctl is-active hihy`
+    if [ "${status}" = "active" ];then
+		echoColor green "hysteria正常运行"
+	else
+		echoColor red "dead!hysteria未正常运行!"
+	fi
+}
+
+function install()
+{	
+	mkdir -p /etc/hihy/bin /etc/hihy/conf /etc/hihy/cert  /etc/hihy/result
+    echoColor purple "Ready to install.\n"
+    version=`wget -qO- -t1 -T2 --no-check-certificate "https://api.github.com/repos/HyNetwork/hysteria/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'`
+    checkSystemForUpdate
+	downloadHysteriaCore
+	setHysteriaConfig
+    cat <<EOF >/etc/systemd/system/hihy.service
+[Unit]
+Description=hysteria:Hello World!
+After=network.target
+
+[Service]
+Type=simple
+PIDFile=/run/hihy.pid
+ExecStart=/etc/hihy/bin/appS --log-level warn -c /etc/hihy/conf/hihyServer.json server
+#Restart=on-failure
+#RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target
+EOF
+	netfilter-persistent save
+    sysctl -w net.core.rmem_max=8000000
+    sysctl -p
+    chmod 644 /etc/systemd/system/hihy.service
+    systemctl daemon-reload
+    systemctl enable hihy
+    systemctl start hihy
+	crontab -l > /tmp/crontab.tmp
+	echo  "0 4 * * * systemctl restart hihy" >> /tmp/crontab.tmp
+	crontab /tmp/crontab.tmp
+	rm /tmp/crontab.tmp
+	printMsg
+	echoColor yellowBlack "安装完毕"
+}
+
+
+# 输出ufw端口开放状态
+checkUFWAllowPort() {
+	if ufw status | grep -q "$1"; then
+		echoColor green " ---> $1端口开放成功"
+	else
+		echoColor red " ---> $1端口开放失败"
+		exit 0
+	fi
+}
+
+# 输出firewall-cmd端口开放状态
+checkFirewalldAllowPort() {
+	if firewall-cmd --list-ports --permanent | grep -q "$1"; then
+		echoColor green " ---> $1端口开放成功"
+	else
+		echoColor red " ---> $1端口开放失败"
+		exit 0
+	fi
+}
+
+allowPort() {
+	# 如果防火墙启动状态则添加相应的开放端口
+	# $1 tcp/udp
+	# $2 port
+	if systemctl status netfilter-persistent 2>/dev/null | grep -q "active (exited)"; then
+		local updateFirewalldStatus=
+		if ! iptables -L | grep -q "allow ${1}/${2}(hihysteria)"; then
+			updateFirewalldStatus=true
+			iptables -I INPUT -p ${1} --dport ${2} -m comment --comment "allow ${1}/${2}(hihysteria)" -j ACCEPT
+			echoColor green "IPTABLES OPEN: ${1}/${2}"
+		fi
+
+		if echo "${updateFirewalldStatus}" | grep -q "true"; then
+			netfilter-persistent save
+		fi
+	elif systemctl status ufw 2>/dev/null | grep -q "active (exited)"; then
+		if ! ufw status | grep -q ${2}; then
+			sudo ufw allow ${2}
+			checkUFWAllowPort ${2}
+			echoColor green "UFW OPEN: ${1}/${2}"
+		fi
+	elif systemctl status firewalld 2>/dev/null | grep -q "active (running)"; then
+		local updateFirewalldStatus=
+		if ! firewall-cmd --list-ports --permanent | grep -qw "${2}/${1}"; then
+			updateFirewalldStatus=true
+			firewall-cmd --zone=public --add-port=${2}/${1} --permanent
+			checkFirewalldAllowPort ${2}
+		fi
+		if echo "${updateFirewalldStatus}" | grep -q "true"; then
+			firewall-cmd --reload
+			echoColor green "FIREWALLD OPEN: ${1}/${2}"
 		fi
 	fi
 }
@@ -604,54 +710,6 @@ case $input in
 		exit 1
 	;;
     esac
-}
-
-
-function checkStatus(){
-	status=`systemctl is-active hihy`
-    if [ "${status}" = "active" ];then
-		echoColor green "hysteria正常运行"
-	else
-		echoColor red "dead!hysteria未正常运行!"
-	fi
-}
-
-function install()
-{	
-	mkdir -p /etc/hihy/bin /etc/hihy/conf /etc/hihy/cert  /etc/hihy/result
-    echoColor purple "Ready to install.\n"
-    version=`wget -qO- -t1 -T2 --no-check-certificate "https://api.github.com/repos/HyNetwork/hysteria/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'`
-    checkSystemForUpdate
-	downloadHysteriaCore
-	setHysteriaConfig
-    cat <<EOF >/etc/systemd/system/hihy.service
-[Unit]
-Description=hysteria:Hello World!
-After=network.target
-
-[Service]
-Type=simple
-PIDFile=/run/hihy.pid
-ExecStart=/etc/hihy/bin/appS --log-level warn -c /etc/hihy/conf/hihyServer.json server
-#Restart=on-failure
-#RestartSec=10s
-
-[Install]
-WantedBy=multi-user.target
-EOF
-	netfilter-persistent save
-    sysctl -w net.core.rmem_max=8000000
-    sysctl -p
-    chmod 644 /etc/systemd/system/hihy.service
-    systemctl daemon-reload
-    systemctl enable hihy
-    systemctl start hihy
-	crontab -l > /tmp/crontab.tmp
-	echo  "0 4 * * * systemctl restart hihy" >> /tmp/crontab.tmp
-	crontab /tmp/crontab.tmp
-	rm /tmp/crontab.tmp
-	printMsg
-	echoColor yellowBlack "安装完毕"
 }
 
 menu

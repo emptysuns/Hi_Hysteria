@@ -30,16 +30,16 @@ Hysteria这是一款由go编写的非常优秀的“轻量”代理程序，它�
 
 因为脚本现处于0.x的测试版本，可能会有一些bug，如果遇到请发issue，欢迎star，您的⭐是我维护的动力。
 
-适配ubuntu/debian, centos操作系统,misple/arm/x86架构。
+适配ubuntu/debian, centos/rhel操作系统,misple/arm/x86/s390x架构。
 
 windows使用请仔细阅读[cmd客户端(伪)介绍](https://github.com/emptysuns/Hi_Hysteria/blob/main/md/cmd.md)其他平台看[这里](https://github.com/emptysuns/Hi_Hysteria/blob/main/md/others.md)。
 
 
 ```
-(2022/04/12) 0.3.4:[请通过"重新安装/升级"选项更新]
-1. 修复高丢包环境下的断流问题
-2. 对齐菜单
-3. 增加命令检测而不是每次修改配置时重复install
+(2022/04/18) 0.3.5:
+1. 完善开放防火墙端口的流程,为以后进一步细分端口打基础
+2. 加入s390x架构适配
+3. 加入v2rayN的说明[TEST]
 ```
 [历史改进](https://github.com/emptysuns/Hi_Hysteria/blob/main/md/log.md)
 
@@ -61,6 +61,8 @@ windows使用请仔细阅读[cmd客户端(伪)介绍](https://github.com/emptysu
 
 #### 7. [如何设置我的延迟、上行/下行速度？](https://github.com/emptysuns/Hi_Hysteria/blob/main/md/speed.md)
 
+#### 8. [图形UI,v2rayN](https://github.com/emptysuns/Hi_Hysteria/blob/main/md/v2n.md)
+
 
 ### 拉取安装
 
@@ -75,7 +77,7 @@ bash <(curl -fsSL https://git.io/hysteria.sh)
  -------------------------------------------
 |**********      Hi Hysteria       **********|
 |**********    Author: emptysuns ************|
-|**********     Version: 0.3.4     **********|
+|**********     Version: 0.3.5     **********|
  -------------------------------------------
 Tips:hihy 命令再次运行本脚本.
 ............................................. 
@@ -98,7 +100,6 @@ Tips:hihy 命令再次运行本脚本.
 12) 完全重置所有配置 
 
 ############################### 
-[Update] hihy有更新,version:v0.3.4,建议更新并查看日志: https://github.com/emptysuns/Hi_Hysteria 
 
 
 0)退出 
@@ -113,46 +114,30 @@ Tips:hihy 命令再次运行本脚本.
 Ready to install.
 
 Update.wait...
-Hit:1 <http://security.ubuntu.com/ubuntu> bionic-security InRelease
-Hit:3 <http://archive.ubuntu.com/ubuntu> bionic InRelease
-Hit:4 <http://archive.ubuntu.com/ubuntu> bionic-updates InRelease
+Get:1 <http://security.ubuntu.com/ubuntu> bionic-security InRelease [88.7 kB]
+Hit:2 <http://archive.ubuntu.com/ubuntu> bionic InRelease
+Get:4 <http://archive.ubuntu.com/ubuntu> bionic-updates InRelease [88.7 kB]
+Hit:3 <https://packagecloud.io/ookla/speedtest-cli/ubuntu> bionic InRelease
 Get:5 <http://archive.ubuntu.com/ubuntu> bionic-backports InRelease [74.6 kB]
-Hit:2 <https://packagecloud.io/ookla/speedtest-cli/ubuntu> bionic InRelease
-Fetched 74.6 kB in 2s (35.6 kB/s)
+Fetched 252 kB in 2s (118 kB/s)
 Reading package lists... Done
 Building dependency tree
 Reading state information... Done
-64 packages can be upgraded. Run 'apt list --upgradable' to see them.
+72 packages can be upgraded. Run 'apt list --upgradable' to see them.
 
 Done.
 Install wget curl netfilter-persistent lsof
 *wget
-Reading package lists...
-Building dependency tree...
-Reading state information...
-wget is already the newest version (1.19.4-1ubuntu2.2).
-0 upgraded, 0 newly installed, 0 to remove and 64 not upgraded.
+Installed.Ignore.
 *curl
-Reading package lists...
-Building dependency tree...
-Reading state information...
-curl is already the newest version (7.58.0-2ubuntu3.16).
-0 upgraded, 0 newly installed, 0 to remove and 64 not upgraded.
+Installed.Ignore.
 *netfilter-persistent
-Reading package lists...
-Building dependency tree...
-Reading state information...
-netfilter-persistent is already the newest version (1.0.4+nmu2ubuntu1.1).
-0 upgraded, 0 newly installed, 0 to remove and 64 not upgraded.
+Installed.Ignore.
 *lsof
-Reading package lists...
-Building dependency tree...
-Reading state information...
-lsof is already the newest version (4.89+dfsg-0.1).
-0 upgraded, 0 newly installed, 0 to remove and 64 not upgraded.
+Installed.Ignore.
 
 Done.
-The Latest hysteria version:v1.0.2
+The Latest hysteria version:v1.0.3
 Download...
 
 Download completed.
@@ -163,7 +148,7 @@ Download completed.
 
 请输入你想要开启的端口,此端口是server端口,建议10000-65535.(默认随机)
 
-随机端口:34249
+随机端口:10294
 
 选择协议类型:
 
@@ -172,22 +157,18 @@ Download completed.
 3、wechat-video(回车默认)
 
 输入序号:
-
-传输协议:wechat-video
+2
+IPTABLES OPEN: tcp/10294
+传输协议:faketcp
 
 请输入您到此服务器的平均延迟,关系到转发速度(默认200,单位:ms):
-
-delay:200 ms
+60
 
 期望速度,这是客户端的峰值速度,服务端默认不受限。Tips:脚本会自动*1.25做冗余，您期望过低或者过高会影响转发效率,请如实填写!
 请输入客户端期望的下行速度:(默认50,单位:mbps):
-
-客户端下行速度：50 mbps
-
+200
 请输入客户端期望的上行速度(默认10,单位:mbps):
-
-客户端上行速度：50 mbps
-
+40
 请输入认证口令:
 pekopeko
 
@@ -195,22 +176,29 @@ pekopeko
 
 执行配置...
 SIGN...
+.
+.
+.
+Signature ok
+subject=C = CN, ST = GuangDong, L = ShenZhen, O = PonyMa, OU = Tecent, emailAddress = admin@qq.com, CN = Tencent Root CA
+Getting CA Private Key
+SUCCESS.
 
 Wait,test config...
 
 Test success.
 net.core.rmem_max = 8000000
-install.sh: line 600:  4003 Killed                  /etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server > /tmp/hihy_debug.info 2>&1
+install.sh: line 533: 27680 Killed                  /etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server > /tmp/hihy_debug.info 2>&1
 Created symlink /etc/systemd/system/multi-user.target.wants/hihy.service → /etc/systemd/system/hihy.service.
 配置文件输出如下且已经在本目录生成(直接下载本目录生成的config.json[推荐]/自行复制粘贴到本地)
 
 Tips:客户端默认只开启http(8888)、socks5(8889)代理!其他方式请参照hysteria文档自行修改客户端config.json
 ***********************************↓↓↓copy↓↓↓*******************************↓
 {
-"server": "1.2.3.4:34249",
-"protocol": "wechat-video",
-"up_mbps": 12,
-"down_mbps": 62,
+"server": "1.2.3.4:10294",
+"protocol": "faketcp",
+"up_mbps": 50,
+"down_mbps": 250,
 "http": {
 "listen": "127.0.0.1:8888",
 "timeout" : 300,
@@ -224,12 +212,12 @@ Tips:客户端默认只开启http(8888)、socks5(8889)代理!其他方式请参�
 "alpn": "h3",
 "acl": "acl/routes.acl",
 "mmdb": "acl/Country.mmdb",
-"auth_str": "emptysuns",
+"auth_str": "pekopeko",
 "server_name": "wechat.com",
 "insecure": true,
-"recv_window_conn": 6291456,
-"recv_window": 25165824,
-"disable_mtu_discovery": false,
+"recv_window_conn": 7864320,
+"recv_window": 31457280,
+"disable_mtu_discovery": true,
 "resolver": "119.29.29.29:53",
 "retry": 3,
 "retry_interval": 3
@@ -237,21 +225,19 @@ Tips:客户端默认只开启http(8888)、socks5(8889)代理!其他方式请参�
 ↑***********************************↑↑↑copy↑↑↑*******************************↑
 
 Shadowrocket/Sagernet/Passwall一键链接:
-hysteria://1.2.3.4:34249?protocol=wechat-video&auth=pekopeko&peer=wechat.com&insecure=1&upmbps=12&downmbps=62&alpn=h3#Hys-1.2.3.4
+hysteria://1.2.3.4:10294?protocol=faketcp&auth=pekopeko&peer=wechat.com&insecure=1&upmbps=50&downmbps=250&alpn=h3#Hys-1.2.3.4
 
 安装完毕
-
-root@dedicated:~# systemctl status hihy
-
-* hihy.service - hysteria:Hello World!
-   Loaded: loaded (/etc/systemd/system/hysteria.service; enabled; vendor preset: enabled)
-   Active: active (running) since Mon 2022-01-10 04:17:23 EST; 15s ago
- Main PID: 29691 (hihy)
-    Tasks: 6 (limit: 1120)
+root@ubuntu:~/hysteria# systemctl status hihy
+● hihy.service - hysteria:Hello World!
+   Loaded: loaded (/etc/systemd/system/hihy.service; enabled; vendor preset: enabled)
+   Active: active (running) since Mon 2022-04-18 01:45:35 EDT; 25s ago
+ Main PID: 27793 (appS)
+    Tasks: 6 (limit: 1077)
    CGroup: /system.slice/hihy.service
-           `-29691 /etc/hihy/appS --log-level warn -c /etc/hihy/config.json server
+           └─27793 /etc/hihy/bin/appS --log-level warn -c /etc/hihy/conf/hihyServer.json server
 
-Jan 10 04:17:23 dedicated systemd[1]: Started hysteria:Hello World!.
+Apr 18 01:45:35 ubuntu systemd[1]: Started hysteria:Hello World!.
 
   </blockcode></pre>
 </details>
@@ -275,7 +261,6 @@ Jan 10 04:17:23 dedicated systemd[1]: Started hysteria:Hello World!.
 * [x] hihy替换掉hysteria
 * [ ] 规范化脚本代码
 * [ ] 利用docker安装?(不知道是否有必要)
-* [ ] cmd客户端的优化,利用一键链接导入非复制config.json,增加多配置切换管理(奇怪的方向越走越远...)
 * [ ] 多密码支持
 * [ ] 利用base64加密替换原来的auth_str
 * [ ] 兼容v2rayN,放弃cmd的更新
