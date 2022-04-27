@@ -13,7 +13,7 @@ Hysteria这是一款由go编写的非常优秀的“轻量”代理程序，它�
 
 2、50mbps北方电信,北京出口 直连落地vir San Jose机房163线路，22-23点测试YT 1080p60直播流:
 
-![image](https://cloud.iacg.cf/0:/normal/img/hihysteria/speed.png)
+![image](https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/imgs/speed.png)
 
 ```
 190 dropped of 131329
@@ -36,10 +36,12 @@ windows使用请仔细阅读[cmd客户端(伪)介绍](https://github.com/emptysu
 
 
 ```
-(2022/04/18) 0.3.5:
-1. 完善开放防火墙端口的流程,为以后进一步细分端口打基础
-2. 加入s390x架构适配
-3. 加入v2rayN的说明[TEST]
+(2022/04/27) 0.3.6[*推荐在4.29日之前更新,git.io短链接服务无了]:
+1. 识别系统默认防火墙管理端口，不再安装netfilter-persistent
+2. 提供使用本地路径下的证书加密方式，可自行上传到服务器可信的证书加密
+3. 开放自定义自签证书域名
+4. 修改buffer size计算
+5. 由于git.io将要在2022/04/29之后完全停止服务，使用bit.ly替代它,0.3.6以后的用户运行一键安装命令使用选项11可自动替换本地hihy脚本
 ```
 [历史改进](https://github.com/emptysuns/Hi_Hysteria/blob/main/md/log.md)
 
@@ -65,10 +67,9 @@ windows使用请仔细阅读[cmd客户端(伪)介绍](https://github.com/emptysu
 
 
 ### 拉取安装
-
 ```
 su - root #Change to root
-bash <(curl -fsSL https://git.io/hysteria.sh)
+bash <(curl -fsSL https://bit.ly/hihysteria)
 ```
 
 ### 配置过程
@@ -77,7 +78,7 @@ bash <(curl -fsSL https://git.io/hysteria.sh)
  -------------------------------------------
 |**********      Hi Hysteria       **********|
 |**********    Author: emptysuns ************|
-|**********     Version: 0.3.5     **********|
+|**********     Version: 0.3.6     **********|
  -------------------------------------------
 Tips:hihy 命令再次运行本脚本.
 ............................................. 
@@ -110,45 +111,26 @@ Tips:hihy 命令再次运行本脚本.
 <details>
   <summary>演示较长，点我查看</summary>
     <pre><blockcode> 
-请选择:1
-Ready to install.
+请选择证书申请方式:
 
-Update.wait...
-Get:1 <http://security.ubuntu.com/ubuntu> bionic-security InRelease [88.7 kB]
-Hit:2 <http://archive.ubuntu.com/ubuntu> bionic InRelease
-Get:4 <http://archive.ubuntu.com/ubuntu> bionic-updates InRelease [88.7 kB]
-Hit:3 <https://packagecloud.io/ookla/speedtest-cli/ubuntu> bionic InRelease
-Get:5 <http://archive.ubuntu.com/ubuntu> bionic-backports InRelease [74.6 kB]
-Fetched 252 kB in 2s (118 kB/s)
-Reading package lists... Done
-Building dependency tree
-Reading state information... Done
-72 packages can be upgraded. Run 'apt list --upgradable' to see them.
+1、使用ACME申请(推荐,需打开tcp 80/443)
+2、使用本地证书文件
+3、自签证书
 
-Done.
-Install wget curl netfilter-persistent lsof
-*wget
-Installed.Ignore.
-*curl
-Installed.Ignore.
-*netfilter-persistent
-Installed.Ignore.
-*lsof
-Installed.Ignore.
+输入序号:
+2
+请输入证书cert文件路径(需fullchain):
+/etc/cert/a.com.crt
+请输入证书key文件路径:
+/etc/cert/a.com.key
+请输入所选证书域名:
+a.com
 
-Done.
-The Latest hysteria version:v1.0.3
-Download...
-
-Download completed.
-开始配置:
-请输入您的域名(不输入回车,则默认自签wechat.com证书,不推荐):
-
-您选择自签wechat证书.公网ip:1.2.3.4
+您已选择使用本地a.com证书加密.
 
 请输入你想要开启的端口,此端口是server端口,建议10000-65535.(默认随机)
 
-随机端口:10294
+随机端口:30506
 
 选择协议类型:
 
@@ -157,48 +139,46 @@ Download completed.
 3、wechat-video(回车默认)
 
 输入序号:
-2
-IPTABLES OPEN: tcp/10294
-传输协议:faketcp
+
+传输协议:wechat-video
 
 请输入您到此服务器的平均延迟,关系到转发速度(默认200,单位:ms):
-60
+
+delay:200 ms
 
 期望速度,这是客户端的峰值速度,服务端默认不受限。Tips:脚本会自动*1.25做冗余，您期望过低或者过高会影响转发效率,请如实填写!
 请输入客户端期望的下行速度:(默认50,单位:mbps):
-200
+
+客户端下行速度：50 mbps
+
 请输入客户端期望的上行速度(默认10,单位:mbps):
-40
+
+客户端上行速度：50 mbps
+
+请输入认证口令:
+
+此选项不能省略,请重新输入!
 请输入认证口令:
 pekopeko
 
 配置录入完成!
 
 执行配置...
-SIGN...
-.
-.
-.
-Signature ok
-subject=C = CN, ST = GuangDong, L = ShenZhen, O = PonyMa, OU = Tecent, emailAddress = admin@qq.com, CN = Tencent Root CA
-Getting CA Private Key
-SUCCESS.
+IPTABLES OPEN: udp/30506
 
 Wait,test config...
 
 Test success.
-net.core.rmem_max = 8000000
-install.sh: line 533: 27680 Killed                  /etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server > /tmp/hihy_debug.info 2>&1
-Created symlink /etc/systemd/system/multi-user.target.wants/hihy.service → /etc/systemd/system/hihy.service.
+install.sh: line 569: 20040 Killed                  /etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server > /tmp/hihy_debug.info 2>&1
 配置文件输出如下且已经在本目录生成(直接下载本目录生成的config.json[推荐]/自行复制粘贴到本地)
 
 Tips:客户端默认只开启http(8888)、socks5(8889)代理!其他方式请参照hysteria文档自行修改客户端config.json
 ***********************************↓↓↓copy↓↓↓*******************************↓
 {
-"server": "1.2.3.4:10294",
-"protocol": "faketcp",
-"up_mbps": 50,
-"down_mbps": 250,
+"server": "a.com:30506",
+"protocol": "wechat-video",
+"up_mbps": 12,
+"down_mbps": 62,
 "http": {
 "listen": "127.0.0.1:8888",
 "timeout" : 300,
@@ -213,10 +193,10 @@ Tips:客户端默认只开启http(8888)、socks5(8889)代理!其他方式请参�
 "acl": "acl/routes.acl",
 "mmdb": "acl/Country.mmdb",
 "auth_str": "pekopeko",
-"server_name": "wechat.com",
-"insecure": true,
-"recv_window_conn": 7864320,
-"recv_window": 31457280,
+"server_name": "a.com",
+"insecure": false,
+"recv_window_conn": 3145728,
+"recv_window": 12582912,
 "disable_mtu_discovery": true,
 "resolver": "119.29.29.29:53",
 "retry": 3,
@@ -225,7 +205,8 @@ Tips:客户端默认只开启http(8888)、socks5(8889)代理!其他方式请参�
 ↑***********************************↑↑↑copy↑↑↑*******************************↑
 
 Shadowrocket/Sagernet/Passwall一键链接:
-hysteria://1.2.3.4:10294?protocol=faketcp&auth=pekopeko&peer=wechat.com&insecure=1&upmbps=50&downmbps=250&alpn=h3#Hys-1.2.3.4
+hysteria://a.com:30506?protocol=wechat-video&auth=pekopeko&peer=a.com&insecure=0&upmbps=12&downmbps=62&alpn=h3#Hys-a.com
+
 
 安装完毕
 root@ubuntu:~/hysteria# systemctl status hihy

@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="0.3.5"
+hihyV="0.3.6"
 function echoColor() {
 	case $1 in
 		# 红色
@@ -80,7 +80,7 @@ function checkSystemForUpdate() {
 	fi
     echoColor purple "\nUpdate.wait..."
     ${upgrade}
-    echoColor purple "\nDone.\nInstall wget curl netfilter-persistent lsof"
+    echoColor purple "\nDone.\nInstall wget curl lsof"
 	echoColor green "*wget"
 	if ! [ -x "$(command -v wget)" ]; then
 		${installType} "wget"
@@ -90,12 +90,6 @@ function checkSystemForUpdate() {
 	echoColor green "*curl"
 	if ! [ -x "$(command -v curl)" ]; then
 		${installType} "curl"
-	else
-		echoColor purple 'Installed.Ignore.' >&2
-	fi
-	echoColor green "*netfilter-persistent"
-	if ! [ -x "$(command -v netfilter-persistent)" ]; then
-		${installType} "netfilter-persistent"
 	else
 		echoColor purple 'Installed.Ignore.' >&2
 	fi
@@ -110,11 +104,11 @@ function checkSystemForUpdate() {
 }
 
 function uninstall(){
-    bash <(curl -fsSL https://git.io/rmhysteria.sh)
+    bash <(curl -fsSL https://bit.ly/rmhysteria)
 }
 
 function reinstall(){
-    bash <(curl -fsSL https://git.io/rehysteria.sh)
+    bash <(curl -fsSL https://bit.ly/rehysteria)
 }
 
 function printMsg(){
@@ -177,13 +171,78 @@ function changeIp64(){
 function setHysteriaConfig(){
 	mkdir -p /etc/hihy/bin /etc/hihy/conf /etc/hihy/cert  /etc/hihy/result
 	echoColor yellowBlack "开始配置:"
-    echoColor green "请输入您的域名(不输入回车,则默认自签wechat.com证书,不推荐):"
-    read  domain
-    if [ -z "${domain}" ];then
-        domain="wechat.com"
-    ip=`curl -4 -s ip.sb`
-    echo -e "您选择自签wechat证书.公网ip:"`echoColor red ${ip}`"\n"
+	echo -e "\033[32m请选择证书申请方式:\n\n\033[0m\033[33m\033[01m1、使用ACME申请(推荐,需打开tcp 80/443)\n2、使用本地证书文件\n3、自签证书\033[0m\033[32m\n\n输入序号:\033[0m"
+    read certNum
+	useAcme=false
+	useLocalCert=false
+	if [ -z "${certNum}" ] || [ "${certNum}" == "3" ];then
+		echoColor green "请输入自签证书的域名(默认:wechat.com):"
+		read domain
+		if [ -z "${domain}" ];then
+			domain="wechat.com"
+		fi
+		ip=`curl -4 -s ip.sb`
+		cert="/etc/hihy/cert/${domain}.crt"
+		key="/etc/hihy/cert/${domain}.key"
+		useAcme=false
+		echoColor purple "\n您已选择自签${domain}证书加密.公网ip:"`echoColor red ${ip}`"\n"
+    elif [ "${certNum}" == "2" ];then
+		echoColor green "请输入证书cert文件路径(需fullchain):"
+		read cert
+		while :
+		do
+			if [ ! -f "${cert}" ];then
+				echoColor red "\n路径不存在,请重新输入!"
+				echoColor green "请输入证书cert文件路径(需fullchain):"
+				read  cert
+			else
+				break
+			fi
+		done
+		echoColor green "请输入证书key文件路径:"
+		read key
+		while :
+		do
+			if [ ! -f "${key}" ];then
+				echoColor red "\n路径不存在,请重新输入!"
+				echoColor green "请输入证书key文件路径:"
+				read  key
+			else
+				break
+			fi
+		done
+		echoColor green "请输入所选证书域名:"
+		read domain
+		while :
+		do
+			if [ -z "${domain}" ];then
+				echoColor red "\n此选项不能为空,请重新输入!"
+				echoColor green "请输入所选证书域名:"
+				read  domain
+			else
+				break
+			fi
+		done
+		useAcme=false
+		useLocalCert=true
+		echoColor purple "\n您已选择使用本地${domain}证书加密.\n"
+    else 
+    	echoColor green "请输入域名(需正确解析到本机,关闭CDN):"
+		read domain
+		while :
+		do
+			if [ -z "${domain}" ];then
+				echoColor red "\n此选项不能为空,请重新输入!"
+				echoColor green "请输入域名(需正确解析到本机,关闭CDN):"
+				read  domain
+			else
+				break
+			fi
+		done
+		useAcme=true
+		echoColor purple "\n您已选择使用ACME自动签发可信的${domain}证书加密.\n"
     fi
+
 	while :
 	do
 		echoColor green "请输入你想要开启的端口,此端口是server端口,建议10000-65535.(默认随机)"
@@ -202,15 +261,16 @@ function setHysteriaConfig(){
 	done
     echo -e "\033[32m选择协议类型:\n\n\033[0m\033[33m\033[01m1、udp(QUIC)\n2、faketcp\n3、wechat-video(回车默认)\033[0m\033[32m\n\n输入序号:\033[0m"
     read protocol
+	ut=
     if [ -z "${protocol}" ] || [ $protocol == "3" ];then
 		protocol="wechat-video"
-		allowPort udp ${port}
+		ut="udp"
     elif [ $protocol == "2" ];then
 		protocol="faketcp"
-		allowPort tcp ${port}
+		ut="tcp"
     else 
     	protocol="udp"
-		allowPort udp ${port}
+		ut="udp"
     fi
     echo -e "传输协议:"`echoColor red ${protocol}`"\n"
 
@@ -250,53 +310,30 @@ function setHysteriaConfig(){
     echoColor yellowBlack "执行配置..."
     download=$(($download + $download / 4))
     upload=$(($upload + $upload / 4))
-    r_client=$(($delay * 2 * $download / 1000 * 1024 * 1024))
+    r_client=$(($delay * $download / 1000 * 1024 * 1024))
     r_conn=$(($r_client / 4))
-
-    if [ "${domain}" = "wechat.com" ];then
-		v6str=":" #Is ipv6?
-        result=$(echo ${ip} | grep ${v6str})
-        if [ "${result}" != "" ];then
-            ip="[${ip}]" 
-        fi
-		u_host=${ip}
-		u_domain="wechat.com"
-		sec="1"
-        mail="admin@qq.com"
-        days=36500
-        echoColor purple "SIGN...\n"
-        openssl genrsa -out /etc/hihy/cert/${domain}.ca.key 2048
-        openssl req -new -x509 -days ${days} -key /etc/hihy/cert/${domain}.ca.key -subj "/C=CN/ST=GuangDong/L=ShenZhen/O=PonyMa/OU=Tecent/emailAddress=${mail}/CN=Tencent Root CA" -out /etc/hihy/cert/${domain}.ca.crt
-        openssl req -newkey rsa:2048 -nodes -keyout /etc/hihy/cert/${domain}.key -subj "/C=CN/ST=GuangDong/L=ShenZhen/O=PonyMa/OU=Tecent/emailAddress=${mail}/CN=Tencent Root CA" -out /etc/hihy/cert/${domain}.csr
-        openssl x509 -req -extfile <(printf "subjectAltName=DNS:${domain},DNS:${domain}") -days ${days} -in /etc/hihy/cert/${domain}.csr -CA /etc/hihy/cert/${domain}.ca.crt -CAkey /etc/hihy/cert/${domain}.ca.key -CAcreateserial -out /etc/hihy/cert/${domain}.crt
-        rm /etc/hihy/cert/${domain}.ca.key /etc/hihy/cert/${domain}.ca.srl /etc/hihy/cert/${domain}.csr
-		mv /etc/hihy/cert/${domain}.ca.crt /etc/hihy/result
-        echoColor purple "SUCCESS.\n"
-
-cat <<EOF > /etc/hihy/conf/hihyServer.json
-{
-"listen": ":${port}",
-"protocol": "${protocol}",
-"disable_udp": false,
-"cert": "/etc/hihy/cert/${domain}.crt",
-"key": "/etc/hihy/cert/${domain}.key",
-"auth": {
-	"mode": "password",
-	"config": {
-	"password": "${auth_str}"
-	}
-},
-"alpn": "h3",
-"recv_window_conn": ${r_conn},
-"recv_window_client": ${r_client},
-"max_conn_client": 4096,
-"disable_mtu_discovery": true,
-"resolve_preference": "46",
-"resolver": "8.8.8.8:53"
-}
-EOF
-
-cat <<EOF > /etc/hihy/result/hihyClient.json
+	allowPort ${ut} ${port}
+    if echo "${useAcme}" | grep -q "false";then
+		if echo "${useLocalCert}" | grep -q "false";then
+			v6str=":" #Is ipv6?
+			result=$(echo ${ip} | grep ${v6str})
+			if [ "${result}" != "" ];then
+				ip="[${ip}]" 
+			fi
+			u_host=${ip}
+			u_domain=${domain}
+			sec="1"
+			mail="admin@qq.com"
+			days=36500
+			echoColor purple "SIGN...\n"
+			openssl genrsa -out /etc/hihy/cert/${domain}.ca.key 2048
+			openssl req -new -x509 -days ${days} -key /etc/hihy/cert/${domain}.ca.key -subj "/C=CN/ST=GuangDong/L=ShenZhen/O=PonyMa/OU=Tecent/emailAddress=${mail}/CN=Tencent Root CA" -out /etc/hihy/cert/${domain}.ca.crt
+			openssl req -newkey rsa:2048 -nodes -keyout /etc/hihy/cert/${domain}.key -subj "/C=CN/ST=GuangDong/L=ShenZhen/O=PonyMa/OU=Tecent/emailAddress=${mail}/CN=Tencent Root CA" -out /etc/hihy/cert/${domain}.csr
+			openssl x509 -req -extfile <(printf "subjectAltName=DNS:${domain},DNS:${domain}") -days ${days} -in /etc/hihy/cert/${domain}.csr -CA /etc/hihy/cert/${domain}.ca.crt -CAkey /etc/hihy/cert/${domain}.ca.key -CAcreateserial -out /etc/hihy/cert/${domain}.crt
+			rm /etc/hihy/cert/${domain}.ca.key /etc/hihy/cert/${domain}.ca.srl /etc/hihy/cert/${domain}.csr
+			mv /etc/hihy/cert/${domain}.ca.crt /etc/hihy/result
+			echoColor purple "SUCCESS.\n"
+			cat <<EOF > /etc/hihy/result/hihyClient.json
 {
 "server": "${ip}:${port}",
 "protocol": "${protocol}",
@@ -324,6 +361,63 @@ cat <<EOF > /etc/hihy/result/hihyClient.json
 "resolver": "119.29.29.29:53",
 "retry": 3,
 "retry_interval": 3
+}
+EOF
+		else
+			u_host=${domain}
+			u_domain=${domain}
+			sec="0"
+			cat <<EOF > /etc/hihy/result/hihyClient.json
+{
+"server": "${domain}:${port}",
+"protocol": "${protocol}",
+"up_mbps": ${upload},
+"down_mbps": ${download},
+"http": {
+"listen": "127.0.0.1:8888",
+"timeout" : 300,
+"disable_udp": false
+},
+"socks5": {
+"listen": "127.0.0.1:8889",
+"timeout": 300,
+"disable_udp": false
+},
+"alpn": "h3",
+"acl": "acl/routes.acl",
+"mmdb": "acl/Country.mmdb",
+"auth_str": "${auth_str}",
+"server_name": "${domain}",
+"insecure": false,
+"recv_window_conn": ${r_conn},
+"recv_window": ${r_client},
+"disable_mtu_discovery": true,
+"resolver": "119.29.29.29:53",
+"retry": 3,
+"retry_interval": 3
+}
+EOF
+		fi		
+		cat <<EOF > /etc/hihy/conf/hihyServer.json
+{
+"listen": ":${port}",
+"protocol": "${protocol}",
+"disable_udp": false,
+"cert": "${cert}",
+"key": "${key}",
+"auth": {
+	"mode": "password",
+	"config": {
+	"password": "${auth_str}"
+	}
+},
+"alpn": "h3",
+"recv_window_conn": ${r_conn},
+"recv_window_client": ${r_client},
+"max_conn_client": 4096,
+"disable_mtu_discovery": true,
+"resolve_preference": "46",
+"resolver": "8.8.8.8:53"
 }
 EOF
 
@@ -451,8 +545,8 @@ function updateHysteriaCore(){
 	if [ -f "/etc/hihy/bin/appS" ]; then
 		localV=`/etc/hihy/bin/appS -v | cut -d " " -f 3`
 		remoteV=`wget -qO- -t1 -T2 --no-check-certificate "https://api.github.com/repos/HyNetwork/hysteria/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'`
-		echo -e "Local version:"`echoColor red "${localV}"`
-		echo -e "Remote version:"`echoColor red "${remoteV}"`
+		echo -e "Local core version:"`echoColor red "${localV}"`
+		echo -e "Remote core version:"`echoColor red "${remoteV}"`
 		if [ "${localV}" = "${remoteV}" ];then
 			echoColor green "Already the latest version.Ignore."
 		else
@@ -478,7 +572,7 @@ function changeServerConfig(){
 		exit
 	fi
 	systemctl stop hihy
-	iptables-save |  sed -e '/hihysteria/d' | iptables-restore
+	delHihyFirewallPort
 	updateHysteriaCore
 	setHysteriaConfig
 	systemctl start hihy
@@ -489,7 +583,7 @@ function changeServerConfig(){
 
 function hihyUpdate(){
 	localV=${hihyV}
-	remoteV=`curl -fsSL https://git.io/hysteria.sh | sed  -n 2p | cut -d '"' -f 2`
+	remoteV=`curl -fsSL https://bit.ly/hihysteria | sed  -n 2p | cut -d '"' -f 2`
 	if [ "${localV}" = "${remoteV}" ];then
 		echoColor green "Already the latest version.Ignore."
 	else
@@ -502,7 +596,7 @@ function hihyUpdate(){
 
 function hihyNotify(){
 	localV=${hihyV}
-	remoteV=`curl -fsSL https://git.io/hysteria.sh | sed  -n 2p | cut -d '"' -f 2`
+	remoteV=`curl -fsSL https://bit.ly/hihysteria | sed  -n 2p | cut -d '"' -f 2`
 	if [ "${localV}" != "${remoteV}" ];then
 		echoColor yellowBlack "[Update] hihy有更新,version:v${remoteV},建议更新并查看日志: https://github.com/emptysuns/Hi_Hysteria"
 	fi
@@ -525,12 +619,16 @@ function checkStatus(){
     if [ "${status}" = "active" ];then
 		echoColor green "hysteria正常运行"
 	else
-		echoColor red "dead!hysteria未正常运行!"
+		echoColor red "Dead!hysteria未正常运行!"
 	fi
 }
 
 function install()
 {	
+	if [ -f "/etc/systemd/system/hihy.service" ]; then
+		echoColor green "你已经成功安装hysteria,如需修改配置请使用选项9/12"
+		exit
+	fi
 	mkdir -p /etc/hihy/bin /etc/hihy/conf /etc/hihy/cert  /etc/hihy/result
     echoColor purple "Ready to install.\n"
     version=`wget -qO- -t1 -T2 --no-check-certificate "https://api.github.com/repos/HyNetwork/hysteria/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'`
@@ -552,7 +650,6 @@ ExecStart=/etc/hihy/bin/appS --log-level warn -c /etc/hihy/conf/hihyServer.json 
 [Install]
 WantedBy=multi-user.target
 EOF
-	netfilter-persistent save
     sysctl -w net.core.rmem_max=8000000
     sysctl -p
     chmod 644 /etc/systemd/system/hihy.service
@@ -569,26 +666,26 @@ EOF
 
 
 # 输出ufw端口开放状态
-checkUFWAllowPort() {
+function checkUFWAllowPort() {
 	if ufw status | grep -q "$1"; then
-		echoColor green " ---> $1端口开放成功"
+		echoColor purple "UFW OPEN: ${1}/${2}"
 	else
-		echoColor red " ---> $1端口开放失败"
+		echoColor red "UFW OPEN FAIL: ${1}/${2}"
 		exit 0
 	fi
 }
 
 # 输出firewall-cmd端口开放状态
-checkFirewalldAllowPort() {
+function checkFirewalldAllowPort() {
 	if firewall-cmd --list-ports --permanent | grep -q "$1"; then
-		echoColor green " ---> $1端口开放成功"
+		echoColor purple "FIREWALLD OPEN: ${1}/${2}"
 	else
-		echoColor red " ---> $1端口开放失败"
+		echoColor red "FIREWALLD OPEN FAIL: ${1}/${2}"
 		exit 0
 	fi
 }
 
-allowPort() {
+function allowPort() {
 	# 如果防火墙启动状态则添加相应的开放端口
 	# $1 tcp/udp
 	# $2 port
@@ -596,32 +693,74 @@ allowPort() {
 		local updateFirewalldStatus=
 		if ! iptables -L | grep -q "allow ${1}/${2}(hihysteria)"; then
 			updateFirewalldStatus=true
-			iptables -I INPUT -p ${1} --dport ${2} -m comment --comment "allow ${1}/${2}(hihysteria)" -j ACCEPT
-			echoColor green "IPTABLES OPEN: ${1}/${2}"
+			iptables -I INPUT -p ${1} --dport ${2} -m comment --comment "allow ${1}/${2}(hihysteria)" -j ACCEPT 2> /dev/null
+			echoColor purple "IPTABLES OPEN: ${1}/${2}"
 		fi
-
 		if echo "${updateFirewalldStatus}" | grep -q "true"; then
-			netfilter-persistent save
+			netfilter-persistent save 2>/dev/null
 		fi
 	elif systemctl status ufw 2>/dev/null | grep -q "active (exited)"; then
 		if ! ufw status | grep -q ${2}; then
-			sudo ufw allow ${2}
+			sudo ufw allow ${2} 2>/dev/null
 			checkUFWAllowPort ${2}
-			echoColor green "UFW OPEN: ${1}/${2}"
 		fi
 	elif systemctl status firewalld 2>/dev/null | grep -q "active (running)"; then
 		local updateFirewalldStatus=
 		if ! firewall-cmd --list-ports --permanent | grep -qw "${2}/${1}"; then
 			updateFirewalldStatus=true
-			firewall-cmd --zone=public --add-port=${2}/${1} --permanent
+			firewall-cmd --zone=public --add-port=${2}/${1} --permanent 2>/dev/null
 			checkFirewalldAllowPort ${2}
 		fi
 		if echo "${updateFirewalldStatus}" | grep -q "true"; then
 			firewall-cmd --reload
-			echoColor green "FIREWALLD OPEN: ${1}/${2}"
 		fi
 	fi
 }
+
+function delHihyFirewallPort() {
+	# 如果防火墙启动状态则删除之前的规则
+	if systemctl status netfilter-persistent 2>/dev/null | grep -q "active (exited)"; then
+		local updateFirewalldStatus=
+		if ! iptables -L | grep -q "allow ${1}/${2}(hihysteria)"; then
+			updateFirewalldStatus=true
+			iptables-save |  sed -e '/hihysteria/d' | iptables-restore
+		fi
+		if echo "${updateFirewalldStatus}" | grep -q "true"; then
+			netfilter-persistent save 2> /dev/null
+		fi
+	elif systemctl status ufw 2>/dev/null | grep -q "active (exited)"; then
+		port=`cat /etc/hihy/conf/hihyServer.json | grep "listen" | awk '{print $2}' | tr -cd "[0-9]"`
+		if ! ufw status | grep -q ${port}; then
+			sudo ufw delete allow ${port} 2> /dev/null
+		fi
+	elif systemctl status firewalld 2>/dev/null | grep -q "active (running)"; then
+		local updateFirewalldStatus=
+		port=`cat /etc/hihy/conf/hihyServer.json | grep "listen" | awk '{print $2}' | tr -cd "[0-9]"`
+		isFaketcp=`cat /etc/hihy/conf/hihyServer.json | grep "faketcp"`
+		if [ -z "${isFaketcp}" ];then
+			ut="udp"
+		else
+			ut="tcp"
+		fi
+		if ! firewall-cmd --list-ports --permanent | grep -qw "${port}/${ut}"; then
+			updateFirewalldStatus=true
+			firewall-cmd --zone=public --remove-port=${port}/${ut} 2> /dev/null
+		fi
+		if echo "${updateFirewalldStatus}" | grep -q "true"; then
+			firewall-cmd --reload 2> /dev/null
+		fi
+	fi
+}
+
+function checkRoot(){
+	user=`whoami`
+	if [ ! "${user}" = "root" ];then
+		echoColor red "Please run as root user!"
+		exit 0
+	fi
+}
+
+
 
 function menu()
 {
@@ -712,4 +851,5 @@ case $input in
     esac
 }
 
+checkRoot
 menu
