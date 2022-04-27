@@ -668,9 +668,9 @@ EOF
 # 输出ufw端口开放状态
 function checkUFWAllowPort() {
 	if ufw status | grep -q "$1"; then
-		echoColor purple "UFW OPEN: ${1}/${2}"
+		echoColor purple "UFW OPEN: ${1}"
 	else
-		echoColor red "UFW OPEN FAIL: ${1}/${2}"
+		echoColor red "UFW OPEN FAIL: ${1}"
 		exit 0
 	fi
 }
@@ -699,7 +699,7 @@ function allowPort() {
 		if echo "${updateFirewalldStatus}" | grep -q "true"; then
 			netfilter-persistent save 2>/dev/null
 		fi
-	elif systemctl status ufw 2>/dev/null | grep -q "active (exited)"; then
+	elif [ `ufw status | grep "Status: " | awk '{print $2}'` = "active" ]; then
 		if ! ufw status | grep -q ${2}; then
 			sudo ufw allow ${2} 2>/dev/null
 			checkUFWAllowPort ${2}
@@ -721,16 +721,16 @@ function delHihyFirewallPort() {
 	# 如果防火墙启动状态则删除之前的规则
 	if systemctl status netfilter-persistent 2>/dev/null | grep -q "active (exited)"; then
 		local updateFirewalldStatus=
-		if ! iptables -L | grep -q "allow ${1}/${2}(hihysteria)"; then
+		if iptables -L | grep -q "allow ${1}/${2}(hihysteria)"; then
 			updateFirewalldStatus=true
 			iptables-save |  sed -e '/hihysteria/d' | iptables-restore
 		fi
 		if echo "${updateFirewalldStatus}" | grep -q "true"; then
 			netfilter-persistent save 2> /dev/null
 		fi
-	elif systemctl status ufw 2>/dev/null | grep -q "active (exited)"; then
+	elif [ `ufw status | grep "Status: " | awk '{print $2}'` = "active" ]; then
 		port=`cat /etc/hihy/conf/hihyServer.json | grep "listen" | awk '{print $2}' | tr -cd "[0-9]"`
-		if ! ufw status | grep -q ${port}; then
+		if ufw status | grep -q ${port}; then
 			sudo ufw delete allow ${port} 2> /dev/null
 		fi
 	elif systemctl status firewalld 2>/dev/null | grep -q "active (running)"; then
@@ -742,7 +742,7 @@ function delHihyFirewallPort() {
 		else
 			ut="tcp"
 		fi
-		if ! firewall-cmd --list-ports --permanent | grep -qw "${port}/${ut}"; then
+		if firewall-cmd --list-ports --permanent | grep -qw "${port}/${ut}"; then
 			updateFirewalldStatus=true
 			firewall-cmd --zone=public --remove-port=${port}/${ut} 2> /dev/null
 		fi
