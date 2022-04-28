@@ -36,12 +36,12 @@ windows使用请仔细阅读[cmd客户端(伪)介绍](https://github.com/emptysu
 
 
 ```
-(2022/04/27) 0.3.6[*推荐在4.29日之前更新,git.io短链接服务无了]:
+(2022/04/28) 0.3.6:
 1. 识别系统默认防火墙管理端口，不再安装netfilter-persistent
 2. 提供使用本地路径下的证书加密方式，可自行上传到服务器可信的证书加密
 3. 开放自定义自签证书域名
 4. 修改buffer size计算
-5. 由于git.io将要在2022/04/29之后完全停止服务，使用bit.ly替代它,0.3.6以后的用户运行一键安装命令使用选项11可自动替换本地hihy脚本
+5. git.io昨天被大量学术人员涌入对线，迫于压力不会停止已存在的规则，但还是保持可读，项目还是改回原来的短链接，我也被它反复横跳了:)
 ```
 [历史改进](https://github.com/emptysuns/Hi_Hysteria/blob/main/md/log.md)
 
@@ -69,7 +69,7 @@ windows使用请仔细阅读[cmd客户端(伪)介绍](https://github.com/emptysu
 ### 拉取安装
 ```
 su - root #Change to root
-bash <(curl -fsSL https://bit.ly/hihysteria)
+bash <(curl -fsSL https://git.io/hysteria.sh)
 ```
 
 ### 配置过程

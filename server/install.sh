@@ -104,11 +104,11 @@ function checkSystemForUpdate() {
 }
 
 function uninstall(){
-    bash <(curl -fsSL https://bit.ly/rmhysteria)
+    bash <(curl -fsSL https://git.io/rmhysteria.sh)
 }
 
 function reinstall(){
-    bash <(curl -fsSL https://bit.ly/rehysteria)
+    bash <(curl -fsSL https://git.io/rehysteria.sh)
 }
 
 function printMsg(){
@@ -583,7 +583,7 @@ function changeServerConfig(){
 
 function hihyUpdate(){
 	localV=${hihyV}
-	remoteV=`curl -fsSL https://bit.ly/hihysteria | sed  -n 2p | cut -d '"' -f 2`
+	remoteV=`curl -fsSL https://git.io/hysteria.sh | sed  -n 2p | cut -d '"' -f 2`
 	if [ "${localV}" = "${remoteV}" ];then
 		echoColor green "Already the latest version.Ignore."
 	else
@@ -596,7 +596,7 @@ function hihyUpdate(){
 
 function hihyNotify(){
 	localV=${hihyV}
-	remoteV=`curl -fsSL https://bit.ly/hihysteria | sed  -n 2p | cut -d '"' -f 2`
+	remoteV=`curl -fsSL https://git.io/hysteria.sh | sed  -n 2p | cut -d '"' -f 2`
 	if [ "${localV}" != "${remoteV}" ];then
 		echoColor yellowBlack "[Update] hihy有更新,version:v${remoteV},建议更新并查看日志: https://github.com/emptysuns/Hi_Hysteria"
 	fi
