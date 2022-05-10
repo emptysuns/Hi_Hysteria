@@ -728,7 +728,7 @@ function delHihyFirewallPort() {
 		if echo "${updateFirewalldStatus}" | grep -q "true"; then
 			netfilter-persistent save 2> /dev/null
 		fi
-	elif [ `ufw status | grep "Status: " | awk '{print $2}'` = "active" ]; then
+	elif [[ `ufw status 2>/dev/null | grep "Status: " | awk '{print $2}'` = "active" ]]; then
 		port=`cat /etc/hihy/conf/hihyServer.json | grep "listen" | awk '{print $2}' | tr -cd "[0-9]"`
 		if ufw status | grep -q ${port}; then
 			sudo ufw delete allow ${port} 2> /dev/null
