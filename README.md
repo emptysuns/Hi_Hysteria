@@ -270,3 +270,6 @@ hysteria://1.2.3.4:37575?protocol=udp&auth=pekopeko&peer=www.whitehouse.gov&inse
 
 
 [@mack-a/v2ray-agent](https://github.com/mack-a/v2ray-agent)
+
+
+[@2dust/v2rayN](https://github.com/2dust/v2rayN)
