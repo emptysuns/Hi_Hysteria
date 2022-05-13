@@ -32,7 +32,7 @@ Hysteria这是一款由go编写的非常优秀的“轻量”代理程序，它�
 
 适配ubuntu/debian, centos/rhel操作系统,misple/arm/x86/s390x架构。
 
-windows使用请仔细阅读[cmd客户端(伪)介绍](md/v2n.md)其他平台看[这里](https://github.com/emptysuns/Hi_Hysteria/blob/main/md/others.md)。
+windows使用请仔细阅读[v2rayN For hysteria](md/v2n.md)其他平台看[这里](https://github.com/emptysuns/Hi_Hysteria/blob/main/md/others.md)。
 
 
 ```
