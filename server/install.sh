@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="0.3.6"
+hihyV="0.3.7"
 function echoColor() {
 	case $1 in
 		# 红色
@@ -169,7 +169,7 @@ function changeIp64(){
 }
 
 function setHysteriaConfig(){
-	mkdir -p /etc/hihy/bin /etc/hihy/conf /etc/hihy/cert  /etc/hihy/result
+	mkdir -p /etc/hihy/bin /etc/hihy/conf /etc/hihy/cert  /etc/hihy/result /etc/hihy/acl
 	echoColor yellowBlack "开始配置:"
 	echo -e "\033[32m请选择证书申请方式:\n\n\033[0m\033[33m\033[01m1、使用ACME申请(推荐,需打开tcp 80/443)\n2、使用本地证书文件\n3、自签证书\033[0m\033[32m\n\n输入序号:\033[0m"
     read certNum
@@ -181,7 +181,7 @@ function setHysteriaConfig(){
 		if [ -z "${domain}" ];then
 			domain="wechat.com"
 		fi
-		ip=`curl -4 -s ip.sb`
+		ip=`curl -4 -s -m 8 ip.sb`
 		cert="/etc/hihy/cert/${domain}.crt"
 		key="/etc/hihy/cert/${domain}.key"
 		useAcme=false
@@ -310,7 +310,7 @@ function setHysteriaConfig(){
     echoColor yellowBlack "执行配置..."
     download=$(($download + $download / 4))
     upload=$(($upload + $upload / 4))
-    r_client=$(($delay * $download / 1000 * 1024 * 1024))
+    r_client=$(($delay * 2 * $download / 1000 * 1024 * 1024))
     r_conn=$(($r_client / 4))
 	allowPort ${ut} ${port}
     if echo "${useAcme}" | grep -q "false";then
@@ -340,12 +340,12 @@ function setHysteriaConfig(){
 "up_mbps": ${upload},
 "down_mbps": ${download},
 "http": {
-"listen": "127.0.0.1:8888",
+"listen": "127.0.0.1:10809",
 "timeout" : 300,
 "disable_udp": false
 },
 "socks5": {
-"listen": "127.0.0.1:8889",
+"listen": "127.0.0.1:10808",
 "timeout": 300,
 "disable_udp": false
 },
@@ -374,12 +374,12 @@ EOF
 "up_mbps": ${upload},
 "down_mbps": ${download},
 "http": {
-"listen": "127.0.0.1:8888",
+"listen": "127.0.0.1:10809",
 "timeout" : 300,
 "disable_udp": false
 },
 "socks5": {
-"listen": "127.0.0.1:8889",
+"listen": "127.0.0.1:10808",
 "timeout": 300,
 "disable_udp": false
 },
@@ -412,6 +412,7 @@ EOF
 	}
 },
 "alpn": "h3",
+"acl": "/etc/hihy/acl/hihyServer.acl",
 "recv_window_conn": ${r_conn},
 "recv_window_client": ${r_client},
 "max_conn_client": 4096,
@@ -445,6 +446,7 @@ EOF
     }
 },
 "alpn": "h3",
+"acl": "/etc/hihy/acl/hihyServer.acl",
 "recv_window_conn": ${r_conn},
 "recv_window_client": ${r_client},
 "max_conn_client": 4096,
@@ -461,12 +463,12 @@ EOF
 "up_mbps": ${upload},
 "down_mbps": ${download},
 "http": {
-"listen": "127.0.0.1:8888",
+"listen": "127.0.0.1:10809",
 "timeout" : 300,
 "disable_udp": false
 },
 "socks5": {
-"listen": "127.0.0.1:8889",
+"listen": "127.0.0.1:10808",
 "timeout": 300,
 "disable_udp": false
 },
@@ -487,6 +489,7 @@ EOF
     fi
 
 	echo -e "\033[1;;35m\nWait,test config...\n\033[0m"
+	echo "block all udp/443" > /etc/hihy/acl/hihyServer.acl
 	/etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server > /tmp/hihy_debug.info 2>&1 &
 	sleep 10
 	msg=`cat /tmp/hihy_debug.info`
@@ -505,11 +508,11 @@ EOF
 		*"Server up and running"*) 
 			echoColor purple "Test success."
 			pIDa=`lsof -i :${port}|grep -v "PID" | awk '{print $2}'`
-			kill -9 ${pIDa}
+			kill -9 ${pIDa} > /dev/null 2>&1
 			;;
 		*) 	
 			pIDa=`lsof -i :${port}|grep -v "PID" | awk '{print $2}'`
-			kill -9 ${pIDa}
+			kill -9 ${pIDa} > /dev/null 2>&1
 			echoColor red "未知错误:请手动运行:`echoColor green "/etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server"`"
 			echoColor red "查看错误日志,反馈到issue!"
 			exit
@@ -699,7 +702,7 @@ function allowPort() {
 		if echo "${updateFirewalldStatus}" | grep -q "true"; then
 			netfilter-persistent save 2>/dev/null
 		fi
-	elif [ `ufw status | grep "Status: " | awk '{print $2}'` = "active" ]; then
+	elif [[ `ufw status 2>/dev/null | grep "Status: " | awk '{print $2}'` = "active" ]]; then
 		if ! ufw status | grep -q ${2}; then
 			sudo ufw allow ${2} 2>/dev/null
 			checkUFWAllowPort ${2}
@@ -728,7 +731,7 @@ function delHihyFirewallPort() {
 		if echo "${updateFirewalldStatus}" | grep -q "true"; then
 			netfilter-persistent save 2> /dev/null
 		fi
-	elif [ `ufw status | grep "Status: " | awk '{print $2}'` = "active" ]; then
+	elif [[ `ufw status 2>/dev/null | grep "Status: " | awk '{print $2}'` = "active" ]]; then
 		port=`cat /etc/hihy/conf/hihyServer.json | grep "listen" | awk '{print $2}' | tr -cd "[0-9]"`
 		if ufw status | grep -q ${port}; then
 			sudo ufw delete allow ${port} 2> /dev/null
@@ -758,6 +761,59 @@ function checkRoot(){
 		echoColor red "Please run as root user!"
 		exit 0
 	fi
+}
+
+function changeMode(){
+	if [ ! -f "/etc/hihy/conf/hihyServer.json" ]; then
+		echoColor red "配置文件不存在,exit..."
+		exit
+	fi
+	protocol=`cat /etc/hihy/conf/hihyServer.json  | grep protocol | awk '{print $2}' | awk -F '"' '{ print $2}'`
+	echoColor yellow "当前使用协议为:"
+	echoColor purple "${protocol}"
+	port=`cat /etc/hihy/conf/hihyServer.json | grep "listen" | awk '{print $2}' | tr -cd "[0-9]"`
+	if [ "${protocol}" = "udp" ];then
+		echo -e "\033[32m\n请选择修改的协议类型:\n\n\033[0m\033[33m\033[01m1、faketcp\n2、wechat-video\033[0m\033[32m\n\n输入序号:\033[0m"
+    	read pNum
+		if [ -z "${pNum}" ] || [ "${pNum}" == "1" ];then
+			echoColor purple "选择修改协议类型为faketcp."
+			sed -i 's/"protocol": "udp"/"protocol": "faketcp"/g' /etc/hihy/conf/hihyServer.json
+			delHihyFirewallPort
+			allowPort "tcp" ${port}
+		else
+			echoColor purple "选择修改协议类型为wechat-video."
+			sed -i 's/"protocol": "udp"/"protocol": "wechat-video"/g' /etc/hihy/conf/hihyServer.json
+		fi
+	elif [ "${protocol}" = "faketcp" ];then
+		delHihyFirewallPort
+		allowPort "udp" ${port}
+		echo -e "\033[32m\n请选择修改的协议类型:\n\n\033[0m\033[33m\033[01m1、udp\n2、wechat-video\033[0m\033[32m\n\n输入序号:\033[0m"
+    	read pNum
+		if [ -z "${pNum}" ] || [ "${pNum}" == "1" ];then
+			echoColor purple "选择修改协议类型为udp."
+			sed -i 's/"protocol": "faketcp"/"protocol": "udp"/g' /etc/hihy/conf/hihyServer.json
+		else
+			echoColor purple "选择修改协议类型为wechat-video."
+			sed -i 's/"protocol": "faketcp"/"protocol": "wechat-video"/g' /etc/hihy/conf/hihyServer.json
+		fi
+	elif [ "${protocol}" = "wechat-video" ];then
+		echo -e "\033[32m\n请选择修改的协议类型:\n\n\033[0m\033[33m\033[01m1、udp\n2、faketcp\033[0m\033[32m\n\n输入序号:\033[0m"
+    	read pNum
+		if [ -z "${pNum}" ] || [ "${pNum}" == "1" ];then
+			echoColor purple "选择修改协议类型为udp."
+			sed -i 's/"protocol": "wechat-video"/"protocol": "udp"/g' /etc/hihy/conf/hihyServer.json
+		else
+			delHihyFirewallPort
+			allowPort "tcp" ${port}
+			echoColor purple "选择修改协议类型为faketcp."
+			sed -i 's/"protocol": "wechat-video"/"protocol": "faketcp"/g' /etc/hihy/conf/hihyServer.json
+		fi
+	else
+		echoColor red "无法识别协议类型!"
+		exit
+	fi
+	systemctl restart hihy
+	echoColor green "修改成功"
 }
 
 
@@ -791,6 +847,7 @@ Tips:`echoColor green "hihy"`命令再次运行本脚本.
 `echoColor yellow "10) 切换ipv4/ipv6优先级"`
 `echoColor yellow "11) 更新hihy"`
 `echoColor red "12) 完全重置所有配置"`
+`echoColor skyBlue "13) 修改当前协议类型"`
 
 `echoColor purple "###############################"`
 `hihyNotify`
@@ -840,6 +897,9 @@ case $input in
     ;;
 	12)
         reinstall
+	;;
+	13)
+        changeMode
     ;;
 	0)
 		exit
