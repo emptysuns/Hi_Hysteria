@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="0.3.7"
+hihyV="0.3.8"
 function echoColor() {
 	case $1 in
 		# 红色
@@ -113,13 +113,14 @@ function reinstall(){
 
 function printMsg(){
 	cp -P /etc/hihy/result/hihyClient.json ./config.json
+	echo ""
 	echoColor yellowBlack "配置文件输出如下且已经在本目录生成(直接下载本目录生成的config.json[推荐]/自行复制粘贴到本地)"
-	echoColor green "\nTips:客户端默认只开启http(8888)、socks5(8889)代理!其他方式请参照hysteria文档自行修改客户端config.json"
+	echoColor green "Tips:客户端默认只开启http(8888)、socks5(8889)代理!其他方式请参照hysteria文档自行修改客户端config.json"
 	echoColor purple "***********************************↓↓↓copy↓↓↓*******************************↓"
 	cat ./config.json
 	echoColor purple "↑***********************************↑↑↑copy↑↑↑*******************************↑\n"
 	url=`cat /etc/hihy/result/url.txt`
-	echo -e "Shadowrocket/Sagernet/Passwall一键链接:"
+	echoColor purple "Shadowrocket/Sagernet/Passwall一键链接:"
 	echoColor green ${url}
 	echo -e "\n"
 }
@@ -166,6 +167,38 @@ function changeIp64(){
             fi
         ;;
 	esac
+}
+
+function getPortBindMsg(){
+        # $1 type UDP or TCP
+        # $2 port
+        msg=`lsof -i:${2} | grep ${1}`
+        if [ "${msg}" == "" ];then
+                return
+        else	
+				command=`echo ${msg} | awk '{print $1}'`
+  				pid=`echo ${msg} | awk '{print $2}'`
+  				name=`echo ${msg} | awk '{print $9}'`
+          		echoColor purple "Port: ${1}/${2} 已经被 ${command}(${name}) 占用,进程pid为: ${pid}."
+  				echoColor green "是否自动关闭端口占用?(y/N)"
+				read bindP
+				if [ -z "${bindP}" ];then
+					echoColor red "由于端口被占用，退出安装。请手动关闭或者更换端口..."
+					if [ "${1}" == "TCP" ] && [ "${2}" == "80" ] || [ "${1}" == "TCP" ] && [ "${2}" == "443" ];then
+						echoColor "如果需求上无法关闭 ${1}/${2}端口，请使用其他证书获取方式"
+					fi
+					exit
+				elif [ "${bindP}" == "y" ] ||  [ "${bindP}" == "Y" ];then
+					kill -9 ${pid}
+					echoColor green "端口解绑成功..."
+				else
+					echoColor red "由于端口被占用，退出安装。请手动关闭或者更换端口..."
+					if [ "${1}" == "TCP" ] && [ "${2}" == "80" ] || [ "${1}" == "TCP" ] && [ "${2}" == "443" ];then
+						echoColor "如果需求上如果无法关闭 ${1}/${2}端口，请使用其他证书获取方式"
+					fi
+					exit
+				fi
+        fi
 }
 
 function setHysteriaConfig(){
@@ -291,7 +324,7 @@ function setHysteriaConfig(){
     read  upload
     if [ -z "${upload}" ];then
         upload=10
-    echo -e "客户端上行速度："`echoColor red ${download}`"mbps\n"
+    echo -e "客户端上行速度："`echoColor red ${upload}`"mbps\n"
     fi
 	auth_str=""
 	echoColor green "请输入认证口令:"
@@ -426,6 +459,8 @@ EOF
 		u_host=${domain}
 		u_domain=${domain}
 		sec="0"
+		getPortBindMsg TCP 80
+		getPortBindMsg TCP 443
 		allowPort tcp 80
 		allowPort tcp 443
 		cat <<EOF > /etc/hihy/conf/hihyServer.json
@@ -536,8 +571,10 @@ function downloadHysteriaCore(){
         wget -q -O /etc/hihy/bin/appS --no-check-certificate https://github.com/HyNetwork/hysteria/releases/download/${version}/hysteria-linux-mipsle
 	elif [ $get_arch = "s390x" ];then
 		wget -q -O /etc/hihy/bin/appS --no-check-certificate https://github.com/HyNetwork/hysteria/releases/download/${version}/hysteria-tun-linux-s390x
+	elif [ $get_arch = "i686" ];then
+		wget -q -O /etc/hihy/bin/appS --no-check-certificate https://github.com/HyNetwork/hysteria/releases/download/${version}/hysteria-tun-linux-386
     else
-        echoColor yellowBlack "Error[OS Message]:${get_arch}\nPlease open a issue to https://github.com/emptysuns/Hi_Hysteria !"
+        echoColor yellowBlack "Error[OS Message]:${get_arch}\nPlease open a issue to https://github.com/emptysuns/Hi_Hysteria/issues !"
         exit
     fi
 	chmod 755 /etc/hihy/bin/appS
@@ -825,7 +862,7 @@ clear
 cat << EOF
  -------------------------------------------
 |**********      Hi Hysteria       **********|
-|**********    Author: emptysuns ************|
+|**********    Author: emptysuns   **********|
 |**********     Version: `echoColor red "${hihyV}"`    **********|
  -------------------------------------------
 Tips:`echoColor green "hihy"`命令再次运行本脚本.
@@ -834,16 +871,16 @@ Tips:`echoColor green "hihy"`命令再次运行本脚本.
 
 `echoColor skyBlue "....................."`
 `echoColor yellow "1)  安装 hysteria"`
-`echoColor magenta "2)  卸载 hysteria"`
+`echoColor magenta "2)  卸载"`
 `echoColor skyBlue "....................."`
-`echoColor yellow "3)  启动 hysteria"`
-`echoColor magenta "4)  暂停 hysteria"`
-`echoColor yellow "5)  重新启动 hysteria"`
+`echoColor yellow "3)  启动"`
+`echoColor magenta "4)  暂停"`
+`echoColor yellow "5)  重新启动"`
 `echoColor yellow "6)  运行状态"`
 `echoColor skyBlue "....................."`
-`echoColor yellow "7)  更新hysteria core"`
+`echoColor yellow "7)  更新Core"`
 `echoColor yellow "8)  查看当前配置"`
-`echoColor skyBlue "9)  重新配置hysteria"`
+`echoColor skyBlue "9)  重新配置"`
 `echoColor yellow "10) 切换ipv4/ipv6优先级"`
 `echoColor yellow "11) 更新hihy"`
 `echoColor red "12) 完全重置所有配置"`
@@ -905,7 +942,7 @@ case $input in
 		exit
 	;;
 	*)
-		echoColor red "Input Error ,Please again !!!"
+		echoColor red "Input Error !!!"
 		exit 1
 	;;
     esac

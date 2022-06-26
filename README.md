@@ -13,14 +13,14 @@ Hysteria这是一款由go编写的非常优秀的“轻量”代理程序，它�
 
 2、50mbps北方电信,北京出口 直连落地vir San Jose机房163线路，22-23点测试YT 1080p60直播流:
 
-![image](https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/imgs/speed.png)
+![image](imgs/speed.png)
 
 ```
 190 dropped of 131329
 ```
 
 3、无对钟国大陆线路优化，洛杉矶shockhosting机房，1c128m ovznat 4k@p60：
-![image](https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/imgs/yt.jpg)
+![image](imgs/yt.jpg)
 ```
 139783 Kbps
 ```
@@ -32,41 +32,45 @@ Hysteria这是一款由go编写的非常优秀的“轻量”代理程序，它�
 
 适配ubuntu/debian, centos/rhel操作系统,misple/arm/x86/s390x架构。
 
-windows使用请仔细阅读[v2rayN For hysteria](md/v2n.md)其他平台看[这里](https://github.com/emptysuns/Hi_Hysteria/blob/main/md/others.md)。
+windows使用请仔细阅读[v2rayN For hysteria](md/v2n.md)其他平台看[这里](md/others.md)。
 
 
 ```
-(2022/05/14) 0.3.7:
-1. 兼容hysteria 1.0.4,同时屏蔽udp/443 output(由于hysteria目前对udp无加速效果，防止网页走http/3减速)
-2. 增加修改当前协议功能，无需重复安装
-3. 兼容v2rayN,不再对cmd客户端优化
+(2022/06/26) 0.3.8:
+1. 增加i686架构适配
+2. 增加端口443 80被其他进程占用导致无法申请证书的检测，提示信息并给出停止该进程选项
+   (不推荐，这里最好使用自签证书或者选择本地证书)
+3. 调整菜单
+4. bug fixed
+5. 提供clash-meta支持（咕咕咕）
 ```
-[历史改进](https://github.com/emptysuns/Hi_Hysteria/blob/main/md/log.md)
+[历史改进](md/log.md)
 
 ## 二·使用
 ### 第一次使用?
 
-#### 1. [防火墙问题](https://github.com/emptysuns/Hi_Hysteria/blob/main/md/firewall.md)
+#### 1. [防火墙问题](md/firewall.md)
 
-#### 2. [自签证书](https://github.com/emptysuns/Hi_Hysteria/blob/main/md/certificate.md)
+#### 2. [自签证书](md/certificate.md)
 
+#### 3. [限制UDP的服务商排雷列表【2022/03/21更新】](md/blacklist.md)
 
-#### 3. [限制UDP的服务商排雷列表【2022/03/21更新】](https://github.com/emptysuns/Hi_Hysteria/blob/main/md/blacklist.md)
+#### 4. [hysteria各个协议介绍](md/protocol.md)
 
-#### 4. [hysteria各个协议介绍](https://github.com/emptysuns/Hi_Hysteria/blob/main/md/protocol.md)
+#### 5. [~~cmd客户端(伪)介绍~~](md/cmd.md)
 
-#### 5. [cmd客户端(伪)介绍](https://github.com/emptysuns/Hi_Hysteria/blob/main/md/cmd.md)
+#### 6. [部分其他平台？](md/others.md)
 
-#### 6. [部分其他平台？](https://github.com/emptysuns/Hi_Hysteria/blob/main/md/others.md)
+#### 7. [如何设置我的延迟、上行/下行速度？](md/speed.md)
 
-#### 7. [如何设置我的延迟、上行/下行速度？](https://github.com/emptysuns/Hi_Hysteria/blob/main/md/speed.md)
+#### 8. [windows客户端, v2rayN](md/v2n.md)
 
-#### 8. [图形UI,v2rayN](https://github.com/emptysuns/Hi_Hysteria/blob/main/md/v2n.md)
+#### 9. [clash-meta介绍](md/clashMeta.md)
 
 
 ### 拉取安装
 ```
-su - root #Change to root
+su - root #switch to root user.
 bash <(curl -fsSL https://git.io/hysteria.sh)
 ```
 
@@ -75,8 +79,8 @@ bash <(curl -fsSL https://git.io/hysteria.sh)
 ```
  -------------------------------------------
 |**********      Hi Hysteria       **********|
-|**********    Author: emptysuns ************|
-|**********     Version: 0.3.7     **********|
+|**********    Author: emptysuns   **********|
+|**********     Version: 0.3.8     **********|
  -------------------------------------------
 Tips:hihy 命令再次运行本脚本.
 ............................................. 
@@ -84,16 +88,16 @@ Tips:hihy 命令再次运行本脚本.
 
 ..................... 
 1)  安装 hysteria 
-2)  卸载 hysteria 
+2)  卸载 
 ..................... 
-3)  启动 hysteria 
-4)  暂停 hysteria 
-5)  重新启动 hysteria 
+3)  启动 
+4)  暂停 
+5)  重新启动 
 6)  运行状态 
 ..................... 
-7)  更新hysteria core 
+7)  更新Core 
 8)  查看当前配置 
-9)  重新配置hysteria 
+9)  重新配置 
 10) 切换ipv4/ipv6优先级 
 11) 更新hihy 
 12) 完全重置所有配置 
@@ -101,9 +105,10 @@ Tips:hihy 命令再次运行本脚本.
 
 ############################### 
 
+
 0)退出 
 ............................................. 
-请选择:1
+请选择:
 ```
 **脚本每次更新都可能会发生改变，请一定要展开并仔细参考演示过程，避免发生不必要的错误！**
 <details>
@@ -250,10 +255,11 @@ hysteria://1.2.3.4:37575?protocol=udp&auth=pekopeko&peer=www.whitehouse.gov&inse
 * [x] 生成分享链接
 * [x] hihy替换掉hysteria
 * [ ] 规范化脚本代码
-* [ ] 利用docker安装?(不知道是否有必要)
+* [ ] 提供docker和systemd(已完成)两种运行方式
 * [ ] 多密码支持
 * [ ] 利用base64加密替换原来的auth_str
 * [x] 兼容v2rayN,放弃cmd的更新
+* [ ] (重要)全面兼容clash-meta核心，替换原来客户端是hysteria核心的不便，使用clash-meta分流(鸽ing...)
 
 ## 五·结语
 

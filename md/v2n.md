@@ -2,7 +2,7 @@
 
 v2rayN已经在添加自定义配置时支持hysteria并能自动识别config的类型，hihy在`0.3.7`版本之后兼容v2rayN，hihy_cmd已经需要退出舞台了，**不会再对它进行维护**。
 
-我将如何使用呢?你可以直接下载我打包好的[v2rayN-hysteriaCore](../client/windows/v2rayN/v2rayN-hysteriaCore.rar)
+我将如何使用呢?你可以直接下载我打包好的[v2rayN-hysteriaCore](../client/windows/v2rayN/v2rayN-hysteriaCore.rar)，可忽略下方的配置v2n过程。
 
 1. [点我下载](https://github.com/2dust/v2rayN/releases/latest/download/v2rayN.zip)最新的v2rayN，并解压。
 

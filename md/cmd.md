@@ -1,3 +1,4 @@
+# `0.3.7`之后停止更新 !!!
 ### cmd客户端介绍
 
 本项目只介绍如何在windows环境下使用，其他环境请参考[这里](https://github.com/HyNetwork/hysteria)。

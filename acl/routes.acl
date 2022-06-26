@@ -1,6 +1,6 @@
 # Author:github.com/emptysuns
 # routes
-# Generated on March 28, 2022
+# Generated on June 26, 2022
 
 block domain-suffix 51yes.com
 block domain-suffix taboola.com
@@ -31695,6 +31695,7 @@ block domain-suffix stathat.com
 block domain-suffix supercell.net
 block domain-suffix trackersimulator.org
 block domain-suffix usergrid.com
+proxy domain-suffix hostloc.com
 proxy domain-suffix google.com
 proxy domain-suffix youtube.com
 proxy domain-suffix facebook.com
@@ -37759,7 +37760,5 @@ proxy domain-suffix zynaima.com
 proxy domain-suffix zyzc9.com
 proxy domain-suffix zzcartoon.com
 proxy domain-suffix phobos.apple.com
-proxy domain-suffix hostloc.com
-proxy domain-suffix v2ex.com
 direct country cn
 proxy all
