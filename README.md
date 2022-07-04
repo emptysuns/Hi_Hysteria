@@ -259,7 +259,7 @@ hysteria://1.2.3.4:37575?protocol=udp&auth=pekopeko&peer=www.whitehouse.gov&inse
 * [ ] 多密码支持
 * [ ] 利用base64加密替换原来的auth_str
 * [x] 兼容v2rayN,放弃cmd的更新
-* [ ] (重要)全面兼容clash-meta核心，替换原来客户端是hysteria核心的不便，使用clash-meta分流(鸽ing...)
+* [ ] [(重要)全面兼容clash-meta核心，替换原来客户端是hysteria核心的不便，使用clash-meta分流(鸽ing...)](https://github.com/emptysuns/Hi_Hysteria/issues/90)
 
 ## 五·结语
 
