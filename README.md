@@ -32,17 +32,12 @@ Hysteria这是一款由go编写的非常优秀的“轻量”代理程序，它�
 
 适配ubuntu/debian, centos/rhel操作系统,misple/arm/x86/s390x架构。
 
-windows使用请仔细阅读[v2rayN For hysteria](md/v2n.md)其他平台看[这里](md/others.md)。
-
-
 ```
-(2022/06/26) 0.3.8:
-1. 增加i686架构适配
-2. 增加端口443 80被其他进程占用导致无法申请证书的检测，提示信息并给出停止该进程选项
-   (不推荐，这里最好使用自签证书或者选择本地证书)
-3. 调整菜单
-4. bug fixed
-5. 提供clash-meta支持（咕咕咕）
+(2022/07/07) 0.3.9 [强烈建议更新server和client]:
+1. 支持导出一个clash.meta 配置文件，clash.meta作为客户端核心比起hysteria有着非常多的优势，详情查看介绍。[推荐/beta ing...]
+2. 修改acl规则生成来源，转化长期维护更新clash分流规则成hysteria acl规则，修复0.3.8.1 acl屏蔽规则
+3. hysteria里程碑更新至1.1.0, cpu开销减少，至少提升130%-500%速度，船烈建议更新两端
+4. 修改结果打印样式，更加清晰可见
 ```
 [历史改进](md/log.md)
 
@@ -57,15 +52,9 @@ windows使用请仔细阅读[v2rayN For hysteria](md/v2n.md)其他平台看[这�
 
 #### 4. [hysteria各个协议介绍](md/protocol.md)
 
-#### 5. [~~cmd客户端(伪)介绍~~](md/cmd.md)
+#### 5. [如何设置我的延迟、上行/下行速度？](md/speed.md)
 
-#### 6. [部分其他平台？](md/others.md)
-
-#### 7. [如何设置我的延迟、上行/下行速度？](md/speed.md)
-
-#### 8. [windows客户端, v2rayN](md/v2n.md)
-
-#### 9. [clash-meta介绍](md/clashMeta.md)
+#### 6. [**支持的客户端**](md/client.md)
 
 
 ### 拉取安装
@@ -114,36 +103,9 @@ Tips:hihy 命令再次运行本脚本.
 <details>
   <summary>演示较长，点我查看</summary>
     <pre><blockcode> 
-请选择:1
-Ready to install.
-
-Update.wait...
-Hit:1 <https://pkg.cloudflareclient.com> bionic InRelease
-Hit:2 <http://archive.ubuntu.com/ubuntu> bionic InRelease
-Hit:3 <http://archive.ubuntu.com/ubuntu> bionic-updates InRelease
-Hit:5 <http://security.ubuntu.com/ubuntu> bionic-security InRelease
-Hit:6 <http://archive.ubuntu.com/ubuntu> bionic-backports InRelease
-Hit:4 <https://packagecloud.io/ookla/speedtest-cli/ubuntu> bionic InRelease
-Reading package lists... Done
-Building dependency tree
-Reading state information... Done
-78 packages can be upgraded. Run 'apt list --upgradable' to see them.
-N: Skipping acquire of configured file 'main/binary-i386/Packages' as repository '<http://pkg.cloudflareclient.com> bionic InRelease' doesn't support architecture 'i386'
-
-Done.
-Install wget curl lsof
-*wget
-Installed.Ignore.
-*curl
-Installed.Ignore.
-*lsof
-Installed.Ignore.
-
-Done.
-The Latest hysteria version:v1.0.4
-Download...
-
-Download completed.
+Local core version:v1.1.0
+Remote core version:v1.1.0
+Already the latest version.Ignore.
 开始配置:
 请选择证书申请方式:
 
@@ -154,12 +116,11 @@ Download completed.
 输入序号:
 3
 请输入自签证书的域名(默认:wechat.com):
-www.whitehouse.gov
 
-您已选择自签www.whitehouse.gov证书加密.公网ip:1.2.3.4
+您已选择自签wechat.com证书加密.公网ip:129.146.83.103
 请输入你想要开启的端口,此端口是server端口,建议10000-65535.(默认随机)
 
-随机端口:37575
+随机端口:12854
 
 选择协议类型:
 
@@ -172,39 +133,30 @@ www.whitehouse.gov
 传输协议:udp
 
 请输入您到此服务器的平均延迟,关系到转发速度(默认200,单位:ms):
-60
+180
 
 期望速度,这是客户端的峰值速度,服务端默认不受限。Tips:脚本会自动*1.25做冗余，您期望过低或者过高会影响转发效率,请如实填写!
 请输入客户端期望的下行速度:(默认50,单位:mbps):
-100
+200
 请输入客户端期望的上行速度(默认10,单位:mbps):
-20
+40
 请输入认证口令:
 pekopeko
 
 配置录入完成!
 
 执行配置...
-IPTABLES OPEN: udp/37575
-SIGN...
+install.sh: line 618: 11172 Killed                  /etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server > /tmp/hihy_debug.info 2>&1
 
-SUCCESS.
-
-Wait,test config...
-
-Test success.
-net.core.rmem_max = 8000000
-hysteria.sh: line 630: 22019 Killed                  /etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server > /tmp/hihy_debug.info 2>&1
-Created symlink /etc/systemd/system/multi-user.target.wants/hihy.service -> /etc/systemd/system/hihy.service.
-配置文件输出如下且已经在本目录生成(直接下载本目录生成的config.json[推荐]/自行复制粘贴到本地)
-
+1. [v2rayN/nekorelay/hihy_cmd] 使用hysteria core直接运行
+客户端配置文件输出至: /root/config.json ( 直接下载生成的配置文件[推荐] / 自行复制粘贴下方配置到本地 )
 Tips:客户端默认只开启http(8888)、socks5(8889)代理!其他方式请参照hysteria文档自行修改客户端config.json
-***********************************↓↓↓copy↓↓↓*******************************↓
+↓***********************************↓↓↓copy↓↓↓*******************************↓
 {
-"server": "1.2.3.4:37575",
+"server": "129.146.83.103:12854",
 "protocol": "udp",
-"up_mbps": 25,
-"down_mbps": 125,
+"up_mbps": 50,
+"down_mbps": 250,
 "http": {
 "listen": "127.0.0.1:10809",
 "timeout" : 300,
@@ -219,10 +171,10 @@ Tips:客户端默认只开启http(8888)、socks5(8889)代理!其他方式请参�
 "acl": "acl/routes.acl",
 "mmdb": "acl/Country.mmdb",
 "auth_str": "pekopeko",
-"server_name": "www.whitehouse.gov",
+"server_name": "wechat.com",
 "insecure": true,
-"recv_window_conn": 3932160,
-"recv_window": 15728640,
+"recv_window_conn": 23592960,
+"recv_window": 94371840,
 "disable_mtu_discovery": true,
 "resolver": "119.29.29.29:53",
 "retry": 3,
@@ -230,10 +182,10 @@ Tips:客户端默认只开启http(8888)、socks5(8889)代理!其他方式请参�
 }
 ↑***********************************↑↑↑copy↑↑↑*******************************↑
 
-Shadowrocket/Sagernet/Passwall一键链接:
-hysteria://1.2.3.4:37575?protocol=udp&auth=pekopeko&peer=www.whitehouse.gov&insecure=1&upmbps=25&downmbps=125&alpn=h3#Hys-1.2.3.4
+2. [Shadowrocket/Sagernet/Passwall] 一键链接:
+hysteria://129.146.83.103:12854?protocol=udp&auth=pekopeko&peer=wechat.com&insecure=1&upmbps=50&downmbps=250&alpn=h3#Hys-129.146.83.103
 
-安装完毕
+3. [Clash.Meta] 推荐!配置文件已在/root/metaHys.yaml输出,请下载至客户端使用(beta)
 
   </blockcode></pre>
 </details>
@@ -259,7 +211,8 @@ hysteria://1.2.3.4:37575?protocol=udp&auth=pekopeko&peer=www.whitehouse.gov&inse
 * [ ] 多密码支持
 * [ ] 利用base64加密替换原来的auth_str
 * [x] 兼容v2rayN,放弃cmd的更新
-* [ ] [(重要)全面兼容clash-meta核心，替换原来客户端是hysteria核心的不便，使用clash-meta分流(鸽ing...)](https://github.com/emptysuns/Hi_Hysteria/issues/90)
+* [x] 支持clash.meta核心
+* [ ] 优化clash配置选项
 
 ## 五·结语
 
@@ -279,3 +232,9 @@ hysteria://1.2.3.4:37575?protocol=udp&auth=pekopeko&peer=www.whitehouse.gov&inse
 
 
 [@2dust/v2rayN](https://github.com/2dust/v2rayN)
+
+
+[@Loyalsoldier/clash-rules](https://github.com/Loyalsoldier/clash-rules)
+
+
+[@zzzgydi/clash-verge](https://github.com/zzzgydi/clash-verge)

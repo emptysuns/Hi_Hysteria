@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="0.3.8"
+hihyV="0.3.9"
 function echoColor() {
 	case $1 in
 		# 红色
@@ -113,16 +113,19 @@ function reinstall(){
 
 function printMsg(){
 	cp -P /etc/hihy/result/hihyClient.json ./config.json
+	cp -P /etc/hihy/result/metaHys.yaml ./metaHys.yaml
 	echo ""
-	echoColor yellowBlack "配置文件输出如下且已经在本目录生成(直接下载本目录生成的config.json[推荐]/自行复制粘贴到本地)"
+	echoColor purple "1. [v2rayN/nekorelay/hihy_cmd] 使用hysteria core直接运行"
+	echoColor green "客户端配置文件输出至: `pwd`/config.json ( 直接下载生成的配置文件[推荐] / 自行复制粘贴下方配置到本地 )"
 	echoColor green "Tips:客户端默认只开启http(8888)、socks5(8889)代理!其他方式请参照hysteria文档自行修改客户端config.json"
-	echoColor purple "***********************************↓↓↓copy↓↓↓*******************************↓"
+	echoColor purple "↓***********************************↓↓↓copy↓↓↓*******************************↓"
 	cat ./config.json
 	echoColor purple "↑***********************************↑↑↑copy↑↑↑*******************************↑\n"
 	url=`cat /etc/hihy/result/url.txt`
-	echoColor purple "Shadowrocket/Sagernet/Passwall一键链接:"
+	echoColor purple "2. [Shadowrocket/Sagernet/Passwall] 一键链接:"
 	echoColor green ${url}
 	echo -e "\n"
+	echoColor purple "3. [Clash.Meta] 推荐!配置文件已在`pwd`/metaHys.yaml输出,请下载至客户端使用(beta)"
 }
 
 function hihy(){
@@ -556,7 +559,13 @@ EOF
 	rm /tmp/hihy_debug.info
 	url="hysteria://${u_host}:${port}?protocol=${protocol}&auth=${auth_str}&peer=${u_domain}&insecure=${sec}&upmbps=${upload}&downmbps=${download}&alpn=h3#Hys-${u_host}"
 	echo ${url} > /etc/hihy/result/url.txt
-	#clear
+	if [ $sec = "1" ];then
+		skip_cert_verify="true"
+	else
+		skip_cert_verify="false"
+	fi
+	generateMetaYaml "Hys-${u_host}" ${u_host} ${port} ${auth_str} ${protocol} ${upload} ${download} ${u_domain} ${skip_cert_verify} ${r_conn} ${r_client} 
+	clear
 }
 
 function downloadHysteriaCore(){
@@ -854,6 +863,168 @@ function changeMode(){
 }
 
 
+function generateMetaYaml(){
+	cat <<EOF > /etc/hihy/result/metaHys.yaml
+mixed-port: 7890
+allow-lan: true
+mode: rule
+log-level: info
+ipv6: true
+dns:
+  enable: true
+  listen: 0.0.0.0:53
+  ipv6: true
+  default-nameserver:
+    - 114.114.114.114
+    - 223.5.5.5
+  enhanced-mode: redir-host
+  nameserver:
+    - https://dns.alidns.com/dns-query
+    - https://doh.pub/dns-query
+  fallback:
+    - 114.114.114.114
+    - 223.5.5.5
+
+proxies:
+  - name: "$1"
+    type: hysteria
+    server: $2
+    port: $3
+    auth_str: $4
+    alpn: h3
+    protocol: $5
+    up: $6
+    down: $7
+    sni: $8
+    skip-cert-verify: $9
+    recv_window_conn: ${10}
+    recv_window: ${11}
+    disable_mtu_discovery: true
+
+proxy-groups:
+  - name: "PROXY"
+    type: select
+    proxies:
+     - $1
+
+rule-providers:
+  reject:
+    type: http
+    behavior: domain
+    url: "https://ghproxy.com/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/reject.txt"
+    path: ./ruleset/reject.yaml
+    interval: 86400
+
+  icloud:
+    type: http
+    behavior: domain
+    url: "https://ghproxy.com/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/icloud.txt"
+    path: ./ruleset/icloud.yaml
+    interval: 86400
+
+  apple:
+    type: http
+    behavior: domain
+    url: "https://ghproxy.com/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/apple.txt"
+    path: ./ruleset/apple.yaml
+    interval: 86400
+
+  google:
+    type: http
+    behavior: domain
+    url: "https://ghproxy.com/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/google.txt"
+    path: ./ruleset/google.yaml
+    interval: 86400
+
+  proxy:
+    type: http
+    behavior: domain
+    url: "https://ghproxy.com/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/proxy.txt"
+    path: ./ruleset/proxy.yaml
+    interval: 86400
+
+  direct:
+    type: http
+    behavior: domain
+    url: "https://ghproxy.com/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/direct.txt"
+    path: ./ruleset/direct.yaml
+    interval: 86400
+
+  private:
+    type: http
+    behavior: domain
+    url: "https://ghproxy.com/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/private.txt"
+    path: ./ruleset/private.yaml
+    interval: 86400
+
+  gfw:
+    type: http
+    behavior: domain
+    url: "https://ghproxy.com/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/gfw.txt"
+    path: ./ruleset/gfw.yaml
+    interval: 86400
+
+  greatfire:
+    type: http
+    behavior: domain
+    url: "https://ghproxy.com/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/greatfire.txt"
+    path: ./ruleset/greatfire.yaml
+    interval: 86400
+
+  tld-not-cn:
+    type: http
+    behavior: domain
+    url: "https://ghproxy.com/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/tld-not-cn.txt"
+    path: ./ruleset/tld-not-cn.yaml
+    interval: 86400
+
+  telegramcidr:
+    type: http
+    behavior: ipcidr
+    url: "https://ghproxy.com/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/telegramcidr.txt"
+    path: ./ruleset/telegramcidr.yaml
+    interval: 86400
+
+  cncidr:
+    type: http
+    behavior: ipcidr
+    url: "https://ghproxy.com/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/cncidr.txt"
+    path: ./ruleset/cncidr.yaml
+    interval: 86400
+
+  lancidr:
+    type: http
+    behavior: ipcidr
+    url: "https://ghproxy.com/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/lancidr.txt"
+    path: ./ruleset/lancidr.yaml
+    interval: 86400
+
+  applications:
+    type: http
+    behavior: classical
+    url: "https://ghproxy.com/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/applications.txt"
+    path: ./ruleset/applications.yaml
+    interval: 86400
+
+rules:
+  - RULE-SET,applications,DIRECT
+  - DOMAIN,clash.razord.top,DIRECT
+  - DOMAIN,yacd.haishan.me,DIRECT
+  - RULE-SET,private,DIRECT
+  - RULE-SET,reject,REJECT
+  - RULE-SET,icloud,DIRECT
+  - RULE-SET,apple,DIRECT
+  - RULE-SET,google,DIRECT
+  - RULE-SET,proxy,PROXY
+  - RULE-SET,direct,DIRECT
+  - RULE-SET,lancidr,DIRECT
+  - RULE-SET,cncidr,DIRECT
+  - RULE-SET,telegramcidr,PROXY
+  - GEOIP,LAN,DIRECT
+  - GEOIP,CN,DIRECT
+  - MATCH,PROXY
+EOF
+}
 
 function menu()
 {

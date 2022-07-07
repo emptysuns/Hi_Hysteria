@@ -7,5 +7,14 @@
 ```
 #生成routes.acl + 获得geoip Country.mmdb
 >python3 GetRoutes.py
-Generate complete.
+
+July 07, 2022,Loading...
+
+Block rules: 53337 done.
+Direct rules: 66789 done.
+Proxy rules: 31924 done.
+
+All rules: 152050
+
+Generate completed!
 ```
