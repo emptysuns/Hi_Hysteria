@@ -117,7 +117,7 @@ Already the latest version.Ignore.
 3
 请输入自签证书的域名(默认:wechat.com):
 
-您已选择自签wechat.com证书加密.公网ip:129.146.83.103
+您已选择自签wechat.com证书加密.公网ip:1.2.3.4
 请输入你想要开启的端口,此端口是server端口,建议10000-65535.(默认随机)
 
 随机端口:12854
@@ -148,12 +148,12 @@ pekopeko
 执行配置...
 install.sh: line 618: 11172 Killed                  /etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server > /tmp/hihy_debug.info 2>&1
 
-1. [v2rayN/nekorelay/hihy_cmd] 使用hysteria core直接运行
+1* [v2rayN/nekorelay/hihy_cmd] 使用hysteria core直接运行
 客户端配置文件输出至: /root/config.json ( 直接下载生成的配置文件[推荐] / 自行复制粘贴下方配置到本地 )
 Tips:客户端默认只开启http(8888)、socks5(8889)代理!其他方式请参照hysteria文档自行修改客户端config.json
 ↓***********************************↓↓↓copy↓↓↓*******************************↓
 {
-"server": "129.146.83.103:12854",
+"server": "1.2.3.4:12854",
 "protocol": "udp",
 "up_mbps": 50,
 "down_mbps": 250,
@@ -182,10 +182,10 @@ Tips:客户端默认只开启http(8888)、socks5(8889)代理!其他方式请参�
 }
 ↑***********************************↑↑↑copy↑↑↑*******************************↑
 
-2. [Shadowrocket/Sagernet/Passwall] 一键链接:
-hysteria://129.146.83.103:12854?protocol=udp&auth=pekopeko&peer=wechat.com&insecure=1&upmbps=50&downmbps=250&alpn=h3#Hys-129.146.83.103
+2* [Shadowrocket/Sagernet/Passwall] 一键链接:
+hysteria://1.2.3.4:12854?protocol=udp&auth=pekopeko&peer=wechat.com&insecure=1&upmbps=50&downmbps=250&alpn=h3#Hys-1.2.3.4
 
-3. [Clash.Meta] 推荐!配置文件已在/root/metaHys.yaml输出,请下载至客户端使用(beta)
+3* [Clash.Meta] 推荐!配置文件已在/root/metaHys.yaml输出,请下载至客户端使用(beta)
 
   </blockcode></pre>
 </details>
