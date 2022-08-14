@@ -33,11 +33,10 @@ Hysteria这是一款由go编写的非常优秀的“轻量”代理程序，它�
 适配ubuntu/debian, centos/rhel操作系统,misple/arm/x86/s390x架构。
 
 ```
-(2022/07/07) 0.3.9 [强烈建议更新server和client]:
-1. 支持导出一个clash.meta 配置文件，clash.meta作为客户端核心比起hysteria有着非常多的优势，详情查看介绍。[推荐/beta ing...]
-2. 修改acl规则生成来源，转化长期维护更新clash分流规则成hysteria acl规则，修复0.3.8.1 acl屏蔽规则
-3. hysteria里程碑更新至1.1.0, cpu开销减少，至少提升130%-500%速度，船烈建议更新两端
-4. 修改结果打印样式，更加清晰可见
+(2022/08/14) 0.4.0 [v2rayN如果使用最新的配置,请更新客户端，clash_meta不影响]:
+1. 兼容hysteria 1.2.0 resovler与tun配置变动
+2. 使用DoH替代原来通过udp 53明文的dns请求，增加安全性
+3. 完善关于支持客户端的说明
 ```
 [历史改进](md/log.md)
 
@@ -146,9 +145,11 @@ pekopeko
 配置录入完成!
 
 执行配置...
+
+安装成功,请查看下方配置详细信息
 install.sh: line 618: 11172 Killed                  /etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server > /tmp/hihy_debug.info 2>&1
 
-1* [v2rayN/nekorelay/hihy_cmd] 使用hysteria core直接运行
+1* [v2rayN/nekoray/hihy_cmd] 使用hysteria core直接运行
 客户端配置文件输出至: /root/config.json ( 直接下载生成的配置文件[推荐] / 自行复制粘贴下方配置到本地 )
 Tips:客户端默认只开启http(8888)、socks5(8889)代理!其他方式请参照hysteria文档自行修改客户端config.json
 ↓***********************************↓↓↓copy↓↓↓*******************************↓
@@ -176,7 +177,7 @@ Tips:客户端默认只开启http(8888)、socks5(8889)代理!其他方式请参�
 "recv_window_conn": 23592960,
 "recv_window": 94371840,
 "disable_mtu_discovery": true,
-"resolver": "119.29.29.29:53",
+"resolver": "https://223.5.5.5:443/dns-query",
 "retry": 3,
 "retry_interval": 3
 }
@@ -238,3 +239,4 @@ hysteria://1.2.3.4:12854?protocol=udp&auth=pekopeko&peer=wechat.com&insecure=1&u
 
 
 [@zzzgydi/clash-verge](https://github.com/zzzgydi/clash-verge)
+[@MetaCubeX/Clash.Meta](https://github.com/MetaCubeX/Clash.Meta)

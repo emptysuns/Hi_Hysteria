@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="0.3.9"
+hihyV="0.4.0"
 function echoColor() {
 	case $1 in
 		# 红色
@@ -34,6 +34,10 @@ function echoColor() {
         # 黑底黄字
         echo -e "\033[1;33;40m${printN}$2 \033[0m"
         ;;
+	"greenWhite")
+		# 绿底白字
+		echo -e "\033[42;37m${printN}$2 \033[0m"
+		;;
 	esac
 }
 
@@ -115,7 +119,7 @@ function printMsg(){
 	cp -P /etc/hihy/result/hihyClient.json ./config.json
 	cp -P /etc/hihy/result/metaHys.yaml ./metaHys.yaml
 	echo ""
-	echoColor purple "1* [v2rayN/nekorelay/hihy_cmd] 使用hysteria core直接运行"
+	echoColor purple "1* [v2rayN/nekoray/hihy_cmd] 使用hysteria core直接运行"
 	echoColor green "客户端配置文件输出至: `pwd`/config.json ( 直接下载生成的配置文件[推荐] / 自行复制粘贴下方配置到本地 )"
 	echoColor green "Tips:客户端默认只开启http(8888)、socks5(8889)代理!其他方式请参照hysteria文档自行修改客户端config.json"
 	echoColor purple "↓***********************************↓↓↓copy↓↓↓*******************************↓"
@@ -394,7 +398,7 @@ function setHysteriaConfig(){
 "recv_window_conn": ${r_conn},
 "recv_window": ${r_client},
 "disable_mtu_discovery": true,
-"resolver": "119.29.29.29:53",
+"resolver": "https://223.5.5.5:443/dns-query",
 "retry": 3,
 "retry_interval": 3
 }
@@ -428,7 +432,7 @@ EOF
 "recv_window_conn": ${r_conn},
 "recv_window": ${r_client},
 "disable_mtu_discovery": true,
-"resolver": "119.29.29.29:53",
+"resolver": "https://223.5.5.5:443/dns-query",
 "retry": 3,
 "retry_interval": 3
 }
@@ -454,7 +458,7 @@ EOF
 "max_conn_client": 4096,
 "disable_mtu_discovery": true,
 "resolve_preference": "46",
-"resolver": "8.8.8.8:53"
+"resolver": "https://8.8.8.8:443/dns-query"
 }
 EOF
 
@@ -490,7 +494,7 @@ EOF
 "max_conn_client": 4096,
 "disable_mtu_discovery": true,
 "resolve_preference": "46",
-"resolver": "8.8.8.8:53"
+"resolver": "https://8.8.8.8:443/dns-query"
 }
 EOF
 
@@ -519,7 +523,7 @@ EOF
 "recv_window_conn": ${r_conn},
 "recv_window": ${r_client},
 "disable_mtu_discovery": true,
-"resolver": "119.29.29.29:53",
+"resolver": "https://223.5.5.5:443/dns-query",
 "retry": 3,
 "retry_interval": 3
 }
@@ -565,6 +569,7 @@ EOF
 		skip_cert_verify="false"
 	fi
 	generateMetaYaml "Hys-${u_host}" ${u_host} ${port} ${auth_str} ${protocol} ${upload} ${download} ${u_domain} ${skip_cert_verify} ${r_conn} ${r_client}
+	echoColor greenWhite "安装成功,请查看下方配置详细信息"
 }
 
 function downloadHysteriaCore(){
@@ -578,15 +583,19 @@ function downloadHysteriaCore(){
     elif [ $get_arch = "mips64" ];then
         wget -q -O /etc/hihy/bin/appS --no-check-certificate https://github.com/HyNetwork/hysteria/releases/download/${version}/hysteria-linux-mipsle
 	elif [ $get_arch = "s390x" ];then
-		wget -q -O /etc/hihy/bin/appS --no-check-certificate https://github.com/HyNetwork/hysteria/releases/download/${version}/hysteria-tun-linux-s390x
+		wget -q -O /etc/hihy/bin/appS --no-check-certificate https://github.com/HyNetwork/hysteria/releases/download/${version}/hysteria-linux-s390x
 	elif [ $get_arch = "i686" ];then
-		wget -q -O /etc/hihy/bin/appS --no-check-certificate https://github.com/HyNetwork/hysteria/releases/download/${version}/hysteria-tun-linux-386
+		wget -q -O /etc/hihy/bin/appS --no-check-certificate https://github.com/HyNetwork/hysteria/releases/download/${version}/hysteria-linux-386
     else
         echoColor yellowBlack "Error[OS Message]:${get_arch}\nPlease open a issue to https://github.com/emptysuns/Hi_Hysteria/issues !"
         exit
     fi
-	chmod 755 /etc/hihy/bin/appS
-	echoColor purple "\nDownload completed."
+	if [ -f "/etc/hihy/bin/appS" ]; then
+		chmod 755 /etc/hihy/bin/appS
+		echoColor purple "\nDownload completed."
+	else
+		echoColor red "Network Error: Can't connect to Github!"
+	fi
 }
 
 function updateHysteriaCore(){

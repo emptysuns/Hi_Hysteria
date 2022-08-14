@@ -1,9 +1,9 @@
 # 支持的客户端
 
-## 1. Clash.Meta[推荐]
+## 1. [Clash.Meta](https://github.com/emptysuns/Hi_Hysteria/releases/latest)[推荐]
 
 ### 介绍
-[clash.meta](https://github.com/MetaCubeX/Clash.Meta/releases/tag/Prerelease-Alpha) 继承了clash的所有特点，所以clash能用的GUI，它全部可以使用，包括openclash、clash verge等等。
+[clash.meta](https://github.com/MetaCubeX/Clash.Meta/releases/tag/Prerelease-Alpha) 继承了clash的所有特点，所以clash能用的GUI，它全部可以使用，包括openclash、clash verge、ClashForWindows等等。
 
 推荐使用[Alpha](https://github.com/MetaCubeX/Clash.Meta/releases/tag/Prerelease-Alpha)分支，同步最新代码。
 
@@ -38,11 +38,13 @@ clash.meta可以同时配置支持vless、ss2022、trojan等等多配置，不�
 
 v2rayN已经在添加自定义配置时支持hysteria并能自动识别config的类型，hihy在`0.3.7`版本之后兼容v2rayN，hihy_cmd已经需要退出舞台了，**不会再对它进行维护**。
 
-我将如何使用呢?你可以直接下载我打包好的[v2rayN-hysteriaCore](../client/windows/v2rayN/v2rayN-hysteriaCore.rar)，可忽略下方的配置v2n过程。
+我将如何使用呢?
+
+**你也可以直接下载我打包好的[v2rayN-hysteriaCore](https://github.com/emptysuns/Hi_Hysteria/releases/latest)，可忽略下方的配置v2n的过程。**
 
 1. [点我下载](https://github.com/2dust/v2rayN/releases/latest/download/v2rayN.zip)最新的v2rayN，并解压。
 
-2. [点我下载](https://github.com/HyNetwork/hysteria/releases/latest/download/hysteria-tun-windows-6.0-amd64.exe)hysteria最新版本的Core，修改名称为`hysteria.exe`,将它放到v2rayN的根目录里。
+2. [点我下载](https://github.com/HyNetwork/hysteria/releases/download/v1.2.0/hysteria-windows-amd64.exe)hysteria最新版本的Core，修改名称为`hysteria.exe`,将它放到v2rayN的根目录里。
 3. 使用提供的[脚本](https://github.com/emptysuns/Hi_Hysteria/tree/main/acl)生成acl文件和Country.mmdb文件,在v2rayN根目录创建一个新的文件夹名称为`acl`并将这两个文件放到这个目录里。
 4. 开始使用时需要得到hihy生成的config.json配置文件，v2rayN选择这个文件，双击选择此节点。如下图:
 
@@ -65,14 +67,16 @@ v2rayN已经在添加自定义配置时支持hysteria并能自动识别config的
 
 
 
-## 3. sagernet [android]
+## 3. [sagernet](https://play.google.com/store/apps/details?id=io.nekohasekai.sagernet&hl=en_SG&gl=US) [android]
   可通过一键链接导入。
 
-  安装hysteria-plugin并**允许该插件被其他应用启动**，否则提示启动失败（tips: sagernet支持直接剪切板导入hysteria的json文本）
+  安装[hysteria-plugin](https://play.google.com/store/apps/details?id=io.nekohasekai.sagernet.plugin.hysteria&hl=en_SG&gl=US)并**允许该插件被其他应用启动**，否则提示启动失败（tips: sagernet支持直接剪切板导入hysteria的json配置文本）
 
 ## 4. openwrt passwall
 只能在编译固件时加进去，请op刷到最新版本,才会支持hysteria，对应config.json看下面
 ![image](https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/imgs/passwall.png)
+
+支持一键导入
 
 ## 5. openclash
 待补充或者请您提交pr
