@@ -34,7 +34,7 @@ Hysteria这是一款由go编写的非常优秀的“轻量”代理程序，它�
 
 ```
 (2022/08/14) 0.4.0 [v2rayN如果使用最新的配置,请更新客户端，clash_meta不影响]:
-1. 兼容hysteria 1.2.0 resovler与tun配置变动
+1. 兼容hysteria 1.2.0 resolver与tun配置变动
 2. 使用DoH替代原来通过udp 53明文的dns请求，增加安全性
 3. 完善关于支持客户端的说明
 ```
