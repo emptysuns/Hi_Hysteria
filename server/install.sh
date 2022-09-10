@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="0.4.0"
+hihyV="0.4.1"
 function echoColor() {
 	case $1 in
 		# 红色
@@ -533,7 +533,7 @@ EOF
 	echo -e "\033[1;;35m\nWait,test config...\n\033[0m"
 	echo "block all udp/443" > /etc/hihy/acl/hihyServer.acl
 	/etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server > /tmp/hihy_debug.info 2>&1 &
-	sleep 10
+	sleep 5
 	msg=`cat /tmp/hihy_debug.info`
 	case ${msg} in 
 		*"Failed to get a certificate with ACME"*)
@@ -569,6 +569,7 @@ EOF
 		skip_cert_verify="false"
 	fi
 	generateMetaYaml "Hys-${u_host}" ${u_host} ${port} ${auth_str} ${protocol} ${upload} ${download} ${u_domain} ${skip_cert_verify} ${r_conn} ${r_client}
+	sleep 5
 	echoColor greenWhite "安装成功,请查看下方配置详细信息"
 }
 
