@@ -9,6 +9,7 @@ function rmhy(){
     rm /usr/bin/${n}
     crontab -l > /tmp/crontab.tmp
     sed -i '/0 4 \* \* \* systemctl restart ${n}/d' /tmp/crontab.tmp
+	sed -i '/15 4 \* \* 1,4 hihy cronTask/d' /tmp/crontab.tmp
     crontab /tmp/crontab.tmp
     rm /tmp/crontab.tmp
 }

@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="0.4.1"
+hihyV="0.4.2"
 function echoColor() {
 	case $1 in
 		# 红色
@@ -320,7 +320,7 @@ function setHysteriaConfig(){
 	delay=200
     echo -e "delay:`echoColor red ${delay}`ms\n"
     fi
-    echo -e "\n期望速度,这是客户端的峰值速度,服务端默认不受限。"`echoColor red Tips:脚本会自动*1.25做冗余，您期望过低或者过高会影响转发效率,请如实填写!`
+    echo -e "\n期望速度,这是客户端的峰值速度,服务端默认不受限。"`echoColor red Tips:脚本会自动*1.10做冗余，您期望过低或者过高会影响转发效率,请如实填写!`
     echoColor green "请输入客户端期望的下行速度:(默认50,单位:mbps):"
     read  download
     if [ -z "${download}" ];then
@@ -348,8 +348,8 @@ function setHysteriaConfig(){
 	done
     echoColor green "\n配置录入完成!\n"
     echoColor yellowBlack "执行配置..."
-    download=$(($download + $download / 4))
-    upload=$(($upload + $upload / 4))
+    download=$(($download + $download / 10))
+    upload=$(($upload + $upload / 10))
     r_client=$(($delay * 2 * $download / 1000 * 1024 * 1024))
     r_conn=$(($r_client / 4))
 	allowPort ${ut} ${port}
@@ -398,9 +398,12 @@ function setHysteriaConfig(){
 "recv_window_conn": ${r_conn},
 "recv_window": ${r_client},
 "disable_mtu_discovery": true,
-"resolver": "https://223.5.5.5:443/dns-query",
+"resolver": "https://doh.pub/dns-query",
 "retry": 3,
-"retry_interval": 3
+"retry_interval": 3,
+"quit_on_disconnect": false,
+"handshake_timeout": 15,
+"idle_timeout": 30
 }
 EOF
 		else
@@ -432,9 +435,12 @@ EOF
 "recv_window_conn": ${r_conn},
 "recv_window": ${r_client},
 "disable_mtu_discovery": true,
-"resolver": "https://223.5.5.5:443/dns-query",
+"resolver": "https://doh.pub/dns-query",
 "retry": 3,
-"retry_interval": 3
+"retry_interval": 3,
+"quit_on_disconnect": false,
+"handshake_timeout": 15,
+"idle_timeout": 30
 }
 EOF
 		fi		
@@ -523,9 +529,12 @@ EOF
 "recv_window_conn": ${r_conn},
 "recv_window": ${r_client},
 "disable_mtu_discovery": true,
-"resolver": "https://223.5.5.5:443/dns-query",
+"resolver": "https://doh.pub/dns-query",
 "retry": 3,
-"retry_interval": 3
+"retry_interval": 3,
+"quit_on_disconnect": false,
+"handshake_timeout": 15,
+"idle_timeout": 30
 }
 EOF
     fi
@@ -569,8 +578,8 @@ EOF
 		skip_cert_verify="false"
 	fi
 	generateMetaYaml "Hys-${u_host}" ${u_host} ${port} ${auth_str} ${protocol} ${upload} ${download} ${u_domain} ${skip_cert_verify} ${r_conn} ${r_client}
-	sleep 5
 	echoColor greenWhite "安装成功,请查看下方配置详细信息"
+	sleep 10
 }
 
 function downloadHysteriaCore(){
@@ -656,7 +665,7 @@ function hihyNotify(){
 	localV=${hihyV}
 	remoteV=`curl -fsSL https://git.io/hysteria.sh | sed  -n 2p | cut -d '"' -f 2`
 	if [ "${localV}" != "${remoteV}" ];then
-		echoColor yellowBlack "[Update] hihy有更新,version:v${remoteV},建议更新并查看日志: https://github.com/emptysuns/Hi_Hysteria"
+		echoColor purple "[Update] hihy有更新,version:v${remoteV},建议更新并查看日志: https://github.com/emptysuns/Hi_Hysteria"
 	fi
 
 }
@@ -701,7 +710,7 @@ After=network.target
 [Service]
 Type=simple
 PIDFile=/run/hihy.pid
-ExecStart=/etc/hihy/bin/appS --log-level warn -c /etc/hihy/conf/hihyServer.json server
+ExecStart=/etc/hihy/bin/appS --log-level info -c /etc/hihy/conf/hihyServer.json server
 #Restart=on-failure
 #RestartSec=10s
 
@@ -715,7 +724,7 @@ EOF
     systemctl enable hihy
     systemctl start hihy
 	crontab -l > /tmp/crontab.tmp
-	echo  "0 4 * * * systemctl restart hihy" >> /tmp/crontab.tmp
+	echo  "15 4 * * 1,4 hihy cronTask" >> /tmp/crontab.tmp
 	crontab /tmp/crontab.tmp
 	rm /tmp/crontab.tmp
 	printMsg
@@ -818,6 +827,12 @@ function checkRoot(){
 	fi
 }
 
+function editProtocol(){
+	# $1 change to $2, example(editProtocol 'udp' 'faketcp'): udp to faketcp
+	sed -i "s/\"protocol\": \"${1}\"/\"protocol\": \"${2}\"/g" /etc/hihy/conf/hihyServer.json
+	sed -i "s/\"protocol\": \"${1}\"/\"protocol\": \"${2}\"/g" /etc/hihy/result/hihyClient.json
+}
+
 function changeMode(){
 	if [ ! -f "/etc/hihy/conf/hihyServer.json" ]; then
 		echoColor red "配置文件不存在,exit..."
@@ -832,12 +847,12 @@ function changeMode(){
     	read pNum
 		if [ -z "${pNum}" ] || [ "${pNum}" == "1" ];then
 			echoColor purple "选择修改协议类型为faketcp."
-			sed -i 's/"protocol": "udp"/"protocol": "faketcp"/g' /etc/hihy/conf/hihyServer.json
+			editProtocol "udp" "faketcp"
 			delHihyFirewallPort
 			allowPort "tcp" ${port}
 		else
 			echoColor purple "选择修改协议类型为wechat-video."
-			sed -i 's/"protocol": "udp"/"protocol": "wechat-video"/g' /etc/hihy/conf/hihyServer.json
+			editProtocol "udp" "wechat-video"
 		fi
 	elif [ "${protocol}" = "faketcp" ];then
 		delHihyFirewallPort
@@ -846,22 +861,22 @@ function changeMode(){
     	read pNum
 		if [ -z "${pNum}" ] || [ "${pNum}" == "1" ];then
 			echoColor purple "选择修改协议类型为udp."
-			sed -i 's/"protocol": "faketcp"/"protocol": "udp"/g' /etc/hihy/conf/hihyServer.json
+			editProtocol "faketcp" "udp"
 		else
 			echoColor purple "选择修改协议类型为wechat-video."
-			sed -i 's/"protocol": "faketcp"/"protocol": "wechat-video"/g' /etc/hihy/conf/hihyServer.json
+			editProtocol "faketcp" "wechat-video"
 		fi
 	elif [ "${protocol}" = "wechat-video" ];then
 		echo -e "\033[32m\n请选择修改的协议类型:\n\n\033[0m\033[33m\033[01m1、udp\n2、faketcp\033[0m\033[32m\n\n输入序号:\033[0m"
     	read pNum
 		if [ -z "${pNum}" ] || [ "${pNum}" == "1" ];then
 			echoColor purple "选择修改协议类型为udp."
-			sed -i 's/"protocol": "wechat-video"/"protocol": "udp"/g' /etc/hihy/conf/hihyServer.json
+			editProtocol wechat-video udp
 		else
 			delHihyFirewallPort
 			allowPort "tcp" ${port}
 			echoColor purple "选择修改协议类型为faketcp."
-			sed -i 's/"protocol": "wechat-video"/"protocol": "faketcp"/g' /etc/hihy/conf/hihyServer.json
+			editProtocol "wechat-video" "faketcp"
 		fi
 	else
 		echoColor red "无法识别协议类型!"
@@ -1035,6 +1050,16 @@ rules:
 EOF
 }
 
+function checkLogs(){
+	echoColor purple "hysteria 实时日志,等级:info,按Ctrl+C退出:"
+	journalctl -fu hihy
+}
+
+function cronTask(){
+	systemctl restart hihy #防止hysteria占用内存过大
+	systemctl restart systemd-journald #防止日志占用内存过大
+}
+
 function menu()
 {
 hihy
@@ -1065,6 +1090,7 @@ Tips:`echoColor green "hihy"`命令再次运行本脚本.
 `echoColor yellow "11) 更新hihy"`
 `echoColor red "12) 完全重置所有配置"`
 `echoColor skyBlue "13) 修改当前协议类型"`
+`echoColor yellow "14) 查看实时日志"`
 
 `echoColor purple "###############################"`
 `hihyNotify`
@@ -1117,6 +1143,9 @@ case $input in
 	;;
 	13)
         changeMode
+	;;
+	14)
+		checkLogs
     ;;
 	0)
 		exit
@@ -1129,4 +1158,36 @@ case $input in
 }
 
 checkRoot
-menu
+if [ "$1" == "install" ]; then
+	install
+elif [ "$1" == "uninstall" ]; then
+	uninstall
+elif [ "$1" == "update" ]; then
+	updateHysteriaCore
+elif [ "$1" == "reinstall" ]; then
+	reinstall
+elif [ "$1" == "status" ]; then
+	checkStatus
+elif [ "$1" == "start" ]; then
+	systemctl start hihy
+elif [ "$1" == "stop" ]; then
+	systemctl stop hihy
+elif [ "$1" == "restart" ]; then
+	systemctl restart hihy
+elif [ "$1" == "logs" ]; then
+	checkLogs
+elif [ "$1" == "config" ]; then
+	printMsg
+elif [ "$1" == "change" ]; then
+	changeServerConfig
+elif [ "$1" == "changeIp64" ]; then
+	changeIp64
+elif [ "$1" == "hihyUpdate" ]; then
+	hihyUpdate
+elif [ "$1" == "changeMode" ]; then
+	changeMode
+elif [ "$1" == "cronTask" ]; then
+	cronTask
+else
+	menu
+fi

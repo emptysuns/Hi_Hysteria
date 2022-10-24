@@ -42,6 +42,10 @@ clash.meta可以同时配置支持vless、ss2022、trojan等等多配置，不�
 
 v2rayN已经在添加自定义配置时支持hysteria并能自动识别config的类型，hihy在 `0.3.7`版本之后兼容v2rayN，hihy_cmd已经需要退出舞台了，**不会再对它进行维护**。
 
+**V2rayN比起其他工具来说，直接使用hysteria Core运行，对hysteria新特征支持比起其他工具要更加及时，hihy也会首先将新特征适配V2rayN。**
+
+如果想要及时体验最新的配置，建议使用这个工具。
+
 我将如何使用呢?
 
 **你也可以直接下载我打包好的[v2rayN-hysteriaCore](https://github.com/emptysuns/Hi_Hysteria/releases/latest)，可忽略下方的配置v2n的过程。**
