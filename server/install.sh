@@ -831,6 +831,8 @@ function editProtocol(){
 	# $1 change to $2, example(editProtocol 'udp' 'faketcp'): udp to faketcp
 	sed -i "s/\"protocol\": \"${1}\"/\"protocol\": \"${2}\"/g" /etc/hihy/conf/hihyServer.json
 	sed -i "s/\"protocol\": \"${1}\"/\"protocol\": \"${2}\"/g" /etc/hihy/result/hihyClient.json
+	sed -i "s/protocol: ${1}/protocol: ${2}/g" /etc/hihy/result/metaHys.yaml
+	sed -i "s/protocol=${1}/protocol=${2}/g" /etc/hihy/result/metaHys.yaml
 }
 
 function changeMode(){
