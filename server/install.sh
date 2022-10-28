@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="0.4.2"
+hihyV="0.4.2.a"
 function echoColor() {
 	case $1 in
 		# 红色
@@ -832,7 +832,7 @@ function editProtocol(){
 	sed -i "s/\"protocol\": \"${1}\"/\"protocol\": \"${2}\"/g" /etc/hihy/conf/hihyServer.json
 	sed -i "s/\"protocol\": \"${1}\"/\"protocol\": \"${2}\"/g" /etc/hihy/result/hihyClient.json
 	sed -i "s/protocol: ${1}/protocol: ${2}/g" /etc/hihy/result/metaHys.yaml
-	sed -i "s/protocol=${1}/protocol=${2}/g" /etc/hihy/result/metaHys.yaml
+	sed -i "s/protocol=${1}/protocol=${2}/g" /etc/hihy/result/url.txt
 }
 
 function changeMode(){
