@@ -1,17 +1,11 @@
 # Hi Hysteria
 
-#### (2022/09/10) 0.4.2:
+(2022/11/08) 0.4.3
 
 ```
-说明: hysteria 1.2.2 新增心跳检测配置，如果v2rayN想要使用最新的hihy配置，请更新hysteria到1.2.2以上否则不兼容最新的配置
-
-1. 菜单提供查看日志功能
-2. 修复修改协议类型后打印结果未同步的bug
-3. 新增心跳检测配置
-   Tip: 现仅适用于v2rayN这种通过hysteria内核直接运行的方式
-        clash-Meta/passwall未适配,nekoray需要手动加入，一键链接不支持导入
-4. 减少增加的带宽冗余，防止填写带宽过大时冗余增量过高
-5. 修改重启服务间隔，增加至一周
+1. hysteria 1.3.0发布，支持了多端口监听功能(仅UDP协议支持)，能够无感切换防止单端口QoS/断流等问题
+详细信息请参考: https://github.com/emptysuns/Hi_Hysteria/blob/main/md/portHopping.md
+2. 修复上个版本切换协议时的遗留bug
 ```
 
 [历史改进](md/log.md)
@@ -51,7 +45,6 @@ Hysteria这是一款由go编写的非常优秀的“轻量”代理程序，它�
 
 适配ubuntu/debian, centos/rhel操作系统,misple/arm/x86/s390x架构。
 
-
 ## 二·使用
 
 ### 第一次使用?
@@ -70,6 +63,8 @@ Hysteria这是一款由go编写的非常优秀的“轻量”代理程序，它�
 
 #### 7. [常见问题/通知](md/issues.md)
 
+#### 8. [[端口跳跃/多端口](Port Hopping)介绍](md/portHopping.md)
+
 ### 拉取安装
 
 ```
@@ -82,10 +77,10 @@ bash <(curl -fsSL https://git.io/hysteria.sh)
 首次安装后: `hihy`命令调出菜单,如更新了hihy脚本，请执行选项 `9`或者 `12`,获得最新的配置
 
 ```
- -------------------------------------------
+3 -------------------------------------------
 |**********      Hi Hysteria       **********|
 |**********    Author: emptysuns   **********|
-|**********     Version: 0.4.2     **********|
+|**********     Version: 0.4.3     **********|
  -------------------------------------------
 Tips:hihy 命令再次运行本脚本.
 ............................................. 
@@ -122,8 +117,8 @@ Tips:hihy 命令再次运行本脚本.
 <details>
   <summary>演示较长，点我查看</summary>
     <pre><blockcode> 
-Local core version:v1.1.0
-Remote core version:v1.1.0
+Local core version:v1.3.0
+Remote core version:v1.3.0
 Already the latest version.Ignore.
 开始配置:
 请选择证书申请方式:
@@ -137,48 +132,93 @@ Already the latest version.Ignore.
 请输入自签证书的域名(默认:wechat.com):
 
 您已选择自签wechat.com证书加密.公网ip:1.2.3.4
+
 请输入你想要开启的端口,此端口是server端口,建议10000-65535.(默认随机)
 
-随机端口:12854
+随机端口:63095
 
 选择协议类型:
 
-1、udp(QUIC)
+1、udp(QUIC,可启动端口跳跃)
 2、faketcp
-3、wechat-video(回车默认)
+3、wechat-video(默认)
 
 输入序号:
 1
 传输协议:udp
 
-请输入您到此服务器的平均延迟,关系到转发速度(默认200,单位:ms):
-180
+您选择udp协议,可使用[端口跳跃/多端口](Port Hopping)功能
+强烈推荐,但是处于beta测试中,目前hihy对此功能支持尚不完善,后续会慢慢修改更新,如有问题请反馈给作者,谢谢!
+目前客户端紧V2rayN支持此功能,其他客户端请等待后续更新支持.
 
-期望速度,这是客户端的峰值速度,服务端默认不受限。Tips:脚本会自动*1.1做冗余，您期望过低或者过高会影响转发效率,请如实填写!
+Tip: 长时间单端口 UDP 连接容易被运营商封锁/QoS/断流,启动此功能可以有效避免此问题.
+更加详细介绍请参考: <https://github.com/emptysuns/Hi_Hysteria/blob/main/md/portHopping.md>
+
+选择是否启用:
+
+1、启用(默认)
+2、跳过
+
+输入序号:
+1
+您选择启用端口跳跃/多端口(Port Hopping)功能
+端口跳跃/多端口(Port Hopping)功能需要占用多个端口,请保证这些端口没有监听其他服务
+Tip: 端口选择数量不宜过多,推荐50个左右,建议选择连续的端口范围.
+更多介绍参考: <https://hysteria.network/docs/port-hopping/>
+请输入起始端口(默认47550):
+
+起始端口:47550
+
+请输入结束端口(默认47600):
+
+结束端口:47600
+
+您选择的端口跳跃/多端口(Port Hopping)参数为: 47550:47600
+
+请输入您到此服务器的平均延迟,关系到转发速度(默认200,单位:ms):
+
+delay:200 ms
+
+期望速度,这是客户端的峰值速度,服务端默认不受限。Tips:脚本会自动*1.10做冗余，您期望过低或者过高会影响转发效率,请如实填写!
 请输入客户端期望的下行速度:(默认50,单位:mbps):
-200
+
+客户端下行速度：50 mbps
+
 请输入客户端期望的上行速度(默认10,单位:mbps):
-40
+
+客户端上行速度：10 mbps
+
+请输入认证口令:
+
+此选项不能省略,请重新输入!
 请输入认证口令:
 pekopeko
 
 配置录入完成!
 
 执行配置...
+IPTABLES OPEN: udp/63095
+SIGN...
+Signature ok
+subject=C = CN, ST = GuangDong, L = ShenZhen, O = PonyMa, OU = Tecent, emailAddress = admin@qq.com, CN = Tencent Root CA
+Getting CA Private Key
+SUCCESS.
 
-install.sh: line 618: 11172 Killed                  /etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server > /tmp/hihy_debug.info 2>&1
+Wait,test config...
 
+Test success.
+install.sh: line 211: 13930 Killed                  /etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server > /tmp/hihy_debug.info 2>&1
 安装成功,请查看下方配置详细信息
 
 1* [v2rayN/nekoray/hihy_cmd] 使用hysteria core直接运行
-客户端配置文件输出至: /root/config.json ( 直接下载生成的配置文件[推荐] / 自行复制粘贴下方配置到本地 )
+客户端配置文件输出至: /root/hysteria/config.json ( 直接下载生成的配置文件[推荐] / 自行复制粘贴下方配置到本地 )
 Tips:客户端默认只开启http(8888)、socks5(8889)代理!其他方式请参照hysteria文档自行修改客户端config.json
 ↓***********************************↓↓↓copy↓↓↓*******************************↓
 {
-"server": "1.2.3.4:12854",
+"server": "1.2.3.4:63095,47550-47600",
 "protocol": "udp",
-"up_mbps": 50,
-"down_mbps": 250,
+"up_mbps": 11,
+"down_mbps": 55,
 "http": {
 "listen": "127.0.0.1:10809",
 "timeout" : 300,
@@ -195,19 +235,23 @@ Tips:客户端默认只开启http(8888)、socks5(8889)代理!其他方式请参�
 "auth_str": "pekopeko",
 "server_name": "wechat.com",
 "insecure": true,
-"recv_window_conn": 23592960,
-"recv_window": 94371840,
+"recv_window_conn": 5767168,
+"recv_window": 23068672,
 "disable_mtu_discovery": true,
-"resolver": "https://223.5.5.5:443/dns-query",
+"resolver": "https://doh.pub/dns-query",
 "retry": 3,
-"retry_interval": 3
+"retry_interval": 3,
+"quit_on_disconnect": false,
+"handshake_timeout": 15,
+"idle_timeout": 30
 }
 ↑***********************************↑↑↑copy↑↑↑*******************************↑
 
 2* [Shadowrocket/Sagernet/Passwall] 一键链接:
-hysteria://1.2.3.4:12854?protocol=udp&auth=pekopeko&peer=wechat.com&insecure=1&upmbps=50&downmbps=250&alpn=h3#Hys-1.2.3.4
+hysteria://1.2.3.4:63095?protocol=udp&auth=pekopeko&peer=wechat.com&insecure=1&upmbps=11&downmbps=55&alpn=h3#Hys-1.2.3.4
 
-3* [Clash.Meta] 推荐!配置文件已在/root/metaHys.yaml输出,请下载至客户端使用(beta)
+3* [Clash.Meta] 推荐!配置文件已在/root/hysteria/metaHys.yaml输出,请下载至客户端使用(beta)
+重新配置完成.
 
   `</blockcode></pre>`
 
@@ -237,6 +281,7 @@ hysteria://1.2.3.4:12854?protocol=udp&auth=pekopeko&peer=wechat.com&insecure=1&u
 * [ ] 支持sing-box作为core运行方式
 * [ ] 提供查看实时log选项
 * [ ] 生成clash配置时，提供一个远程链接来代替本地导入（咕～）
+* [ ] 完善对portHopping功能的支持
 
 ## 五·结语
 

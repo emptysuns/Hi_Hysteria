@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="0.4.2.a"
+hihyV="0.4.3"
 function echoColor() {
 	case $1 in
 		# 红色
@@ -226,6 +226,7 @@ function setHysteriaConfig(){
 		key="/etc/hihy/cert/${domain}.key"
 		useAcme=false
 		echoColor purple "\n您已选择自签${domain}证书加密.公网ip:"`echoColor red ${ip}`"\n"
+		echo -e "\n"
     elif [ "${certNum}" == "2" ];then
 		echoColor green "请输入证书cert文件路径(需fullchain):"
 		read cert
@@ -299,7 +300,7 @@ function setHysteriaConfig(){
 			break
 		fi
 	done
-    echo -e "\033[32m选择协议类型:\n\n\033[0m\033[33m\033[01m1、udp(QUIC)\n2、faketcp\n3、wechat-video(回车默认)\033[0m\033[32m\n\n输入序号:\033[0m"
+    echo -e "\033[32m选择协议类型:\n\n\033[0m\033[33m\033[01m1、udp(QUIC,可启动端口跳跃)\n2、faketcp\n3、wechat-video(默认)\033[0m\033[32m\n\n输入序号:\033[0m"
     read protocol
 	ut=
     if [ -z "${protocol}" ] || [ $protocol == "3" ];then
@@ -313,6 +314,39 @@ function setHysteriaConfig(){
 		ut="udp"
     fi
     echo -e "传输协议:"`echoColor red ${protocol}`"\n"
+	if [ "${ut}" == "udp" ];then
+		echoColor yellow "您选择udp协议,可使用[端口跳跃/多端口](Port Hopping)功能"
+		echoColor red "强烈推荐,但是处于beta测试中,目前hihy对此功能支持尚不完善,后续会慢慢修改更新,如有问题请反馈给作者,谢谢!\n目前客户端紧V2rayN支持此功能,其他客户端请等待后续更新支持.\n"
+		echo -e "Tip: 长时间单端口 UDP 连接容易被运营商封锁/QoS/断流,启动此功能可以有效避免此问题."
+		echo -e "更加详细介绍请参考: https://github.com/emptysuns/Hi_Hysteria/blob/main/md/portHopping.md\n"
+		echo -e "\033[32m选择是否启用:\n\n\033[0m\033[33m\033[01m1、启用(默认)\n2、跳过\033[0m\033[32m\n\n输入序号:\033[0m"
+		read portHoppingStatus
+		if [ -z "${portHoppingStatus}" ] || [ $portHoppingStatus == "1" ];then
+			portHoppingStatus="true"
+			echoColor purple "您选择启用端口跳跃/多端口(Port Hopping)功能"
+			echo -e "端口跳跃/多端口(Port Hopping)功能需要占用多个端口,请保证这些端口没有监听其他服务\nTip: 端口选择数量不宜过多,推荐50个左右,建议选择连续的端口范围.\n更多介绍参考: https://hysteria.network/docs/port-hopping/"
+			echoColor green "请输入起始端口(默认47550):"
+			read  portHoppingStart
+			if [ -z "${portHoppingStart}" ];then
+				portHoppingStart=47550
+				echo -e "起始端口:"`echoColor red ${portHoppingStart}`"\n"
+			fi
+			echoColor green "请输入结束端口(默认47600):"
+			read  portHoppingEnd
+			if [ -z "${portHoppingEnd}" ];then
+				portHoppingEnd=47600
+				echo -e "结束端口:"`echoColor red ${portHoppingEnd}`"\n"
+				
+			fi
+			addPortHoppingNat ${portHoppingStart} ${portHoppingEnd} ${port}
+			clientPort="${port},${portHoppingStart}-${portHoppingEnd}"
+			echo -e "您选择的端口跳跃/多端口(Port Hopping)参数为: "`echoColor red ${portHoppingStart}:${portHoppingEnd}`"\n"
+		else
+			portHoppingStatus="false"
+			clientPort=${port}
+			echoColor red "您选择跳过端口跳跃/多端口(Port Hopping)功能"
+		fi
+	fi
 
     echoColor green "请输入您到此服务器的平均延迟,关系到转发速度(默认200,单位:ms):"
     read  delay
@@ -375,7 +409,7 @@ function setHysteriaConfig(){
 			echoColor purple "SUCCESS.\n"
 			cat <<EOF > /etc/hihy/result/hihyClient.json
 {
-"server": "${ip}:${port}",
+"server": "${ip}:${clientPort}",
 "protocol": "${protocol}",
 "up_mbps": ${upload},
 "down_mbps": ${download},
@@ -412,7 +446,7 @@ EOF
 			sec="0"
 			cat <<EOF > /etc/hihy/result/hihyClient.json
 {
-"server": "${domain}:${port}",
+"server": "${domain}:${clientPort}",
 "protocol": "${protocol}",
 "up_mbps": ${upload},
 "down_mbps": ${download},
@@ -506,7 +540,7 @@ EOF
 
 		cat <<EOF > /etc/hihy/result/hihyClient.json
 {
-"server": "${domain}:${port}",
+"server": "${domain}:${clientPort}",
 "protocol": "${protocol}",
 "up_mbps": ${upload},
 "down_mbps": ${download},
@@ -578,8 +612,8 @@ EOF
 		skip_cert_verify="false"
 	fi
 	generateMetaYaml "Hys-${u_host}" ${u_host} ${port} ${auth_str} ${protocol} ${upload} ${download} ${u_domain} ${skip_cert_verify} ${r_conn} ${r_client}
-	echoColor greenWhite "安装成功,请查看下方配置详细信息"
 	sleep 10
+	echoColor greenWhite "安装成功,请查看下方配置详细信息"
 }
 
 function downloadHysteriaCore(){
@@ -640,6 +674,8 @@ function changeServerConfig(){
 	fi
 	systemctl stop hihy
 	delHihyFirewallPort
+	iptables -t nat -F PREROUTING
+	ip6tables -t nat -F PREROUTING
 	updateHysteriaCore
 	setHysteriaConfig
 	systemctl start hihy
@@ -782,6 +818,17 @@ function allowPort() {
 			firewall-cmd --reload
 		fi
 	fi
+}
+
+function addPortHoppingNat() {
+	# 此防火墙规则并不完善，下个版本修复
+	# $1 portHoppingStart
+	# $2 portHoppingEnd
+	# $3 portHoppingTarget
+	iptables -t nat -F PREROUTING  2>/dev/null
+	iptables -t nat -A PREROUTING -p udp --dport $1:$2 -m comment --comment "NAT $1:$2 to $3 (hihysteria)" -j DNAT --to-destination :$3 2>/dev/null
+	ip6tables -t nat -A PREROUTING -p udp --dport $1:$2 -m comment --comment "NAT $1:$2 to $3 (hihysteria)" -j DNAT --to-destination :$3 2>/dev/null
+
 }
 
 function delHihyFirewallPort() {

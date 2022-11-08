@@ -12,6 +12,8 @@ function rmhy(){
 	sed -i '/15 4 \* \* 1,4 hihy cronTask/d' /tmp/crontab.tmp
     crontab /tmp/crontab.tmp
     rm /tmp/crontab.tmp
+	iptables -t nat -F PREROUTING
+	ip6tables -t nat -F PREROUTING
 }
 
 function delHihyFirewallPort() {
