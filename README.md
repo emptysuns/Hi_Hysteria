@@ -6,6 +6,9 @@
 1. hysteria 1.3.0发布，支持了多端口监听功能(仅UDP协议支持)，能够无感切换防止单端口QoS/断流等问题
 详细信息请参考: https://github.com/emptysuns/Hi_Hysteria/blob/main/md/portHopping.md
 2. 修复上个版本切换协议时的遗留bug
+3. 修改一些文字颜色，使之打印出来结果更加清晰
+4. clash.meta 1.13.2 后alpn配置变成了数组，如果您版本低于1.13.2您可能需要更新您的客户端以支持最新的配置
+详细内容: https://docs.metacubex.one/function/proxy/hysteria
 ```
 
 [历史改进](md/log.md)
@@ -152,7 +155,7 @@ Already the latest version.Ignore.
 目前客户端紧V2rayN支持此功能,其他客户端请等待后续更新支持.
 
 Tip: 长时间单端口 UDP 连接容易被运营商封锁/QoS/断流,启动此功能可以有效避免此问题.
-更加详细介绍请参考: <https://github.com/emptysuns/Hi_Hysteria/blob/main/md/portHopping.md>
+更加详细介绍请参考: [https://github.com/emptysuns/Hi_Hysteria/blob/main/md/portHopping.md](https://github.com/emptysuns/Hi_Hysteria/blob/main/md/portHopping.md)
 
 选择是否启用:
 
@@ -164,7 +167,7 @@ Tip: 长时间单端口 UDP 连接容易被运营商封锁/QoS/断流,启动此�
 您选择启用端口跳跃/多端口(Port Hopping)功能
 端口跳跃/多端口(Port Hopping)功能需要占用多个端口,请保证这些端口没有监听其他服务
 Tip: 端口选择数量不宜过多,推荐50个左右,建议选择连续的端口范围.
-更多介绍参考: <https://hysteria.network/docs/port-hopping/>
+更多介绍参考: [https://hysteria.network/docs/port-hopping/](https://hysteria.network/docs/port-hopping/)
 请输入起始端口(默认47550):
 
 起始端口:47550

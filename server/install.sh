@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="0.4.3"
+hihyV="0.4.3.a"
 function echoColor() {
 	case $1 in
 		# 红色
@@ -119,17 +119,17 @@ function printMsg(){
 	cp -P /etc/hihy/result/hihyClient.json ./config.json
 	cp -P /etc/hihy/result/metaHys.yaml ./metaHys.yaml
 	echo ""
-	echoColor purple "1* [v2rayN/nekoray/hihy_cmd] 使用hysteria core直接运行"
+	echo -e  "\033[1;;35m1* [\033[0m\033[31mv2rayN/nekoray\033[0m\033[1;;35m] 使用hysteria core直接运行: \033[0m"
 	echoColor green "客户端配置文件输出至: `pwd`/config.json ( 直接下载生成的配置文件[推荐] / 自行复制粘贴下方配置到本地 )"
 	echoColor green "Tips:客户端默认只开启http(8888)、socks5(8889)代理!其他方式请参照hysteria文档自行修改客户端config.json"
-	echoColor purple "↓***********************************↓↓↓copy↓↓↓*******************************↓"
+	echoColor skyBlue "↓***********************************↓↓↓copy↓↓↓*******************************↓"
 	cat ./config.json
-	echoColor purple "↑***********************************↑↑↑copy↑↑↑*******************************↑\n"
+	echoColor skyBlue "↑***********************************↑↑↑copy↑↑↑*******************************↑\n"
 	url=`cat /etc/hihy/result/url.txt`
-	echoColor purple "2* [Shadowrocket/Sagernet/Passwall] 一键链接:"
+	echo -e  "\033[1;;35m2* [\033[0m\033[31mShadowrocket/Sagernet/Passwall\033[0m\033[1;;35m] 一键链接: \033[0m"
 	echoColor green ${url}
 	echo -e "\n"
-	echoColor purple "3* [Clash.Meta] 推荐!配置文件已在`pwd`/metaHys.yaml输出,请下载至客户端使用(beta)"
+	echo -e  "\033[1;;35m3* [\033[0m\033[31mClash.Meta\033[0m\033[1;;35m] 推荐!配置文件已在`pwd`/metaHys.yaml输出,请下载至客户端使用(beta)\033[0m"
 }
 
 function hihy(){
@@ -573,7 +573,7 @@ EOF
 EOF
     fi
 
-	echo -e "\033[1;;35m\nWait,test config...\n\033[0m"
+	echo -e "\033[1;;35m\nTest config...\n\033[0m"
 	echo "block all udp/443" > /etc/hihy/acl/hihyServer.acl
 	/etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server > /tmp/hihy_debug.info 2>&1 &
 	sleep 5
@@ -591,7 +591,7 @@ EOF
 			exit
 			;;
 		*"Server up and running"*) 
-			echoColor purple "Test success."
+			echoColor purple "Test success!Generating config..."
 			pIDa=`lsof -i :${port}|grep -v "PID" | awk '{print $2}'`
 			kill -9 ${pIDa} > /dev/null 2>&1
 			;;
@@ -964,7 +964,8 @@ proxies:
     server: $2
     port: $3
     auth_str: $4
-    alpn: h3
+    alpn:
+      - h3
     protocol: $5
     up: $6
     down: $7
