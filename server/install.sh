@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="0.4.3.a"
+hihyV="0.4.3.b"
 function echoColor() {
 	case $1 in
 		# 红色
@@ -314,9 +314,9 @@ function setHysteriaConfig(){
 		ut="udp"
     fi
     echo -e "传输协议:"`echoColor red ${protocol}`"\n"
-	if [ "${ut}" == "udp" ];then
+	if [ "${protocol}" == "udp" ];then
 		echoColor yellow "您选择udp协议,可使用[端口跳跃/多端口](Port Hopping)功能"
-		echoColor red "强烈推荐,但是处于beta测试中,目前hihy对此功能支持尚不完善,后续会慢慢修改更新,如有问题请反馈给作者,谢谢!\n目前客户端紧V2rayN支持此功能,其他客户端请等待后续更新支持.\n"
+		echoColor red "强烈推荐,但是处于beta测试中,目前hihy对此功能支持尚不完善,后续会慢慢修改更新,如有问题请反馈给作者,谢谢!\n目前客户端仅V2rayN/Nekoray支持此功能,其他客户端请等待后续更新支持.\n"
 		echo -e "Tip: 长时间单端口 UDP 连接容易被运营商封锁/QoS/断流,启动此功能可以有效避免此问题."
 		echo -e "更加详细介绍请参考: https://github.com/emptysuns/Hi_Hysteria/blob/main/md/portHopping.md\n"
 		echo -e "\033[32m选择是否启用:\n\n\033[0m\033[33m\033[01m1、启用(默认)\n2、跳过\033[0m\033[32m\n\n输入序号:\033[0m"
@@ -437,7 +437,8 @@ function setHysteriaConfig(){
 "retry_interval": 3,
 "quit_on_disconnect": false,
 "handshake_timeout": 15,
-"idle_timeout": 30
+"idle_timeout": 30,
+"hop_interval": 60
 }
 EOF
 		else
@@ -474,7 +475,8 @@ EOF
 "retry_interval": 3,
 "quit_on_disconnect": false,
 "handshake_timeout": 15,
-"idle_timeout": 30
+"idle_timeout": 30,
+"hop_interval": 60
 }
 EOF
 		fi		
@@ -568,7 +570,8 @@ EOF
 "retry_interval": 3,
 "quit_on_disconnect": false,
 "handshake_timeout": 15,
-"idle_timeout": 30
+"idle_timeout": 30,
+"hop_interval": 60
 }
 EOF
     fi
