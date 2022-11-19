@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="0.4.3.b"
+hihyV="0.4.3.c"
 function echoColor() {
 	case $1 in
 		# 红色
@@ -315,7 +315,7 @@ function setHysteriaConfig(){
     fi
     echo -e "传输协议:"`echoColor red ${protocol}`"\n"
 	if [ "${protocol}" == "udp" ];then
-		echoColor yellow "您选择udp协议,可使用[端口跳跃/多端口](Port Hopping)功能"
+		echoColor purple "您选择udp协议,可使用[端口跳跃/多端口](Port Hopping)功能"
 		echoColor red "强烈推荐,但是处于beta测试中,目前hihy对此功能支持尚不完善,后续会慢慢修改更新,如有问题请反馈给作者,谢谢!\n目前客户端仅V2rayN/Nekoray支持此功能,其他客户端请等待后续更新支持.\n"
 		echo -e "Tip: 长时间单端口 UDP 连接容易被运营商封锁/QoS/断流,启动此功能可以有效避免此问题."
 		echo -e "更加详细介绍请参考: https://github.com/emptysuns/Hi_Hysteria/blob/main/md/portHopping.md\n"
