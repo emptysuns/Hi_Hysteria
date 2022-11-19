@@ -620,19 +620,19 @@ EOF
 }
 
 function downloadHysteriaCore(){
-	version=`wget -qO- -t1 -T2 --no-check-certificate "https://api.github.com/repos/HyNetwork/hysteria/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'`
+	version=`wget -qO- -t1 -T2 --no-check-certificate "https://api.github.com/repos/apernet/hysteria/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'`
 	echo -e "The Latest hysteria version:"`echoColor red "${version}"`"\nDownload..."
     get_arch=`arch`
     if [ $get_arch = "x86_64" ];then
-        wget -q -O /etc/hihy/bin/appS --no-check-certificate https://github.com/HyNetwork/hysteria/releases/download/${version}/hysteria-linux-amd64
+        wget -q -O /etc/hihy/bin/appS --no-check-certificate https://github.com/apernet/hysteria/releases/download/${version}/hysteria-linux-amd64
     elif [ $get_arch = "aarch64" ];then
-        wget -q -O /etc/hihy/bin/appS --no-check-certificate https://github.com/HyNetwork/hysteria/releases/download/${version}/hysteria-linux-arm64
+        wget -q -O /etc/hihy/bin/appS --no-check-certificate https://github.com/apernet/hysteria/releases/download/${version}/hysteria-linux-arm64
     elif [ $get_arch = "mips64" ];then
-        wget -q -O /etc/hihy/bin/appS --no-check-certificate https://github.com/HyNetwork/hysteria/releases/download/${version}/hysteria-linux-mipsle
+        wget -q -O /etc/hihy/bin/appS --no-check-certificate https://github.com/apernet/hysteria/releases/download/${version}/hysteria-linux-mipsle
 	elif [ $get_arch = "s390x" ];then
-		wget -q -O /etc/hihy/bin/appS --no-check-certificate https://github.com/HyNetwork/hysteria/releases/download/${version}/hysteria-linux-s390x
+		wget -q -O /etc/hihy/bin/appS --no-check-certificate https://github.com/apernet/hysteria/releases/download/${version}/hysteria-linux-s390x
 	elif [ $get_arch = "i686" ];then
-		wget -q -O /etc/hihy/bin/appS --no-check-certificate https://github.com/HyNetwork/hysteria/releases/download/${version}/hysteria-linux-386
+		wget -q -O /etc/hihy/bin/appS --no-check-certificate https://github.com/apernet/hysteria/releases/download/${version}/hysteria-linux-386
     else
         echoColor yellowBlack "Error[OS Message]:${get_arch}\nPlease open a issue to https://github.com/emptysuns/Hi_Hysteria/issues !"
         exit
@@ -648,7 +648,7 @@ function downloadHysteriaCore(){
 function updateHysteriaCore(){
 	if [ -f "/etc/hihy/bin/appS" ]; then
 		localV=`/etc/hihy/bin/appS -v | cut -d " " -f 3`
-		remoteV=`wget -qO- -t1 -T2 --no-check-certificate "https://api.github.com/repos/HyNetwork/hysteria/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'`
+		remoteV=`wget -qO- -t1 -T2 --no-check-certificate "https://api.github.com/repos/apernet/hysteria/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'`
 		echo -e "Local core version:"`echoColor red "${localV}"`
 		echo -e "Remote core version:"`echoColor red "${remoteV}"`
 		if [ "${localV}" = "${remoteV}" ];then
@@ -712,9 +712,9 @@ function hihyNotify(){
 function hyCoreNotify(){
 	if [ -f "/etc/hihy/bin/appS" ]; then
   		localV=`/etc/hihy/bin/appS -v | cut -d " " -f 3`
-		remoteV=`wget -qO- -t1 -T2 --no-check-certificate "https://api.github.com/repos/HyNetwork/hysteria/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'`
+		remoteV=`wget -qO- -t1 -T2 --no-check-certificate "https://api.github.com/repos/apernet/hysteria/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'`
 		if [ "${localV}" != "${remoteV}" ];then
-			echoColor purple "[Update] hysteria有更新,version:${remoteV}. detail: https://github.com/HyNetwork/hysteria/blob/master/CHANGELOG.md"
+			echoColor purple "[Update] hysteria有更新,version:${remoteV}. detail: https://github.com/apernet/hysteria/blob/master/CHANGELOG.md"
 		fi
 	fi
 }
@@ -737,7 +737,7 @@ function install()
 	fi
 	mkdir -p /etc/hihy/bin /etc/hihy/conf /etc/hihy/cert  /etc/hihy/result
     echoColor purple "Ready to install.\n"
-    version=`wget -qO- -t1 -T2 --no-check-certificate "https://api.github.com/repos/HyNetwork/hysteria/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'`
+    version=`wget -qO- -t1 -T2 --no-check-certificate "https://api.github.com/repos/apernet/hysteria/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'`
     checkSystemForUpdate
 	downloadHysteriaCore
 	setHysteriaConfig
