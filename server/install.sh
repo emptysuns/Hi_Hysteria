@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="0.4.3.c"
+hihyV="0.4.3.d"
 function echoColor() {
 	case $1 in
 		# 红色
@@ -313,6 +313,7 @@ function setHysteriaConfig(){
     	protocol="udp"
 		ut="udp"
     fi
+	clientPort="${port}"
     echo -e "传输协议:"`echoColor red ${protocol}`"\n"
 	if [ "${protocol}" == "udp" ];then
 		echoColor purple "您选择udp协议,可使用[端口跳跃/多端口](Port Hopping)功能"
@@ -343,7 +344,6 @@ function setHysteriaConfig(){
 			echo -e "您选择的端口跳跃/多端口(Port Hopping)参数为: "`echoColor red ${portHoppingStart}:${portHoppingEnd}`"\n"
 		else
 			portHoppingStatus="false"
-			clientPort=${port}
 			echoColor red "您选择跳过端口跳跃/多端口(Port Hopping)功能"
 		fi
 	fi
