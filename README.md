@@ -1,17 +1,20 @@
 # Hi Hysteria
 
-##### (2022/11/08) 0.4.3.c :
-
-**hysteria原仓库由[@HyNetwork](https://github.com/HyNetwork/hysteria)更名为[@apernet](https://github.com/apernet/hysteria)，请低于0.4.3.c版本的用户更新后再使用，否则无法获取core信息导致安装失败!!!**
+##### (2022/11/26) 0.4.4 :
 
 ```
-1. hysteria 1.3.0发布，支持了多端口监听功能(仅UDP协议支持)，能够无感切换防止单端口QoS/断流等问题
-详细信息请参考: https://github.com/emptysuns/Hi_Hysteria/blob/main/md/portHopping.md
-2. 修复上个版本切换协议时的遗留bug
-3. 修改一些文字颜色，使之打印出来结果更加清晰
-4. clash.meta 1.13.2 后alpn配置变成了数组，如果您版本低于1.13.2您可能需要更新您的客户端以支持最新的配置
-详细内容: https://docs.metacubex.one/function/proxy/hysteria
-5. 修复启动端口跳跃时对协议类型误判的bug
+hysteria 1.3.1发布,支持了fast_open加快响应速度和提升了些许性能(目前fast_open仅适用hysteria内核直接运行方式(V2rayN),其他客户端未直接支持)
+1. 支持对配置进行备注
+2. 增加对自签证书的提示，最近GFW对自签证书阻断情况严重，不再推荐使用
+3. 增加了一些提示信息方便配置过程
+4. 增加随机密码功能
+5. 完善对PortHopping的支持，修复重启系统后iptables规则消失的bug
+6. 修复ip被github拉黑无法获得hysteria core时下载为空的bug
+7. 增加重启hysteria后的检测，修复重启失败时提示成功的bug
+8. 修复netfilter-persistent规则无法删除的bug
+9. 一些其它小完善
+10. 支持fast_open
+11. 在release上增加其他客户端下载方便直接取得
 ```
 
 [历史改进](md/log.md)
@@ -86,7 +89,7 @@ bash <(curl -fsSL https://git.io/hysteria.sh)
 3 -------------------------------------------
 |**********      Hi Hysteria       **********|
 |**********    Author: emptysuns   **********|
-|**********     Version: 0.4.3     **********|
+|**********     Version: 0.4.4     **********|
  -------------------------------------------
 Tips:hihy 命令再次运行本脚本.
 ............................................. 
@@ -122,10 +125,33 @@ Tips:hihy 命令再次运行本脚本.
 
 <details>
   <summary>演示较长，点我查看</summary>
-    <pre><blockcode> 
-Local core version:v1.3.0
-Remote core version:v1.3.0
-Already the latest version.Ignore.
+  <pre><blockcode> 
+  请选择:1
+Ready to install.
+
+Update.wait...
+Hit:1 [http://security.debian.org](http://security.debian.org) buster/updates InRelease
+Hit:2 [http://ftp.debian.org/debian](http://ftp.debian.org/debian) buster InRelease
+Hit:3 [http://ftp.debian.org/debian](http://ftp.debian.org/debian) buster-updates InRelease
+Reading package lists... Done
+Building dependency tree
+Reading state information... Done
+4 packages can be upgraded. Run 'apt list --upgradable' to see them.
+
+Done.
+Install wget curl lsof
+*wget
+Installed.Ignore.
+*curl
+Installed.Ignore.
+*lsof
+Installed.Ignore.
+
+Done.
+The Latest hysteria version:v1.3.1
+Download...
+
+Download completed.
 开始配置:
 请选择证书申请方式:
 
@@ -134,14 +160,15 @@ Already the latest version.Ignore.
 3、自签证书
 
 输入序号:
-3
-请输入自签证书的域名(默认:wechat.com):
+1
+请输入域名(需正确解析到本机,关闭CDN):
+dedi2.nico.ml
 
-您已选择自签wechat.com证书加密.公网ip:1.2.3.4
+您已选择使用ACME自动签发可信的dedi2.nico.ml证书加密.
 
 请输入你想要开启的端口,此端口是server端口,建议10000-65535.(默认随机)
 
-随机端口:63095
+随机端口:60853
 
 选择协议类型:
 
@@ -155,7 +182,6 @@ Already the latest version.Ignore.
 
 您选择udp协议,可使用[端口跳跃/多端口](Port Hopping)功能
 强烈推荐,但是处于beta测试中,目前hihy对此功能支持尚不完善,后续会慢慢修改更新,如有问题请反馈给作者,谢谢!
-目前客户端紧V2rayN支持此功能,其他客户端请等待后续更新支持.
 
 Tip: 长时间单端口 UDP 连接容易被运营商封锁/QoS/断流,启动此功能可以有效避免此问题.
 更加详细介绍请参考: [https://github.com/emptysuns/Hi_Hysteria/blob/main/md/portHopping.md](https://github.com/emptysuns/Hi_Hysteria/blob/main/md/portHopping.md)
@@ -166,65 +192,74 @@ Tip: 长时间单端口 UDP 连接容易被运营商封锁/QoS/断流,启动此�
 2、跳过
 
 输入序号:
-1
+
 您选择启用端口跳跃/多端口(Port Hopping)功能
 端口跳跃/多端口(Port Hopping)功能需要占用多个端口,请保证这些端口没有监听其他服务
-Tip: 端口选择数量不宜过多,推荐50个左右,建议选择连续的端口范围.
+Tip: 端口选择数量不宜过多,推荐1000个左右,建议选择连续的端口范围.
 更多介绍参考: [https://hysteria.network/docs/port-hopping/](https://hysteria.network/docs/port-hopping/)
-请输入起始端口(默认47550):
+请输入起始端口(默认47000):
 
-起始端口:47550
+起始端口:47000
 
-请输入结束端口(默认47600):
+请输入结束端口(默认48000):
 
-结束端口:47600
+结束端口:48000
 
-您选择的端口跳跃/多端口(Port Hopping)参数为: 47550:47600
+您选择的端口跳跃/多端口(Port Hopping)参数为: 47000:48000
 
 请输入您到此服务器的平均延迟,关系到转发速度(默认200,单位:ms):
 
-delay:200 ms
+延迟:200 ms
 
 期望速度,这是客户端的峰值速度,服务端默认不受限。Tips:脚本会自动*1.10做冗余，您期望过低或者过高会影响转发效率,请如实填写!
 请输入客户端期望的下行速度:(默认50,单位:mbps):
-
-客户端下行速度：50 mbps
+100
+客户端下行速度：100 mbps
 
 请输入客户端期望的上行速度(默认10,单位:mbps):
-
+10
 客户端上行速度：10 mbps
 
-请输入认证口令:
+请输入认证口令(默认随机生成,建议20位以上强密码):
 
-此选项不能省略,请重新输入!
-请输入认证口令:
-pekopeko
+认证口令:f45fd50b526907b2ba8f03df0
+
+请输入客户端名称备注(默认使用域名/IP区分,例如输入test,则名称为Hys-test):
+ppeko
 
 配置录入完成!
 
 执行配置...
-IPTABLES OPEN: udp/63095
-SIGN...
-Signature ok
-subject=C = CN, ST = GuangDong, L = ShenZhen, O = PonyMa, OU = Tecent, emailAddress = admin@qq.com, CN = Tencent Root CA
-Getting CA Private Key
-SUCCESS.
+IPTABLES OPEN: udp/60853
+Reading package lists...
+Building dependency tree...
+Reading state information...
+wget is already the newest version (1.20.1-1.1).
+0 upgraded, 0 newly installed, 0 to remove and 4 not upgraded.
+Port: TCP/80 已经被 apache2(*:http) 占用,进程pid为: 6371.
+是否自动关闭端口占用?(y/N)
+y
+端口解绑成功...
+IPTABLES OPEN: tcp/80
+IPTABLES OPEN: tcp/443
 
-Wait,test config...
+Test config...
 
-Test success.
-install.sh: line 211: 13930 Killed                  /etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server > /tmp/hihy_debug.info 2>&1
+Test success!Generating config...
+in.sh: line 211:  5296 Killed                  /etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server > /tmp/hihy_debug.info 2>&1
 安装成功,请查看下方配置详细信息
+sysctl: cannot stat /proc/sys/net/core/rmem_max: No such file or directory
+Created symlink /etc/systemd/system/multi-user.target.wants/hihy.service → /etc/systemd/system/hihy.service.
 
-1* [v2rayN/nekoray/hihy_cmd] 使用hysteria core直接运行
-客户端配置文件输出至: /root/hysteria/config.json ( 直接下载生成的配置文件[推荐] / 自行复制粘贴下方配置到本地 )
+1* [v2rayN/nekoray] 使用hysteria core直接运行:
+客户端配置文件输出至: /root/Hys-ppeko(v2rayN).json ( 直接下载生成的配置文件[推荐] / 自行复制粘贴下方配置到本地 )
 Tips:客户端默认只开启http(8888)、socks5(8889)代理!其他方式请参照hysteria文档自行修改客户端config.json
 ↓***********************************↓↓↓copy↓↓↓*******************************↓
 {
-"server": "1.2.3.4:63095,47550-47600",
+"server": "dedi2.nico.ml:60853,47000-48000",
 "protocol": "udp",
 "up_mbps": 11,
-"down_mbps": 55,
+"down_mbps": 110,
 "http": {
 "listen": "127.0.0.1:10809",
 "timeout" : 300,
@@ -238,26 +273,28 @@ Tips:客户端默认只开启http(8888)、socks5(8889)代理!其他方式请参�
 "alpn": "h3",
 "acl": "acl/routes.acl",
 "mmdb": "acl/Country.mmdb",
-"auth_str": "pekopeko",
-"server_name": "wechat.com",
-"insecure": true,
-"recv_window_conn": 5767168,
-"recv_window": 23068672,
+"auth_str": "f45fd50b526907b2ba8f03df0",
+"server_name": "dedi2.nico.ml",
+"insecure": false,
+"recv_window_conn": 11534336,
+"recv_window": 46137344,
 "disable_mtu_discovery": true,
-"resolver": "https://doh.pub/dns-query",
+"resolver": "https://223.5.5.5/dns-query",
 "retry": 3,
 "retry_interval": 3,
 "quit_on_disconnect": false,
 "handshake_timeout": 15,
-"idle_timeout": 30
+"idle_timeout": 30,
+"fast_open": true,
+"hop_interval": 180
 }
 ↑***********************************↑↑↑copy↑↑↑*******************************↑
 
 2* [Shadowrocket/Sagernet/Passwall] 一键链接:
-hysteria://1.2.3.4:63095?protocol=udp&auth=pekopeko&peer=wechat.com&insecure=1&upmbps=11&downmbps=55&alpn=h3#Hys-1.2.3.4
+hysteria://dedi2.nico.ml:60853?protocol=udp&auth=f45fd50b526907b2ba8f03df0&peer=dedi2.nico.ml&insecure=0&upmbps=11&downmbps=110&alpn=h3#Hys-ppeko
 
-3* [Clash.Meta] 推荐!配置文件已在/root/hysteria/metaHys.yaml输出,请下载至客户端使用(beta)
-重新配置完成.
+3* [Clash.Meta] 配置文件已在/root/Hys-ppeko(clashMeta).yaml输出,请下载至客户端使用(beta)
+安装完毕
 
   `</blockcode></pre>`
 
@@ -279,15 +316,14 @@ hysteria://1.2.3.4:63095?protocol=udp&auth=pekopeko&peer=wechat.com&insecure=1&u
 * [X] hihy替换掉hysteria
 * [ ] 规范化脚本代码
 * [ ] 提供docker和systemd(已完成)两种运行方式
-* [ ] 多密码支持
 * [ ] 利用base64加密替换原来的auth_str
 * [X] 兼容v2rayN,放弃cmd的更新
 * [X] 支持clash.meta核心
-* [ ] 优化clash配置选项
+* [X] 优化clash配置选项
 * [ ] 支持sing-box作为core运行方式
-* [ ] 提供查看实时log选项
+* [X] 提供查看实时log选项
 * [ ] 生成clash配置时，提供一个远程链接来代替本地导入（咕～）
-* [ ] 完善对portHopping功能的支持
+* [X] 完善对portHopping功能的支持
 
 ## 五·结语
 
@@ -308,3 +344,13 @@ hysteria://1.2.3.4:63095?protocol=udp&auth=pekopeko&peer=wechat.com&insecure=1&u
 [@zzzgydi/clash-verge](https://github.com/zzzgydi/clash-verge)
 
 [@MetaCubeX/Clash.Meta](https://github.com/MetaCubeX/Clash.Meta)
+
+## 八·捐赠
+
+如果您有能力，请捐赠**hysteria开发项目组**去支持它们无私的工作:
+
+此捐助对象不是hihy,只是单纯帮它们宣传...
+
+[https://hysteria.network/docs/donations/](https://hysteria.network/docs/donations/)
+
+[![Crypto donation button by NOWPayments](https://camo.githubusercontent.com/70a3b7fb344c4dc9151639ec5db5e713b2bb177aa6cac6e63538f33a74585e48/68747470733a2f2f6e6f777061796d656e74732e696f2f696d616765732f656d626564732f646f6e6174696f6e2d627574746f6e2d626c61636b2e737667)](https://nowpayments.io/donation?api_key=EJH83FM-FDC40ZW-QGDZRR4-A7SC67S)

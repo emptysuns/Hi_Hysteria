@@ -1,12 +1,19 @@
 #!/bin/bash
 
 function rmhy(){
+	remarks=`cat /etc/hihy/conf/hihy.conf | grep 'remarks' | awk -F ':' '{print $2}'`
     n=$1
     systemctl stop ${n}
     systemctl disable ${n}
     rm /etc/systemd/system/${n}.service
     rm -r /etc/${n}
     rm /usr/bin/${n}
+	if [ -f "./Hys-${remarks}(v2rayN).json" ];then
+		rm ./Hys-${remarks}\(v2rayN\).json
+	fi
+	if [ -f "./Hys-${remarks}(clashMeta).yaml" ];then
+		rm ./Hys-${remarks}\(clashMeta\).yaml
+	fi
     crontab -l > /tmp/crontab.tmp
     sed -i '/0 4 \* \* \* systemctl restart ${n}/d' /tmp/crontab.tmp
 	sed -i '/15 4 \* \* 1,4 hihy cronTask/d' /tmp/crontab.tmp
@@ -18,23 +25,13 @@ function rmhy(){
 
 function delHihyFirewallPort() {
 	# 如果防火墙启动状态则删除之前的规则
-	if systemctl status netfilter-persistent 2>/dev/null | grep -q "active (exited)"; then
-		local updateFirewalldStatus=
-		if iptables -L | grep -q "allow ${1}/${2}(hihysteria)"; then
-			updateFirewalldStatus=true
-			iptables-save |  sed -e '/hihysteria/d' | iptables-restore
-		fi
-		if echo "${updateFirewalldStatus}" | grep -q "true"; then
-			netfilter-persistent save 2> /dev/null
-		fi
-	elif [ `ufw status | grep "Status: " | awk '{print $2}'` = "active" ]; then
-		port=`cat /etc/hihy/conf/hihyServer.json | grep "listen" | awk '{print $2}' | tr -cd "[0-9]"`
+	port=`cat /etc/hihy/conf/hihyServer.json | grep "listen" | awk '{print $2}' | tr -cd "[0-9]"`
+	if [[ `ufw status 2>/dev/null | grep "Status: " | awk '{print $2}'` = "active" ]]	; then
 		if ufw status | grep -q ${port}; then
 			sudo ufw delete allow ${port} 2> /dev/null
 		fi
 	elif systemctl status firewalld 2>/dev/null | grep -q "active (running)"; then
 		local updateFirewalldStatus=
-		port=`cat /etc/hihy/conf/hihyServer.json | grep "listen" | awk '{print $2}' | tr -cd "[0-9]"`
 		isFaketcp=`cat /etc/hihy/conf/hihyServer.json | grep "faketcp"`
 		if [ -z "${isFaketcp}" ];then
 			ut="udp"
@@ -48,18 +45,21 @@ function delHihyFirewallPort() {
 		if echo "${updateFirewalldStatus}" | grep -q "true"; then
 			firewall-cmd --reload 2> /dev/null
 		fi
+	elif systemctl status netfilter-persistent 2>/dev/null | grep -q "active (exited)"; then
+		updateFirewalldStatus=true
+		iptables-save |  sed -e '/hihysteria/d' | iptables-restore
+		if echo "${updateFirewalldStatus}" | grep -q "true"; then
+			netfilter-persistent save 2> /dev/null
+		fi
 	fi
 }
 
+iptables -t nat -F PREROUTING
+ip6tables -t nat -F PREROUTING
+if [ -x "$(command -v netfilter-persistent)" ]; then
+	netfilter-persistent save 2> /dev/null
+fi
 delHihyFirewallPort
-if [ -f "/etc/systemd/system/hihys.service" ]; then
-  rmhy "hihys"
-fi
-
-if [ -f "/etc/systemd/system/hysteria.service" ]; then
-  rmhy "hysteria"
-fi
-
 if [ -f "/etc/systemd/system/hihy.service" ]; then
   rmhy "hihy"
 fi

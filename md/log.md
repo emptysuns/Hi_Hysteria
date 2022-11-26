@@ -1,3 +1,17 @@
+##### (2022/11/08) 0.4.3.c
+
+**hysteria原仓库由[@HyNetwork](https://github.com/HyNetwork/hysteria)更名为[@apernet](https://github.com/apernet/hysteria)，请低于0.4.3.c版本的用户更新后再使用，否则无法获取core信息导致安装失败!!!**
+
+```
+1. hysteria 1.3.0发布，支持了多端口监听功能(仅UDP协议支持)，能够无感切换防止单端口QoS/断流等问题
+详细信息请参考: https://github.com/emptysuns/Hi_Hysteria/blob/main/md/portHopping.md
+2. 修复上个版本切换协议时的遗留bug
+3. 修改一些文字颜色，使之打印出来结果更加清晰
+4. clash.meta 1.13.2 后alpn配置变成了数组，如果您版本低于1.13.2您可能需要更新您的客户端以支持最新的配置
+详细内容: https://docs.metacubex.one/function/proxy/hysteria
+5. 修复启动端口跳跃时对协议类型误判的bug
+```
+
 #### (2022/10/28) 0.4.2:
 
 ```

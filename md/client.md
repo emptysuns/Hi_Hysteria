@@ -1,6 +1,6 @@
 # 支持的客户端
 
-## 1. [Clash.Meta](https://github.com/emptysuns/Hi_Hysteria/releases/latest)[推荐]
+## 1. [Clash.Meta](https://github.com/emptysuns/Hi_Hysteria/releases/latest)
 
 ### 介绍
 
@@ -72,7 +72,7 @@ v2rayN已经在添加自定义配置时支持hysteria并能自动识别config的
 
 5. **Hello World！**
 
-## 3. [sagernet](https://play.google.com/store/apps/details?id=io.nekohasekai.sagernet&hl=en_SG&gl=US) [android]
+## 3. [matsuri](https://github.com/MatsuriDayo/Matsuri/releases) [android]
 
   可通过一键链接导入。
 

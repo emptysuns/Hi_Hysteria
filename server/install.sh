@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="0.4.3.d"
+hihyV="0.4.4"
 function echoColor() {
 	case $1 in
 		# 红色
@@ -52,7 +52,6 @@ function checkSystemForUpdate() {
 				centosVersion=8
 			fi
 		fi
-
 		release="centos"
 		installType='yum -y -q install'
 		removeType='yum -y -q remove'
@@ -116,20 +115,21 @@ function reinstall(){
 }
 
 function printMsg(){
-	cp -P /etc/hihy/result/hihyClient.json ./config.json
-	cp -P /etc/hihy/result/metaHys.yaml ./metaHys.yaml
+	remarks=`cat /etc/hihy/conf/hihy.conf | grep 'remarks' | awk -F ':' '{print $2}'`
+	cp -P /etc/hihy/result/hihyClient.json ./Hys-${remarks}\(v2rayN\).json
+	cp -P /etc/hihy/result/metaHys.yaml ./Hys-${remarks}\(clashMeta\).yaml
 	echo ""
 	echo -e  "\033[1;;35m1* [\033[0m\033[31mv2rayN/nekoray\033[0m\033[1;;35m] 使用hysteria core直接运行: \033[0m"
-	echoColor green "客户端配置文件输出至: `pwd`/config.json ( 直接下载生成的配置文件[推荐] / 自行复制粘贴下方配置到本地 )"
+	echoColor green "客户端配置文件输出至: `pwd`/Hys-${remarks}(v2rayN).json ( 直接下载生成的配置文件[推荐] / 自行复制粘贴下方配置到本地 )"
 	echoColor green "Tips:客户端默认只开启http(8888)、socks5(8889)代理!其他方式请参照hysteria文档自行修改客户端config.json"
 	echoColor skyBlue "↓***********************************↓↓↓copy↓↓↓*******************************↓"
-	cat ./config.json
+	cat ./Hys-${remarks}\(v2rayN\).json
 	echoColor skyBlue "↑***********************************↑↑↑copy↑↑↑*******************************↑\n"
 	url=`cat /etc/hihy/result/url.txt`
 	echo -e  "\033[1;;35m2* [\033[0m\033[31mShadowrocket/Sagernet/Passwall\033[0m\033[1;;35m] 一键链接: \033[0m"
 	echoColor green ${url}
 	echo -e "\n"
-	echo -e  "\033[1;;35m3* [\033[0m\033[31mClash.Meta\033[0m\033[1;;35m] 推荐!配置文件已在`pwd`/metaHys.yaml输出,请下载至客户端使用(beta)\033[0m"
+	echo -e  "\033[1;;35m3* [\033[0m\033[31mClash.Meta\033[0m\033[1;;35m] 配置文件已在`pwd`/Hys-${remarks}(clashMeta).yaml输出,请下载至客户端使用(beta)\033[0m"
 }
 
 function hihy(){
@@ -217,6 +217,7 @@ function setHysteriaConfig(){
 	useLocalCert=false
 	if [ -z "${certNum}" ] || [ "${certNum}" == "3" ];then
 		echoColor green "请输入自签证书的域名(默认:wechat.com):"
+		echoColor red "注意:自签证书近一段时间来遭到大量随机阻断,请谨慎使用(这条提示不消失说明阻断还在继续)"
 		read domain
 		if [ -z "${domain}" ];then
 			domain="wechat.com"
@@ -228,13 +229,13 @@ function setHysteriaConfig(){
 		echoColor purple "\n您已选择自签${domain}证书加密.公网ip:"`echoColor red ${ip}`"\n"
 		echo -e "\n"
     elif [ "${certNum}" == "2" ];then
-		echoColor green "请输入证书cert文件路径(需fullchain):"
+		echoColor green "请输入证书cert文件路径:"
 		read cert
 		while :
 		do
 			if [ ! -f "${cert}" ];then
 				echoColor red "\n路径不存在,请重新输入!"
-				echoColor green "请输入证书cert文件路径(需fullchain):"
+				echoColor green "请输入证书cert文件路径:"
 				read  cert
 			else
 				break
@@ -291,6 +292,8 @@ function setHysteriaConfig(){
 		if [ -z "${port}" ];then
 			port=$(($(od -An -N2 -i /dev/random) % (65534 - 10001) + 10001))
 			echo -e "随机端口:"`echoColor red ${port}`"\n"
+		else
+			echo -e "您输入的端口:"`echoColor red ${port}`"\n"
 		fi
 		pIDa=`lsof -i :${port}|grep -v "PID" | awk '{print $2}'`
 		if [ "$pIDa" != "" ];
@@ -317,7 +320,7 @@ function setHysteriaConfig(){
     echo -e "传输协议:"`echoColor red ${protocol}`"\n"
 	if [ "${protocol}" == "udp" ];then
 		echoColor purple "您选择udp协议,可使用[端口跳跃/多端口](Port Hopping)功能"
-		echoColor red "强烈推荐,但是处于beta测试中,目前hihy对此功能支持尚不完善,后续会慢慢修改更新,如有问题请反馈给作者,谢谢!\n目前客户端仅V2rayN/Nekoray支持此功能,其他客户端请等待后续更新支持.\n"
+		echoColor red "强烈推荐,但是处于beta测试中,目前hihy对此功能支持尚不完善,后续会慢慢修改更新,如有问题请反馈给作者,谢谢!\n"
 		echo -e "Tip: 长时间单端口 UDP 连接容易被运营商封锁/QoS/断流,启动此功能可以有效避免此问题."
 		echo -e "更加详细介绍请参考: https://github.com/emptysuns/Hi_Hysteria/blob/main/md/portHopping.md\n"
 		echo -e "\033[32m选择是否启用:\n\n\033[0m\033[33m\033[01m1、启用(默认)\n2、跳过\033[0m\033[32m\n\n输入序号:\033[0m"
@@ -325,21 +328,19 @@ function setHysteriaConfig(){
 		if [ -z "${portHoppingStatus}" ] || [ $portHoppingStatus == "1" ];then
 			portHoppingStatus="true"
 			echoColor purple "您选择启用端口跳跃/多端口(Port Hopping)功能"
-			echo -e "端口跳跃/多端口(Port Hopping)功能需要占用多个端口,请保证这些端口没有监听其他服务\nTip: 端口选择数量不宜过多,推荐50个左右,建议选择连续的端口范围.\n更多介绍参考: https://hysteria.network/docs/port-hopping/"
-			echoColor green "请输入起始端口(默认47550):"
+			echo -e "端口跳跃/多端口(Port Hopping)功能需要占用多个端口,请保证这些端口没有监听其他服务\nTip: 端口选择数量不宜过多,推荐1000个左右,建议选择连续的端口范围.\n更多介绍参考: https://hysteria.network/docs/port-hopping/"
+			echoColor green "请输入起始端口(默认47000):"
 			read  portHoppingStart
 			if [ -z "${portHoppingStart}" ];then
-				portHoppingStart=47550
-				echo -e "起始端口:"`echoColor red ${portHoppingStart}`"\n"
+				portHoppingStart=47000
 			fi
-			echoColor green "请输入结束端口(默认47600):"
+			echo -e "起始端口:"`echoColor red ${portHoppingStart}`"\n"
+			echoColor green "请输入结束端口(默认48000):"
 			read  portHoppingEnd
 			if [ -z "${portHoppingEnd}" ];then
-				portHoppingEnd=47600
-				echo -e "结束端口:"`echoColor red ${portHoppingEnd}`"\n"
-				
+				portHoppingEnd=48000
 			fi
-			addPortHoppingNat ${portHoppingStart} ${portHoppingEnd} ${port}
+			echo -e "结束端口:"`echoColor red ${portHoppingEnd}`"\n"
 			clientPort="${port},${portHoppingStart}-${portHoppingEnd}"
 			echo -e "您选择的端口跳跃/多端口(Port Hopping)参数为: "`echoColor red ${portHoppingStart}:${portHoppingEnd}`"\n"
 		else
@@ -351,35 +352,31 @@ function setHysteriaConfig(){
     echoColor green "请输入您到此服务器的平均延迟,关系到转发速度(默认200,单位:ms):"
     read  delay
     if [ -z "${delay}" ];then
-	delay=200
-    echo -e "delay:`echoColor red ${delay}`ms\n"
+		delay=200
     fi
+	echo -e "延迟:`echoColor red ${delay}`ms\n"
     echo -e "\n期望速度,这是客户端的峰值速度,服务端默认不受限。"`echoColor red Tips:脚本会自动*1.10做冗余，您期望过低或者过高会影响转发效率,请如实填写!`
     echoColor green "请输入客户端期望的下行速度:(默认50,单位:mbps):"
     read  download
     if [ -z "${download}" ];then
         download=50
-    echo -e "客户端下行速度："`echoColor red ${download}`"mbps\n"
     fi
+	echo -e "客户端下行速度："`echoColor red ${download}`"mbps\n"
     echo -e "\033[32m请输入客户端期望的上行速度(默认10,单位:mbps):\033[0m" 
     read  upload
     if [ -z "${upload}" ];then
         upload=10
-    echo -e "客户端上行速度："`echoColor red ${upload}`"mbps\n"
     fi
+	echo -e "客户端上行速度："`echoColor red ${upload}`"mbps\n"
 	auth_str=""
-	echoColor green "请输入认证口令:"
-	read  auth_str
-	while :
-	do
-		if [ -z "${auth_str}" ];then
-			echoColor red "\n此选项不能省略,请重新输入!"
-			echoColor green "请输入认证口令:"
-			read  auth_str
-		else
-			break
-		fi
-	done
+	echoColor green "请输入认证口令(默认随机生成,建议20位以上强密码):"
+	read auth_str
+	if [ -z "${auth_str}" ];then
+		auth_str=`cat /dev/urandom | head -1 | md5sum | head -c 25`
+	fi
+	echo -e "认证口令:"`echoColor red ${auth_str}`"\n"
+	echoColor green "请输入客户端名称备注(默认使用域名/IP区分,例如输入test,则名称为Hys-test):"
+	read remarks
     echoColor green "\n配置录入完成!\n"
     echoColor yellowBlack "执行配置..."
     download=$(($download + $download / 10))
@@ -387,6 +384,7 @@ function setHysteriaConfig(){
     r_client=$(($delay * 2 * $download / 1000 * 1024 * 1024))
     r_conn=$(($r_client / 4))
 	allowPort ${ut} ${port}
+	addPortHoppingNat ${portHoppingStart} ${portHoppingEnd} ${port}
     if echo "${useAcme}" | grep -q "false";then
 		if echo "${useLocalCert}" | grep -q "false";then
 			v6str=":" #Is ipv6?
@@ -396,6 +394,11 @@ function setHysteriaConfig(){
 			fi
 			u_host=${ip}
 			u_domain=${domain}
+			if [ -z "${remarks}" ];then
+				u_name="Hys-${ip}"
+			else
+				u_name="Hys-${remarks}"
+			fi
 			sec="1"
 			mail="admin@qq.com"
 			days=36500
@@ -432,18 +435,24 @@ function setHysteriaConfig(){
 "recv_window_conn": ${r_conn},
 "recv_window": ${r_client},
 "disable_mtu_discovery": true,
-"resolver": "https://doh.pub/dns-query",
+"resolver": "https://223.5.5.5/dns-query",
 "retry": 3,
 "retry_interval": 3,
 "quit_on_disconnect": false,
 "handshake_timeout": 15,
 "idle_timeout": 30,
-"hop_interval": 60
+"fast_open": true,
+"hop_interval": 180
 }
 EOF
 		else
 			u_host=${domain}
 			u_domain=${domain}
+			if [ -z "${remarks}" ];then
+				u_name="Hys-${domain}"
+			else
+				u_name="Hys-${remarks}"
+			fi
 			sec="0"
 			cat <<EOF > /etc/hihy/result/hihyClient.json
 {
@@ -470,13 +479,14 @@ EOF
 "recv_window_conn": ${r_conn},
 "recv_window": ${r_client},
 "disable_mtu_discovery": true,
-"resolver": "https://doh.pub/dns-query",
+"resolver": "https://223.5.5.5/dns-query",
 "retry": 3,
 "retry_interval": 3,
 "quit_on_disconnect": false,
 "handshake_timeout": 15,
 "idle_timeout": 30,
-"hop_interval": 60
+"fast_open": true,
+"hop_interval": 180
 }
 EOF
 		fi		
@@ -508,6 +518,11 @@ EOF
 		u_host=${domain}
 		u_domain=${domain}
 		sec="0"
+		if [ -z "${remarks}" ];then
+			u_name="Hys-${domain}"
+		else
+			u_name="Hys-${remarks}"
+		fi
 		getPortBindMsg TCP 80
 		getPortBindMsg TCP 443
 		allowPort tcp 80
@@ -565,19 +580,21 @@ EOF
 "recv_window_conn": ${r_conn},
 "recv_window": ${r_client},
 "disable_mtu_discovery": true,
-"resolver": "https://doh.pub/dns-query",
+"resolver": "https://223.5.5.5/dns-query",
 "retry": 3,
 "retry_interval": 3,
 "quit_on_disconnect": false,
 "handshake_timeout": 15,
 "idle_timeout": 30,
-"hop_interval": 60
+"fast_open": true,
+"hop_interval": 180
 }
 EOF
     fi
 
 	echo -e "\033[1;;35m\nTest config...\n\033[0m"
 	echo "block all udp/443" > /etc/hihy/acl/hihyServer.acl
+	echo "remarks:${remarks}" >> /etc/hihy/conf/hihy.conf
 	/etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server > /tmp/hihy_debug.info 2>&1 &
 	sleep 5
 	msg=`cat /tmp/hihy_debug.info`
@@ -607,14 +624,14 @@ EOF
 			;;
 	esac
 	rm /tmp/hihy_debug.info
-	url="hysteria://${u_host}:${port}?protocol=${protocol}&auth=${auth_str}&peer=${u_domain}&insecure=${sec}&upmbps=${upload}&downmbps=${download}&alpn=h3#Hys-${u_host}"
+	url="hysteria://${u_host}:${port}?protocol=${protocol}&auth=${auth_str}&peer=${u_domain}&insecure=${sec}&upmbps=${upload}&downmbps=${download}&alpn=h3#${u_name}"
 	echo ${url} > /etc/hihy/result/url.txt
 	if [ $sec = "1" ];then
 		skip_cert_verify="true"
 	else
 		skip_cert_verify="false"
 	fi
-	generateMetaYaml "Hys-${u_host}" ${u_host} ${port} ${auth_str} ${protocol} ${upload} ${download} ${u_domain} ${skip_cert_verify} ${r_conn} ${r_client}
+	generateMetaYaml "${u_name}" ${u_host} ${port} ${auth_str} ${protocol} ${upload} ${download} ${u_domain} ${skip_cert_verify} ${r_conn} ${r_client}
 	sleep 10
 	echoColor greenWhite "安装成功,请查看下方配置详细信息"
 }
@@ -622,6 +639,10 @@ EOF
 function downloadHysteriaCore(){
 	version=`wget -qO- -t1 -T2 --no-check-certificate "https://api.github.com/repos/apernet/hysteria/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'`
 	echo -e "The Latest hysteria version:"`echoColor red "${version}"`"\nDownload..."
+	if [ -z ${version} ];then
+		echoColor red "[Network error]: Failed to get the latest version of hysteria in Github!"
+		exit
+	fi
     get_arch=`arch`
     if [ $get_arch = "x86_64" ];then
         wget -q -O /etc/hihy/bin/appS --no-check-certificate https://github.com/apernet/hysteria/releases/download/${version}/hysteria-linux-amd64
@@ -649,6 +670,10 @@ function updateHysteriaCore(){
 	if [ -f "/etc/hihy/bin/appS" ]; then
 		localV=`/etc/hihy/bin/appS -v | cut -d " " -f 3`
 		remoteV=`wget -qO- -t1 -T2 --no-check-certificate "https://api.github.com/repos/apernet/hysteria/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'`
+		if [ -z $remoteV ];then
+			echoColor red "Network Error: Can't connect to Github!"
+			exit
+		fi
 		echo -e "Local core version:"`echoColor red "${localV}"`
 		echo -e "Remote core version:"`echoColor red "${remoteV}"`
 		if [ "${localV}" = "${remoteV}" ];then
@@ -679,6 +704,12 @@ function changeServerConfig(){
 	delHihyFirewallPort
 	iptables -t nat -F PREROUTING
 	ip6tables -t nat -F PREROUTING
+	if [ -x "$(command -v netfilter-persistent)" ]; then
+		netfilter-persistent save
+	fi
+	if [ -f "/etc/hihy/conf/hihy.conf" ]; then
+		rm -r /etc/hihy/conf/hihy.conf
+	fi
 	updateHysteriaCore
 	setHysteriaConfig
 	systemctl start hihy
@@ -690,6 +721,10 @@ function changeServerConfig(){
 function hihyUpdate(){
 	localV=${hihyV}
 	remoteV=`curl -fsSL https://git.io/hysteria.sh | sed  -n 2p | cut -d '"' -f 2`
+	if [ -z $remoteV ];then
+		echoColor red "Network Error: Can't connect to Github!"
+		exit
+	fi
 	if [ "${localV}" = "${remoteV}" ];then
 		echoColor green "Already the latest version.Ignore."
 	else
@@ -703,9 +738,14 @@ function hihyUpdate(){
 function hihyNotify(){
 	localV=${hihyV}
 	remoteV=`curl -fsSL https://git.io/hysteria.sh | sed  -n 2p | cut -d '"' -f 2`
-	if [ "${localV}" != "${remoteV}" ];then
-		echoColor purple "[Update] hihy有更新,version:v${remoteV},建议更新并查看日志: https://github.com/emptysuns/Hi_Hysteria"
+	if [ -z $remoteV ];then
+		echoColor red "Network Error: Can't connect to Github for checking hihy version!"
+	else
+		if [ "${localV}" != "${remoteV}" ];then
+			echoColor purple "[Update] hihy有更新,version:v${remoteV},建议更新并查看日志: https://github.com/emptysuns/Hi_Hysteria"
+		fi
 	fi
+	
 
 }
 
@@ -713,9 +753,14 @@ function hyCoreNotify(){
 	if [ -f "/etc/hihy/bin/appS" ]; then
   		localV=`/etc/hihy/bin/appS -v | cut -d " " -f 3`
 		remoteV=`wget -qO- -t1 -T2 --no-check-certificate "https://api.github.com/repos/apernet/hysteria/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'`
-		if [ "${localV}" != "${remoteV}" ];then
-			echoColor purple "[Update] hysteria有更新,version:${remoteV}. detail: https://github.com/apernet/hysteria/blob/master/CHANGELOG.md"
+		if [ -z $remoteV ];then
+			echoColor red "Network Error: Can't connect to Github for checking the hysteria version!"
+		else
+			if [ "${localV}" != "${remoteV}" ];then
+				echoColor purple "[Update] hysteria有更新,version:${remoteV}. detail: https://github.com/apernet/hysteria/blob/master/CHANGELOG.md"
+			fi
 		fi
+		
 	fi
 }
 
@@ -807,7 +852,7 @@ function allowPort() {
 		fi
 	elif [[ `ufw status 2>/dev/null | grep "Status: " | awk '{print $2}'` = "active" ]]; then
 		if ! ufw status | grep -q ${2}; then
-			sudo ufw allow ${2} 2>/dev/null
+			ufw allow ${2} 2>/dev/null
 			checkUFWAllowPort ${2}
 		fi
 	elif systemctl status firewalld 2>/dev/null | grep -q "active (running)"; then
@@ -828,31 +873,84 @@ function addPortHoppingNat() {
 	# $1 portHoppingStart
 	# $2 portHoppingEnd
 	# $3 portHoppingTarget
-	iptables -t nat -F PREROUTING  2>/dev/null
-	iptables -t nat -A PREROUTING -p udp --dport $1:$2 -m comment --comment "NAT $1:$2 to $3 (hihysteria)" -j DNAT --to-destination :$3 2>/dev/null
-	ip6tables -t nat -A PREROUTING -p udp --dport $1:$2 -m comment --comment "NAT $1:$2 to $3 (hihysteria)" -j DNAT --to-destination :$3 2>/dev/null
+	# 如果防火墙启动状态则删除之前的规则
+	if [[ -n $(find /etc -name "redhat-release") ]] || grep </proc/version -q -i "centos"; then
+		mkdir -p /etc/yum.repos.d
 
+		if [[ -f "/etc/centos-release" ]]; then
+			centosVersion=$(rpm -q centos-release | awk -F "[-]" '{print $3}' | awk -F "[.]" '{print $1}')
+
+			if [[ -z "${centosVersion}" ]] && grep </etc/centos-release -q -i "release 8"; then
+				centosVersion=8
+			fi
+		fi
+		release="centos"
+		installType='yum -y -q install'
+		removeType='yum -y -q remove'
+		upgrade="yum update -y  --skip-broken"
+
+	elif grep </etc/issue -q -i "debian" && [[ -f "/etc/issue" ]] || grep </etc/issue -q -i "debian" && [[ -f "/proc/version" ]]; then
+		release="debian"
+		installType='apt -y -q install'
+		upgrade="apt update"
+		updateReleaseInfoChange='apt-get --allow-releaseinfo-change update'
+		removeType='apt -y -q autoremove'
+
+	elif grep </etc/issue -q -i "ubuntu" && [[ -f "/etc/issue" ]] || grep </etc/issue -q -i "ubuntu" && [[ -f "/proc/version" ]]; then
+		release="ubuntu"
+		installType='apt -y -q install'
+		upgrade="apt update"
+		updateReleaseInfoChange='apt-get --allow-releaseinfo-change update'
+		removeType='apt -y -q autoremove'
+		if grep </etc/issue -q -i "16."; then
+			release=
+		fi
+	fi
+
+	if [[ -z ${release} ]]; then
+		echoColor red "\n本脚本不支持此系统,请将下方日志反馈给开发者\n"
+		echoColor yellow "$(cat /etc/issue)"
+		echoColor yellow "$(cat /proc/version)"
+		exit 0
+	fi
+	if ! [ -x "$(command -v netpre)" ]; then
+		${installType} "wget"
+	else
+		echoColor purple 'Installed.Ignore.' >&2
+	fi
+	if ! [ -x "$(command -v netfilter-persistent)" ]; then
+		echoColor purple "\nUpdate.wait..."
+		${upgrade}
+		${installType} "netfilter-persistent"
+		if ! [ -x "$(command -v netfilter-persistent)" ]; then
+			echoColor red "[Warnning]:netfilter-persistent安装失败,但安装进度不会停止,只是您的PortHopping转发规则为临时规则,重启可能失效,是否继续使用临时规则?(y/N)"
+			read continueInstall
+			if [[ "${continueInstall}" != "y" ]]; then
+				exit 0
+			fi
+		fi
+	fi
+    
+	iptables -t nat -F PREROUTING  2>/dev/null
+	iptables -t nat -A PREROUTING -p udp --dport $1:$2 -m comment --comment "NAT $1:$2 to $3 (PortHopping-hihysteria)" -j DNAT --to-destination :$3 2>/dev/null
+	ip6tables -t nat -A PREROUTING -p udp --dport $1:$2 -m comment --comment "NAT $1:$2 to $3 (PortHopping-hihysteria)" -j DNAT --to-destination :$3 2>/dev/null
+	
+	if systemctl status netfilter-persistent 2>/dev/null | grep -q "active (exited)"; then
+		netfilter-persistent save 2> /dev/null
+	else 
+		echoColor red "netfilter-persistent未启动,PortHopping转发规则无法持久化,重启系统失效,请手动执行netfilter-persistent save,继续执行脚本..."
+	fi
 }
 
 function delHihyFirewallPort() {
 	# 如果防火墙启动状态则删除之前的规则
-	if systemctl status netfilter-persistent 2>/dev/null | grep -q "active (exited)"; then
-		local updateFirewalldStatus=
-		if iptables -L | grep -q "allow ${1}/${2}(hihysteria)"; then
-			updateFirewalldStatus=true
-			iptables-save |  sed -e '/hihysteria/d' | iptables-restore
-		fi
-		if echo "${updateFirewalldStatus}" | grep -q "true"; then
-			netfilter-persistent save 2> /dev/null
-		fi
-	elif [[ `ufw status 2>/dev/null | grep "Status: " | awk '{print $2}'` = "active" ]]; then
-		port=`cat /etc/hihy/conf/hihyServer.json | grep "listen" | awk '{print $2}' | tr -cd "[0-9]"`
+	port=`cat /etc/hihy/conf/hihyServer.json | grep "listen" | awk '{print $2}' | tr -cd "[0-9]"`
+	if [[ `ufw status 2>/dev/null | grep "Status: " | awk '{print $2}'` = "active" ]]	; then
 		if ufw status | grep -q ${port}; then
 			sudo ufw delete allow ${port} 2> /dev/null
 		fi
 	elif systemctl status firewalld 2>/dev/null | grep -q "active (running)"; then
 		local updateFirewalldStatus=
-		port=`cat /etc/hihy/conf/hihyServer.json | grep "listen" | awk '{print $2}' | tr -cd "[0-9]"`
 		isFaketcp=`cat /etc/hihy/conf/hihyServer.json | grep "faketcp"`
 		if [ -z "${isFaketcp}" ];then
 			ut="udp"
@@ -865,6 +963,12 @@ function delHihyFirewallPort() {
 		fi
 		if echo "${updateFirewalldStatus}" | grep -q "true"; then
 			firewall-cmd --reload 2> /dev/null
+		fi
+	elif systemctl status netfilter-persistent 2>/dev/null | grep -q "active (exited)"; then
+		updateFirewalldStatus=true
+		iptables-save |  sed -e '/hihysteria/d' | iptables-restore
+		if echo "${updateFirewalldStatus}" | grep -q "true"; then
+			netfilter-persistent save 2> /dev/null
 		fi
 	fi
 }
@@ -883,6 +987,16 @@ function editProtocol(){
 	sed -i "s/\"protocol\": \"${1}\"/\"protocol\": \"${2}\"/g" /etc/hihy/result/hihyClient.json
 	sed -i "s/protocol: ${1}/protocol: ${2}/g" /etc/hihy/result/metaHys.yaml
 	sed -i "s/protocol=${1}/protocol=${2}/g" /etc/hihy/result/url.txt
+	portHoppingStatus=`iptables -t nat -L PREROUTING | grep "hihysteria"`
+	if [ ! -z "${portHoppingStatus}" ];then
+		iptables -t nat -D PREROUTING
+		ip6tables -t nat -D PREROUTING
+		iptables-save |  sed -e '/hihysteria/d' | iptables-restore
+		msg=`cat /etc/hihy/result/hihyClient.json | grep \"server\" | awk '{print $2}' | tr -cd "[0-9],-"`
+		port_before=${msg::length-1}
+		port_after=echo ${msg%%,*}
+		sed -i "s/\"server\": \"${port_before}\"/\"server\": \"${port_after}\"/g" /etc/hihy/conf/hihyClient.json
+	fi
 }
 
 function changeMode(){
@@ -956,7 +1070,7 @@ dns:
   enhanced-mode: redir-host
   nameserver:
     - https://dns.alidns.com/dns-query
-    - https://doh.pub/dns-query
+    - https://223.5.5.5/dns-query
   fallback:
     - 114.114.114.114
     - 223.5.5.5
@@ -1162,7 +1276,13 @@ case $input in
 	;;
 	3)
 		systemctl start hihy
-		echoColor green "启动成功"
+		if [ $? -eq 0 ];then
+			echoColor green "重启成功"
+		else
+			echoColor red "重启失败"
+			echoColor red "未知错误:请手动运行:`echoColor green "/etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server"`"
+			echoColor red "查看错误日志,反馈到issue!"
+		fi
 	;;
 	4)
 		systemctl stop hihy
@@ -1170,7 +1290,13 @@ case $input in
 	;;
     5)
         systemctl restart hihy
-		echoColor green "重启成功"
+		if [ $? -eq 0 ];then
+			echoColor green "重启成功"
+		else
+			echoColor red "重启失败"
+			echoColor red "未知错误:请手动运行:`echoColor green "/etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server"`"
+			echoColor red "查看错误日志,反馈到issue!"
+		fi
 
     ;;
     6)
