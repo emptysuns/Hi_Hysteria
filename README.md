@@ -345,7 +345,7 @@ hysteria://test.example.com:60853?protocol=udp&auth=f45fd50b526907b2ba8f03df0&pe
 
 [@MetaCubeX/Clash.Meta](https://github.com/MetaCubeX/Clash.Meta)
 
-## 八·捐赠
+## 七·捐赠
 
 如果您有能力，请捐赠**hysteria开发项目组**去支持它们无私的工作，谢谢:
 

@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="0.4.4"
+hihyV="0.4.4.a"
 function echoColor() {
 	case $1 in
 		# 红色
@@ -395,9 +395,7 @@ function setHysteriaConfig(){
 			u_host=${ip}
 			u_domain=${domain}
 			if [ -z "${remarks}" ];then
-				u_name="Hys-${ip}"
-			else
-				u_name="Hys-${remarks}"
+				remarks="${ip}"
 			fi
 			sec="1"
 			mail="admin@qq.com"
@@ -449,9 +447,7 @@ EOF
 			u_host=${domain}
 			u_domain=${domain}
 			if [ -z "${remarks}" ];then
-				u_name="Hys-${domain}"
-			else
-				u_name="Hys-${remarks}"
+				remarks="${domain}"
 			fi
 			sec="0"
 			cat <<EOF > /etc/hihy/result/hihyClient.json
@@ -519,9 +515,7 @@ EOF
 		u_domain=${domain}
 		sec="0"
 		if [ -z "${remarks}" ];then
-			u_name="Hys-${domain}"
-		else
-			u_name="Hys-${remarks}"
+			remarks="${domain}"
 		fi
 		getPortBindMsg TCP 80
 		getPortBindMsg TCP 443
@@ -624,14 +618,14 @@ EOF
 			;;
 	esac
 	rm /tmp/hihy_debug.info
-	url="hysteria://${u_host}:${port}?protocol=${protocol}&auth=${auth_str}&peer=${u_domain}&insecure=${sec}&upmbps=${upload}&downmbps=${download}&alpn=h3#${u_name}"
+	url="hysteria://${u_host}:${port}?protocol=${protocol}&auth=${auth_str}&peer=${u_domain}&insecure=${sec}&upmbps=${upload}&downmbps=${download}&alpn=h3#Hys-${remarks}"
 	echo ${url} > /etc/hihy/result/url.txt
 	if [ $sec = "1" ];then
 		skip_cert_verify="true"
 	else
 		skip_cert_verify="false"
 	fi
-	generateMetaYaml "${u_name}" ${u_host} ${port} ${auth_str} ${protocol} ${upload} ${download} ${u_domain} ${skip_cert_verify} ${r_conn} ${r_client}
+	generateMetaYaml "Hys-${remarks}" ${u_host} ${port} ${auth_str} ${protocol} ${upload} ${download} ${u_domain} ${skip_cert_verify} ${r_conn} ${r_client}
 	sleep 10
 	echoColor greenWhite "安装成功,请查看下方配置详细信息"
 }
