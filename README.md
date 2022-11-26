@@ -162,9 +162,9 @@ Download completed.
 输入序号:
 1
 请输入域名(需正确解析到本机,关闭CDN):
-dedi2.nico.ml
+test.example.com
 
-您已选择使用ACME自动签发可信的dedi2.nico.ml证书加密.
+您已选择使用ACME自动签发可信的test.example.com证书加密.
 
 请输入你想要开启的端口,此端口是server端口,建议10000-65535.(默认随机)
 
@@ -256,7 +256,7 @@ Created symlink /etc/systemd/system/multi-user.target.wants/hihy.service → /et
 Tips:客户端默认只开启http(8888)、socks5(8889)代理!其他方式请参照hysteria文档自行修改客户端config.json
 ↓***********************************↓↓↓copy↓↓↓*******************************↓
 {
-"server": "dedi2.nico.ml:60853,47000-48000",
+"server": "test.example.com:60853,47000-48000",
 "protocol": "udp",
 "up_mbps": 11,
 "down_mbps": 110,
@@ -274,7 +274,7 @@ Tips:客户端默认只开启http(8888)、socks5(8889)代理!其他方式请参�
 "acl": "acl/routes.acl",
 "mmdb": "acl/Country.mmdb",
 "auth_str": "f45fd50b526907b2ba8f03df0",
-"server_name": "dedi2.nico.ml",
+"server_name": "test.example.com",
 "insecure": false,
 "recv_window_conn": 11534336,
 "recv_window": 46137344,
@@ -291,7 +291,7 @@ Tips:客户端默认只开启http(8888)、socks5(8889)代理!其他方式请参�
 ↑***********************************↑↑↑copy↑↑↑*******************************↑
 
 2* [Shadowrocket/Sagernet/Passwall] 一键链接:
-hysteria://dedi2.nico.ml:60853?protocol=udp&auth=f45fd50b526907b2ba8f03df0&peer=dedi2.nico.ml&insecure=0&upmbps=11&downmbps=110&alpn=h3#Hys-ppeko
+hysteria://test.example.com:60853?protocol=udp&auth=f45fd50b526907b2ba8f03df0&peer=test.example.com&insecure=0&upmbps=11&downmbps=110&alpn=h3#Hys-ppeko
 
 3* [Clash.Meta] 配置文件已在/root/Hys-ppeko(clashMeta).yaml输出,请下载至客户端使用(beta)
 安装完毕
@@ -347,7 +347,7 @@ hysteria://dedi2.nico.ml:60853?protocol=udp&auth=f45fd50b526907b2ba8f03df0&peer=
 
 ## 八·捐赠
 
-如果您有能力，请捐赠**hysteria开发项目组**去支持它们无私的工作:
+如果您有能力，请捐赠**hysteria开发项目组**去支持它们无私的工作，谢谢:
 
 此捐助对象不是hihy,只是单纯帮它们宣传...
 

@@ -74,11 +74,11 @@ v2rayN已经在添加自定义配置时支持hysteria并能自动识别config的
 
 ## 3. [matsuri](https://github.com/MatsuriDayo/Matsuri/releases) [android]
 
+  Sagernet已经很久不更新了，建议更换它的魔改分支Matsuri,由https://matsuridayo.github.io/维护
+
   可通过一键链接导入。
 
-  安装[hysteria-plugin](https://play.google.com/store/apps/details?id=io.nekohasekai.sagernet.plugin.hysteria&hl=en_SG&gl=US)并**允许该插件被其他应用启动**，否则提示启动失败（tips: sagernet支持直接剪切板导入hysteria的json配置文本）
-
-  也可以使用sagernet的另一个魔改分支[matsuri](https://matsuridayo.github.io/)
+  安装[hysteria-plugin](https://github.com/MatsuriDayo/plugins/releases)并**允许该插件被其他应用启动**，否则提示启动失败（tips: sagernet支持直接剪切板导入hysteria的json配置文本）
 
 ## 4. openwrt passwall
 
