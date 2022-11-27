@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="0.4.4.e"
+hihyV="0.4.4.f"
 function echoColor() {
 	case $1 in
 		# 红色
@@ -285,21 +285,55 @@ function setHysteriaConfig(){
 		done
 		while :
 		do
-			Localip=`curl -4 -s -m 8 ip.sb`
 			remoteip=`ping ${domain} -c 1 | sed '1{s/[^(]*(//;s/).*//;q}'`
 			if [ -z "${remoteip}" ];then
-				echoColor red "\n->域名解析失败,空解析,请重新输入!"
-				echoColor green "请输入域名(需正确解析到本机,关闭CDN):"
-				read  domain
+				remoteip=`ping6 ${domain} -c 1 | sed '1{s/[^(]*(//;s/).*//;q}'`
+				if [ -z "${remoteip}" ];then
+					echoColor red "\n->域名解析失败,请检查域名是否正确解析到本机,关闭CDN!"
+					echoColor green "请输入域名(需正确解析到本机,关闭CDN):"
+					read  domain
+					continue
+				fi
+			fi
+			v6str=":" #Is ipv6?
+			result=$(echo ${remoteip} | grep ${v6str})
+			if [ "${result}" != "" ];then
+				localip=`curl -6 -s -m 8 ip.sb`
 			else
-				if [ "${Localip}" != "${remoteip}" ];then
-					echo -e " \n->本机ip: "`echoColor red ${Localip}`" \n->域名ip: "`echoColor red ${remoteip}`"\n"
+				localip=`curl -4 -s -m 8 ip.sb`
+			fi
+			if [ -z "${localip}" ];then
+				echoColor red "\n->获取本机ip失败,请检查网络连接!curl -s -m 8 ip.sb"
+				exit 1
+			fi
+			if [ "${localip}" != "${remoteip}" ];then
+				echo -e " \n->本机ip: "`echoColor red ${localip}`" \n->域名ip: "`echoColor red ${remoteip}`"\n"
+				echoColor yellow "检测可能有问题,如果你正确解析到了本机,是否自己指定本机ip? [y/N]:"
+				read isLocalip
+				if [ "${isLocalip}" == "y" ];then
+					echoColor green "请自行输入本机ip:"
+					read localip
+					while :
+					do
+						if [ -z "${localip}" ];then
+							echoColor red "\n->此选项不能为空,请重新输入!"
+							echoColor green "请输入本机ip:"
+							read  localip
+						else
+							break
+						fi
+					done
+				fi
+				if [ "${localip}" != "${remoteip}" ];then
 					echoColor red "\n->域名解析到的ip与本机ip不一致,请重新输入!"
 					echoColor green "请输入域名(需正确解析到本机,关闭CDN):"
 					read  domain
+					continue
 				else
 					break
 				fi
+			else
+				break
 			fi
 		done
 		useAcme=true
@@ -614,25 +648,28 @@ EOF
     fi
 
 	echo -e "\033[1;;35m\nTest config...\n\033[0m"
-	echo "block all udp/443" > /etc/hihy/acl/hihyServer.acl
-	echo "remarks:${remarks}" >> /etc/hihy/conf/hihy.conf
-	echo "serverAddress:${u_host}" >> /etc/hihy/conf/hihy.conf
-	echo "serverPort:${port}" >> /etc/hihy/conf/hihy.conf
-	echo "portHoppingStatus:${portHoppingStatus}" >> /etc/hihy/conf/hihy.conf
-	echo "portHoppingStart:${portHoppingStart}" >> /etc/hihy/conf/hihy.conf
-	echo "portHoppingEnd:${portHoppingEnd}" >> /etc/hihy/conf/hihy.conf
 	/etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server > /tmp/hihy_debug.info 2>&1 &
-	sleep 5
+	sleep 10
 	msg=`cat /tmp/hihy_debug.info`
 	case ${msg} in 
 		*"Failed to get a certificate with ACME"*)
 			echoColor red "域名:${u_host},申请证书失败!请查看服务器提供的面板防火墙是否开启(TCP:80,443)\n或者域名是否正确解析到此ip(不要开CDN!)\n如果无法满足以上两点,请重新安装使用自签证书."
 			rm /etc/hihy/conf/hihyServer.json
 			rm /etc/hihy/result/hihyClient.json
-			rm /etc/systemd/system/hihy.service
+			delHihyFirewallPort
+			if echo ${portHoppingStatus} | grep -q "true";then
+				delHihyFirewallPort ${portHoppingStart} ${portHoppingEnd} ${port}
+			fi
 			exit
 			;;
 		*"bind: address already in use"*)
+			rm /etc/hihy/conf/hihyServer.json
+			rm /etc/hihy/result/hihyClient.json
+			delHihyFirewallPort
+			if echo ${portHoppingStatus} | grep -q "true";then
+				delHihyFirewallPort ${portHoppingStart} ${portHoppingEnd} ${port}
+			fi
+			exit
 			echoColor red "端口被占用,请更换端口!"
 			exit
 			;;
@@ -644,12 +681,25 @@ EOF
 		*) 	
 			pIDa=`lsof -i :${port}|grep -v "PID" | awk '{print $2}'`
 			kill -9 ${pIDa} > /dev/null 2>&1
+			rm /etc/hihy/result/hihyClient.json
+			delHihyFirewallPort
+			if echo ${portHoppingStatus} | grep -q "true";then
+				delHihyFirewallPort ${portHoppingStart} ${portHoppingEnd} ${port}
+			fi
+			exit
 			echoColor red "未知错误:请手动运行:`echoColor green "/etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server"`"
 			echoColor red "查看错误日志,反馈到issue!"
 			exit
 			;;
 	esac
 	rm /tmp/hihy_debug.info
+	echo "block all udp/443" > /etc/hihy/acl/hihyServer.acl
+	echo "remarks:${remarks}" >> /etc/hihy/conf/hihy.conf
+	echo "serverAddress:${u_host}" >> /etc/hihy/conf/hihy.conf
+	echo "serverPort:${port}" >> /etc/hihy/conf/hihy.conf
+	echo "portHoppingStatus:${portHoppingStatus}" >> /etc/hihy/conf/hihy.conf
+	echo "portHoppingStart:${portHoppingStart}" >> /etc/hihy/conf/hihy.conf
+	echo "portHoppingEnd:${portHoppingEnd}" >> /etc/hihy/conf/hihy.conf
 	url="hysteria://${u_host}:${port}?protocol=${protocol}&auth=${auth_str}&peer=${u_domain}&insecure=${sec}&upmbps=${upload}&downmbps=${download}&alpn=h3#Hys-${remarks}"
 	echo ${url} > /etc/hihy/result/url.txt
 	if [ $sec = "1" ];then
@@ -768,7 +818,7 @@ function hihyUpdate(){
 	if [ "${localV}" = "${remoteV}" ];then
 		echoColor green "Already the latest version.Ignore."
 	else
-		wget -q -O /usr/bin/hihy --no-check-certificate https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/server/install.sh
+		wget -q -O /usr/bin/hihy --no-check-certificate https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/server/install.sh 2>/dev/null
 		chmod +x /usr/bin/hihy
 		echoColor green "Done."
 	fi
