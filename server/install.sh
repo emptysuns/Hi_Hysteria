@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="0.4.4.a"
+hihyV="0.4.4.d"
 function echoColor() {
 	case $1 in
 		# 红色
