@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="0.4.4.d"
+hihyV="0.4.4.e"
 function echoColor() {
 	case $1 in
 		# 红色
@@ -547,9 +547,7 @@ EOF
 			remarks="${domain}"
 		fi
 		getPortBindMsg TCP 80
-		getPortBindMsg TCP 443
 		allowPort tcp 80
-		allowPort tcp 443
 		cat <<EOF > /etc/hihy/conf/hihyServer.json
 {
 "listen": ":${port}",
@@ -619,6 +617,10 @@ EOF
 	echo "block all udp/443" > /etc/hihy/acl/hihyServer.acl
 	echo "remarks:${remarks}" >> /etc/hihy/conf/hihy.conf
 	echo "serverAddress:${u_host}" >> /etc/hihy/conf/hihy.conf
+	echo "serverPort:${port}" >> /etc/hihy/conf/hihy.conf
+	echo "portHoppingStatus:${portHoppingStatus}" >> /etc/hihy/conf/hihy.conf
+	echo "portHoppingStart:${portHoppingStart}" >> /etc/hihy/conf/hihy.conf
+	echo "portHoppingEnd:${portHoppingEnd}" >> /etc/hihy/conf/hihy.conf
 	/etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server > /tmp/hihy_debug.info 2>&1 &
 	sleep 5
 	msg=`cat /tmp/hihy_debug.info`
@@ -719,13 +721,19 @@ function updateHysteriaCore(){
 	fi
 }
 
+
+
 function changeServerConfig(){
 	if [ ! -f "/etc/systemd/system/hihy.service" ]; then
 		echoColor red "请先安装hysteria,再去修改配置..."
 		exit
 	fi
+	portHoppingStatus=`cat /etc/hihy/conf/hihy.conf | grep "portHopping" | awk -F ":" '{print $2}'`
+	portHoppingStart=`cat /etc/hihy/conf/hihy.conf | grep "portHoppingStart" | awk -F ":" '{print $2}'`
+	portHoppingEnd=`cat /etc/hihy/conf/hihy.conf | grep "portHoppingEnd" | awk -F ":" '{print $2}'`
+	serverPort=`cat /etc/hihy/conf/hihy.conf | grep "serverPort" | awk -F ":" '{print $2}'`
+	remarks=`cat /etc/hihy/conf/hihy.conf | grep 'remarks' | awk -F ':' '{print $2}'`
 	if [ -f "/etc/hihy/conf/hihy.conf" ]; then
-		remarks=`cat /etc/hihy/conf/hihy.conf | grep 'remarks' | awk -F ':' '{print $2}'`
 		if [ -f "/etc/hihy/conf/hihy.conf" ]; then
 			rm -r /etc/hihy/conf/hihy.conf
 		fi
@@ -738,13 +746,8 @@ function changeServerConfig(){
 	fi
 	systemctl stop hihy
 	delHihyFirewallPort
-	portHoppingStatus=`iptables -t nat -L PREROUTING | grep "hihysteria"`
-	if [ ! -z "${portHoppingStatus}" ];then
-		iptables -t nat -F PREROUTING 
-		ip6tables -t nat -F PREROUTING
-		if [ -x "$(command -v netfilter-persistent)" ]; then
-			netfilter-persistent save 2>/dev/null
-		fi
+	if echo "${portHoppingStatus}" | grep -q "true";then
+		delPortHoppingNat ${portHoppingStart} ${portHoppingEnd} ${serverPort}
 	fi
 	echoColor red "Stop hihy service...\nDelete old config..."
 	updateHysteriaCore
@@ -839,6 +842,10 @@ ExecStart=/etc/hihy/bin/appS --log-level info -c /etc/hihy/conf/hihyServer.json 
 WantedBy=multi-user.target
 EOF
     sysctl -w net.core.rmem_max=8000000
+	if echo "${portHoppingStatus}" | grep -q "true";then
+		sysctl -w net.ipv4.ip_forward=1
+		sysctl -w net.ipv6.ip_forward=1
+	fi
     sysctl -p
     chmod 644 /etc/systemd/system/hihy.service
     systemctl daemon-reload
@@ -897,7 +904,7 @@ function allowPort() {
 		if ! firewall-cmd --list-ports --permanent | grep -qw "${2}/${1}"; then
 			updateFirewalldStatus=true
 			firewall-cmd --zone=public --add-port=${2}/${1} --permanent 2>/dev/null
-			checkFirewalldAllowPort ${2}
+			checkFirewalldAllowPort ${2} ${1}
 		fi
 		if echo "${updateFirewalldStatus}" | grep -q "true"; then
 			firewall-cmd --reload
@@ -905,8 +912,24 @@ function allowPort() {
 	fi
 }
 
+function delPortHoppingNat(){
+	# $1 portHoppingStart
+	# $2 portHoppingEnd
+	# $3 portHoppingTarget
+	if systemctl status firewalld 2>/dev/null | grep -q "active (running)"; then
+		firewall-cmd --permanent --remove-forward-port=port=$1-$2:proto=udp:toport=$3
+		firewall-cmd --reload
+	else
+		iptables -t nat -F PREROUTING  2>/dev/null
+		ip6tables -t nat -F PREROUTING  2>/dev/null
+		if systemctl status netfilter-persistent 2>/dev/null | grep -q "active (exited)"; then
+			netfilter-persistent save 2> /dev/null
+		fi
+
+	fi
+}
+
 function addPortHoppingNat() {
-	# 此防火墙规则并不完善，下个版本修复
 	# $1 portHoppingStart
 	# $2 portHoppingEnd
 	# $3 portHoppingTarget
@@ -925,14 +948,12 @@ function addPortHoppingNat() {
 		installType='yum -y -q install'
 		removeType='yum -y -q remove'
 		upgrade="yum update -y  --skip-broken"
-
 	elif grep </etc/issue -q -i "debian" && [[ -f "/etc/issue" ]] || grep </etc/issue -q -i "debian" && [[ -f "/proc/version" ]]; then
 		release="debian"
 		installType='apt -y -q install'
 		upgrade="apt update"
 		updateReleaseInfoChange='apt-get --allow-releaseinfo-change update'
 		removeType='apt -y -q autoremove'
-
 	elif grep </etc/issue -q -i "ubuntu" && [[ -f "/etc/issue" ]] || grep </etc/issue -q -i "ubuntu" && [[ -f "/proc/version" ]]; then
 		release="ubuntu"
 		installType='apt -y -q install'
@@ -950,15 +971,21 @@ function addPortHoppingNat() {
 		echoColor yellow "$(cat /proc/version)"
 		exit 0
 	fi
-	if ! [ -x "$(command -v netpre)" ]; then
-		${installType} "wget"
+
+	if systemctl status firewalld 2>/dev/null | grep -q "active (running)"; then
+		if ! firewall-cmd --query-masquerade --permanent 2>/dev/null | grep -q "yes"; then
+			firewall-cmd --add-masquerade --permanent 2>/dev/null
+			firewall-cmd --reload 2>/dev/null
+			echoColor purple "FIREWALLD MASQUERADE OPEN"
+		fi
+		firewall-cmd --add-forward-port=port=$1-$2:proto=udp:toport=$3 --permanent 2>/dev/null
+		firewall-cmd --reload 2>/dev/null
 	else
-		echoColor purple 'Installed.Ignore.' >&2
-	fi
-	if ! [ -x "$(command -v netfilter-persistent)" ]; then
-		echoColor purple "\nUpdate.wait..."
-		${upgrade}
-		${installType} "netfilter-persistent"
+		if ! [ -x "$(command -v netfilter-persistent)" ]; then
+			echoColor purple "\nUpdate.wait..."
+			${upgrade}
+			${installType} "netfilter-persistent"
+		fi
 		if ! [ -x "$(command -v netfilter-persistent)" ]; then
 			echoColor red "[Warnning]:netfilter-persistent安装失败,但安装进度不会停止,只是您的PortHopping转发规则为临时规则,重启可能失效,是否继续使用临时规则?(y/N)"
 			read continueInstall
@@ -966,17 +993,18 @@ function addPortHoppingNat() {
 				exit 0
 			fi
 		fi
+		iptables -t nat -F PREROUTING  2>/dev/null
+		iptables -t nat -A PREROUTING -p udp --dport $1:$2 -m comment --comment "NAT $1:$2 to $3 (PortHopping-hihysteria)" -j DNAT --to-destination :$3 2>/dev/null
+		ip6tables -t nat -A PREROUTING -p udp --dport $1:$2 -m comment --comment "NAT $1:$2 to $3 (PortHopping-hihysteria)" -j DNAT --to-destination :$3 2>/dev/null
+		
+		if systemctl status netfilter-persistent 2>/dev/null | grep -q "active (exited)"; then
+			netfilter-persistent save 2> /dev/null
+		else 
+			echoColor red "netfilter-persistent未启动,PortHopping转发规则无法持久化,重启系统失效,请手动执行netfilter-persistent save,继续执行脚本不影响后续配置..."
+		fi
+
 	fi
     
-	iptables -t nat -F PREROUTING  2>/dev/null
-	iptables -t nat -A PREROUTING -p udp --dport $1:$2 -m comment --comment "NAT $1:$2 to $3 (PortHopping-hihysteria)" -j DNAT --to-destination :$3 2>/dev/null
-	ip6tables -t nat -A PREROUTING -p udp --dport $1:$2 -m comment --comment "NAT $1:$2 to $3 (PortHopping-hihysteria)" -j DNAT --to-destination :$3 2>/dev/null
-	
-	if systemctl status netfilter-persistent 2>/dev/null | grep -q "active (exited)"; then
-		netfilter-persistent save 2> /dev/null
-	else 
-		echoColor red "netfilter-persistent未启动,PortHopping转发规则无法持久化,重启系统失效,请手动执行netfilter-persistent save,继续执行脚本..."
-	fi
 }
 
 function delHihyFirewallPort() {
@@ -996,7 +1024,7 @@ function delHihyFirewallPort() {
 		fi
 		if firewall-cmd --list-ports --permanent | grep -qw "${port}/${ut}"; then
 			updateFirewalldStatus=true
-			firewall-cmd --zone=public --remove-port=${port}/${ut} 2> /dev/null
+			firewall-cmd --zone=public --remove-port=${port}/${ut} --permanent 2> /dev/null
 		fi
 		if echo "${updateFirewalldStatus}" | grep -q "true"; then
 			firewall-cmd --reload 2> /dev/null
@@ -1005,7 +1033,7 @@ function delHihyFirewallPort() {
 		updateFirewalldStatus=true
 		iptables-save |  sed -e '/hihysteria/d' | iptables-restore
 		if echo "${updateFirewalldStatus}" | grep -q "true"; then
-			netfilter-persistent save 2> /dev/null
+			netfilter-persistent save 2>/dev/null
 		fi
 	fi
 }
@@ -1020,20 +1048,22 @@ function checkRoot(){
 
 function editProtocol(){
 	# $1 change to $2, example(editProtocol 'udp' 'faketcp'): udp to faketcp
+	portHoppingStatus=`cat /etc/hihy/conf/hihy.conf | grep "portHopping" | awk -F ":" '{print $2}'`
+	portHoppingStart=`cat /etc/hihy/conf/hihy.conf | grep "portHoppingStart" | awk -F ":" '{print $2}'`
+	portHoppingEnd=`cat /etc/hihy/conf/hihy.conf | grep "portHoppingEnd" | awk -F ":" '{print $2}'`
+	serverPort=`cat /etc/hihy/conf/hihy.conf | grep "serverPort" | awk -F ":" '{print $2}'`
 	sed -i "s/\"protocol\": \"${1}\"/\"protocol\": \"${2}\"/g" /etc/hihy/conf/hihyServer.json
 	sed -i "s/\"protocol\": \"${1}\"/\"protocol\": \"${2}\"/g" /etc/hihy/result/hihyClient.json
 	sed -i "s/protocol: ${1}/protocol: ${2}/g" /etc/hihy/result/metaHys.yaml
 	sed -i "s/protocol=${1}/protocol=${2}/g" /etc/hihy/result/url.txt
-	portHoppingStatus=`iptables -t nat -L PREROUTING | grep "hihysteria"`
-	if [ ! -z "${portHoppingStatus}" ];then
+	if echo "${portHoppingStatus}" | grep -q "true";then
 		serverAddress=`cat /etc/hihy/conf/hihy.conf | grep "serverAddress" | grep ":" | awk -F ':' '{print $2}'`
-		iptables -t nat -F PREROUTING 
-		ip6tables -t nat -F PREROUTING
-		netfilter-persistent save 2> /dev/null
+		delPortHoppingNat ${portHoppingStart} ${portHoppingEnd} ${serverPort}
 		msg=`cat /etc/hihy/result/hihyClient.json | grep \"server\" | awk '{print $2}' | awk '{split($1, arr, ":"); print arr[2]}'`
 		port_before=${msg::length-2}
 		port_after=${msg%%,*}
 		sed -i "s/\"server\": \"${serverAddress}:${port_before}\"/\"server\": \"${serverAddress}:${port_after}\"/g" /etc/hihy/result/hihyClient.json
+		sed -i "s/\portHoppingStatus=true/portHoppingStatus=false/g" /etc/hihy/conf/hihy.conf
 	fi
 }
 
@@ -1318,7 +1348,7 @@ case $input in
 			echoColor green "重启成功"
 		else
 			echoColor red "重启失败"
-			echoColor red "未知错误:请手动运行:`echoColor green "/etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server"`"
+			echo -e "未知错误:请手动运行:\033[32m/etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server\033[0m"
 			echoColor red "查看错误日志,反馈到issue!"
 		fi
 	;;
@@ -1332,7 +1362,7 @@ case $input in
 			echoColor green "重启成功"
 		else
 			echoColor red "重启失败"
-			echoColor red "未知错误:请手动运行:`echoColor green "/etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server"`"
+			echo -e "未知错误:请手动运行:\033[32m/etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server\033[0m"
 			echoColor red "查看错误日志,反馈到issue!"
 		fi
 
