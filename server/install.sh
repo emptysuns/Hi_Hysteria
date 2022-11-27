@@ -226,7 +226,7 @@ function setHysteriaConfig(){
 		cert="/etc/hihy/cert/${domain}.crt"
 		key="/etc/hihy/cert/${domain}.key"
 		useAcme=false
-		echoColor purple "\n您已选择自签${domain}证书加密.公网ip:"`echoColor red ${ip}`"\n"
+		echoColor purple "\n->您已选择自签${domain}证书加密.公网ip:"`echoColor red ${ip}`"\n"
 		echo -e "\n"
     elif [ "${certNum}" == "2" ];then
 		echoColor green "请输入证书cert文件路径:"
@@ -234,31 +234,33 @@ function setHysteriaConfig(){
 		while :
 		do
 			if [ ! -f "${cert}" ];then
-				echoColor red "\n路径不存在,请重新输入!"
+				echoColor red "\n->路径不存在,请重新输入!"
 				echoColor green "请输入证书cert文件路径:"
 				read  cert
 			else
 				break
 			fi
 		done
+		echo -e "\n->cert文件路径: "`echoColor red ${cert}`"\n"
 		echoColor green "请输入证书key文件路径:"
 		read key
 		while :
 		do
 			if [ ! -f "${key}" ];then
-				echoColor red "\n路径不存在,请重新输入!"
+				echoColor red "\n->路径不存在,请重新输入!"
 				echoColor green "请输入证书key文件路径:"
 				read  key
 			else
 				break
 			fi
 		done
+		echo -e "\n->key文件路径: "`echoColor red ${key}`"\n"
 		echoColor green "请输入所选证书域名:"
 		read domain
 		while :
 		do
 			if [ -z "${domain}" ];then
-				echoColor red "\n此选项不能为空,请重新输入!"
+				echoColor red "\n->此选项不能为空,请重新输入!"
 				echoColor green "请输入所选证书域名:"
 				read  domain
 			else
@@ -267,22 +269,41 @@ function setHysteriaConfig(){
 		done
 		useAcme=false
 		useLocalCert=true
-		echoColor purple "\n您已选择使用本地${domain}证书加密.\n"
+		echoColor purple "\n->您已选择本地证书加密.域名:"`echoColor red ${domain}`"\n"
     else 
     	echoColor green "请输入域名(需正确解析到本机,关闭CDN):"
 		read domain
 		while :
 		do
 			if [ -z "${domain}" ];then
-				echoColor red "\n此选项不能为空,请重新输入!"
+				echoColor red "\n->此选项不能为空,请重新输入!"
 				echoColor green "请输入域名(需正确解析到本机,关闭CDN):"
 				read  domain
 			else
 				break
 			fi
 		done
+		while :
+		do
+			Localip=`curl -4 -s -m 8 ip.sb`
+			remoteip=`ping ${domain} -c 1 | sed '1{s/[^(]*(//;s/).*//;q}'`
+			if [ -z "${remoteip}" ];then
+				echoColor red "\n->域名解析失败,空解析,请重新输入!"
+				echoColor green "请输入域名(需正确解析到本机,关闭CDN):"
+				read  domain
+			else
+				if [ "${Localip}" != "${remoteip}" ];then
+					echo -e " \n->本机ip: "`echoColor red ${Localip}`" \n->域名ip: "`echoColor red ${remoteip}`"\n"
+					echoColor red "\n->域名解析到的ip与本机ip不一致,请重新输入!"
+					echoColor green "请输入域名(需正确解析到本机,关闭CDN):"
+					read  domain
+				else
+					break
+				fi
+			fi
+		done
 		useAcme=true
-		echoColor purple "\n您已选择使用ACME自动签发可信的${domain}证书加密.\n"
+		echoColor purple "\n->您已选择hysteria内置ACME申请证书.域名:"`echoColor red ${domain}`"\n"
     fi
 
 	while :
@@ -291,14 +312,14 @@ function setHysteriaConfig(){
 		read  port
 		if [ -z "${port}" ];then
 			port=$(($(od -An -N2 -i /dev/random) % (65534 - 10001) + 10001))
-			echo -e "随机端口:"`echoColor red ${port}`"\n"
+			echo -e "->随机端口:"`echoColor red ${port}`"\n"
 		else
-			echo -e "您输入的端口:"`echoColor red ${port}`"\n"
+			echo -e "->您输入的端口:"`echoColor red ${port}`"\n"
 		fi
 		pIDa=`lsof -i :${port}|grep -v "PID" | awk '{print $2}'`
 		if [ "$pIDa" != "" ];
 		then
-			echoColor red "端口${port}被占用,PID:${pIDa}!请重新输入或者运行kill -9 ${pIDa}后重新安装!"
+			echoColor red "->端口${port}被占用,PID:${pIDa}!请重新输入或者运行kill -9 ${pIDa}后重新安装!"
 		else
 			break
 		fi
@@ -317,9 +338,9 @@ function setHysteriaConfig(){
 		ut="udp"
     fi
 	clientPort="${port}"
-    echo -e "传输协议:"`echoColor red ${protocol}`"\n"
+    echo -e "->传输协议:"`echoColor red ${protocol}`"\n"
 	if [ "${protocol}" == "udp" ];then
-		echoColor purple "您选择udp协议,可使用[端口跳跃/多端口](Port Hopping)功能"
+		echoColor purple "->您选择udp协议,可使用[端口跳跃/多端口](Port Hopping)功能"
 		echoColor red "强烈推荐,但是处于beta测试中,目前hihy对此功能支持尚不完善,后续会慢慢修改更新,如有问题请反馈给作者,谢谢!\n"
 		echo -e "Tip: 长时间单端口 UDP 连接容易被运营商封锁/QoS/断流,启动此功能可以有效避免此问题."
 		echo -e "更加详细介绍请参考: https://github.com/emptysuns/Hi_Hysteria/blob/main/md/portHopping.md\n"
@@ -327,25 +348,33 @@ function setHysteriaConfig(){
 		read portHoppingStatus
 		if [ -z "${portHoppingStatus}" ] || [ $portHoppingStatus == "1" ];then
 			portHoppingStatus="true"
-			echoColor purple "您选择启用端口跳跃/多端口(Port Hopping)功能"
+			echoColor purple "->您选择启用端口跳跃/多端口(Port Hopping)功能"
 			echo -e "端口跳跃/多端口(Port Hopping)功能需要占用多个端口,请保证这些端口没有监听其他服务\nTip: 端口选择数量不宜过多,推荐1000个左右,建议选择连续的端口范围.\n更多介绍参考: https://hysteria.network/docs/port-hopping/"
-			echoColor green "请输入起始端口(默认47000):"
-			read  portHoppingStart
-			if [ -z "${portHoppingStart}" ];then
-				portHoppingStart=47000
-			fi
-			echo -e "起始端口:"`echoColor red ${portHoppingStart}`"\n"
-			echoColor green "请输入结束端口(默认48000):"
-			read  portHoppingEnd
-			if [ -z "${portHoppingEnd}" ];then
-				portHoppingEnd=48000
-			fi
-			echo -e "结束端口:"`echoColor red ${portHoppingEnd}`"\n"
+			while :
+			do
+				echoColor green "请输入起始端口(默认47000):"
+				read  portHoppingStart
+				if [ -z "${portHoppingStart}" ];then
+					portHoppingStart=47000
+				fi
+				echo -e "->起始端口:"`echoColor red ${portHoppingStart}`"\n"
+				echoColor green "请输入结束端口(默认48000):"
+				read  portHoppingEnd
+				if [ -z "${portHoppingEnd}" ];then
+					portHoppingEnd=48000
+				fi
+				echo -e "->结束端口:"`echoColor red ${portHoppingEnd}`"\n"
+				if [ $portHoppingStart -ge $portHoppingEnd ];then
+					echoColor red "->起始端口必须小于结束端口,请重新输入!"
+				else
+					break
+				fi
+			done
 			clientPort="${port},${portHoppingStart}-${portHoppingEnd}"
-			echo -e "您选择的端口跳跃/多端口(Port Hopping)参数为: "`echoColor red ${portHoppingStart}:${portHoppingEnd}`"\n"
+			echo -e "->您选择的端口跳跃/多端口(Port Hopping)参数为: "`echoColor red ${portHoppingStart}:${portHoppingEnd}`"\n"
 		else
 			portHoppingStatus="false"
-			echoColor red "您选择跳过端口跳跃/多端口(Port Hopping)功能"
+			echoColor red "->您选择跳过端口跳跃/多端口(Port Hopping)功能"
 		fi
 	fi
 
@@ -354,27 +383,27 @@ function setHysteriaConfig(){
     if [ -z "${delay}" ];then
 		delay=200
     fi
-	echo -e "延迟:`echoColor red ${delay}`ms\n"
+	echo -e "->延迟:`echoColor red ${delay}`ms\n"
     echo -e "\n期望速度,这是客户端的峰值速度,服务端默认不受限。"`echoColor red Tips:脚本会自动*1.10做冗余，您期望过低或者过高会影响转发效率,请如实填写!`
     echoColor green "请输入客户端期望的下行速度:(默认50,单位:mbps):"
     read  download
     if [ -z "${download}" ];then
         download=50
     fi
-	echo -e "客户端下行速度："`echoColor red ${download}`"mbps\n"
+	echo -e "->客户端下行速度："`echoColor red ${download}`"mbps\n"
     echo -e "\033[32m请输入客户端期望的上行速度(默认10,单位:mbps):\033[0m" 
     read  upload
     if [ -z "${upload}" ];then
         upload=10
     fi
-	echo -e "客户端上行速度："`echoColor red ${upload}`"mbps\n"
+	echo -e "->客户端上行速度："`echoColor red ${upload}`"mbps\n"
 	auth_str=""
 	echoColor green "请输入认证口令(默认随机生成,建议20位以上强密码):"
 	read auth_str
 	if [ -z "${auth_str}" ];then
-		auth_str=`cat /dev/urandom | head -1 | md5sum | head -c 25`
+		auth_str=`tr -cd '[:alnum:]' < /dev/urandom | fold -w50 | head -n1`
 	fi
-	echo -e "认证口令:"`echoColor red ${auth_str}`"\n"
+	echo -e "->认证口令:"`echoColor red ${auth_str}`"\n"
 	echoColor green "请输入客户端名称备注(默认使用域名/IP区分,例如输入test,则名称为Hys-test):"
 	read remarks
     echoColor green "\n配置录入完成!\n"
@@ -589,6 +618,7 @@ EOF
 	echo -e "\033[1;;35m\nTest config...\n\033[0m"
 	echo "block all udp/443" > /etc/hihy/acl/hihyServer.acl
 	echo "remarks:${remarks}" >> /etc/hihy/conf/hihy.conf
+	echo "serverAddress:${u_host}" >> /etc/hihy/conf/hihy.conf
 	/etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server > /tmp/hihy_debug.info 2>&1 &
 	sleep 5
 	msg=`cat /tmp/hihy_debug.info`
@@ -694,16 +724,29 @@ function changeServerConfig(){
 		echoColor red "请先安装hysteria,再去修改配置..."
 		exit
 	fi
+	if [ -f "/etc/hihy/conf/hihy.conf" ]; then
+		remarks=`cat /etc/hihy/conf/hihy.conf | grep 'remarks' | awk -F ':' '{print $2}'`
+		if [ -f "/etc/hihy/conf/hihy.conf" ]; then
+			rm -r /etc/hihy/conf/hihy.conf
+		fi
+		if [ -f "./Hys-${remarks}(v2rayN).json" ];then
+			rm ./Hys-${remarks}\(v2rayN\).json
+		fi
+		if [ -f "./Hys-${remarks}(clashMeta).yaml" ];then
+			rm ./Hys-${remarks}\(clashMeta\).yaml
+		fi
+	fi
 	systemctl stop hihy
 	delHihyFirewallPort
-	iptables -t nat -F PREROUTING
-	ip6tables -t nat -F PREROUTING
-	if [ -x "$(command -v netfilter-persistent)" ]; then
-		netfilter-persistent save
+	portHoppingStatus=`iptables -t nat -L PREROUTING | grep "hihysteria"`
+	if [ ! -z "${portHoppingStatus}" ];then
+		iptables -t nat -F PREROUTING 
+		ip6tables -t nat -F PREROUTING
+		if [ -x "$(command -v netfilter-persistent)" ]; then
+			netfilter-persistent save 2>/dev/null
+		fi
 	fi
-	if [ -f "/etc/hihy/conf/hihy.conf" ]; then
-		rm -r /etc/hihy/conf/hihy.conf
-	fi
+	echoColor red "Stop hihy service...\nDelete old config..."
 	updateHysteriaCore
 	setHysteriaConfig
 	systemctl start hihy
@@ -983,13 +1026,14 @@ function editProtocol(){
 	sed -i "s/protocol=${1}/protocol=${2}/g" /etc/hihy/result/url.txt
 	portHoppingStatus=`iptables -t nat -L PREROUTING | grep "hihysteria"`
 	if [ ! -z "${portHoppingStatus}" ];then
-		iptables -t nat -D PREROUTING
-		ip6tables -t nat -D PREROUTING
-		iptables-save |  sed -e '/hihysteria/d' | iptables-restore
-		msg=`cat /etc/hihy/result/hihyClient.json | grep \"server\" | awk '{print $2}' | tr -cd "[0-9],-"`
-		port_before=${msg::length-1}
-		port_after=echo ${msg%%,*}
-		sed -i "s/\"server\": \"${port_before}\"/\"server\": \"${port_after}\"/g" /etc/hihy/conf/hihyClient.json
+		serverAddress=`cat /etc/hihy/conf/hihy.conf | grep "serverAddress" | grep ":" | awk -F ':' '{print $2}'`
+		iptables -t nat -F PREROUTING 
+		ip6tables -t nat -F PREROUTING
+		netfilter-persistent save 2> /dev/null
+		msg=`cat /etc/hihy/result/hihyClient.json | grep \"server\" | awk '{print $2}' | awk '{split($1, arr, ":"); print arr[2]}'`
+		port_before=${msg::length-2}
+		port_after=${msg%%,*}
+		sed -i "s/\"server\": \"${serverAddress}:${port_before}\"/\"server\": \"${serverAddress}:${port_after}\"/g" /etc/hihy/result/hihyClient.json
 	fi
 }
 
