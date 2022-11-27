@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="0.4.4.f"
+hihyV="0.4.4.g"
 function echoColor() {
 	case $1 in
 		# 红色
@@ -648,6 +648,7 @@ EOF
     fi
 
 	echo -e "\033[1;;35m\nTest config...\n\033[0m"
+	echo "block all udp/443" > /etc/hihy/acl/hihyServer.acl
 	/etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server > /tmp/hihy_debug.info 2>&1 &
 	sleep 10
 	msg=`cat /tmp/hihy_debug.info`
@@ -669,7 +670,6 @@ EOF
 			if echo ${portHoppingStatus} | grep -q "true";then
 				delHihyFirewallPort ${portHoppingStart} ${portHoppingEnd} ${port}
 			fi
-			exit
 			echoColor red "端口被占用,请更换端口!"
 			exit
 			;;
@@ -686,14 +686,12 @@ EOF
 			if echo ${portHoppingStatus} | grep -q "true";then
 				delHihyFirewallPort ${portHoppingStart} ${portHoppingEnd} ${port}
 			fi
-			exit
 			echoColor red "未知错误:请手动运行:`echoColor green "/etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server"`"
 			echoColor red "查看错误日志,反馈到issue!"
 			exit
 			;;
 	esac
 	rm /tmp/hihy_debug.info
-	echo "block all udp/443" > /etc/hihy/acl/hihyServer.acl
 	echo "remarks:${remarks}" >> /etc/hihy/conf/hihy.conf
 	echo "serverAddress:${u_host}" >> /etc/hihy/conf/hihy.conf
 	echo "serverPort:${port}" >> /etc/hihy/conf/hihy.conf
