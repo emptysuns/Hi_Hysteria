@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="0.4.4.i"
+hihyV="0.4.4.j"
 function echoColor() {
 	case $1 in
 		# 红色
@@ -108,6 +108,7 @@ function checkSystemForUpdate() {
 }
 
 function uninstall(){
+	rm -r /usr/bin/hihy
     bash <(curl -fsSL https://git.io/rmhysteria.sh)
 }
 
@@ -493,8 +494,6 @@ function setHysteriaConfig(){
     upload=$(($upload + $upload / 10))
     r_client=$(($delay * 2 * $download / 1000 * 1024 * 1024))
     r_conn=$(($r_client / 4))
-	allowPort ${ut} ${port}
-	addPortHoppingNat ${portHoppingStart} ${portHoppingEnd} ${port}
     if echo "${useAcme}" | grep -q "false";then
 		if echo "${useLocalCert}" | grep -q "false";then
 			v6str=":" #Is ipv6?
@@ -739,6 +738,10 @@ EOF
 			;;
 	esac
 	rm /tmp/hihy_debug.info
+	if [ "${portHoppingStatus}" == "true" ];then
+		addPortHoppingNat ${portHoppingStart} ${portHoppingEnd} ${port}
+	fi
+	allowPort ${ut} ${port}
 	echo "remarks:${remarks}" >> /etc/hihy/conf/hihy.conf
 	echo "serverAddress:${u_host}" >> /etc/hihy/conf/hihy.conf
 	echo "serverPort:${port}" >> /etc/hihy/conf/hihy.conf
@@ -859,6 +862,7 @@ function hihyUpdate(){
 	if [ "${localV}" = "${remoteV}" ];then
 		echoColor green "Already the latest version.Ignore."
 	else
+		rm -r /usr/bin/hihy
 		wget -q -O /usr/bin/hihy --no-check-certificate https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/server/install.sh 2>/dev/null
 		chmod +x /usr/bin/hihy
 		echoColor green "Done."
