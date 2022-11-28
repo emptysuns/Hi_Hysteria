@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="0.4.4.g"
+hihyV="0.4.4.i"
 function echoColor() {
 	case $1 in
 		# 红色
@@ -83,24 +83,25 @@ function checkSystemForUpdate() {
 	fi
     echoColor purple "\nUpdate.wait..."
     ${upgrade}
-    echoColor purple "\nDone.\nInstall wget curl lsof"
-	echoColor green "*wget"
 	if ! [ -x "$(command -v wget)" ]; then
+		echoColor green "*wget"
 		${installType} "wget"
-	else
-		echoColor purple 'Installed.Ignore.' >&2
 	fi
-	echoColor green "*curl"
 	if ! [ -x "$(command -v curl)" ]; then
+		echoColor green "*curl"
 		${installType} "curl"
-	else
-		echoColor purple 'Installed.Ignore.' >&2
 	fi
-	echoColor green "*lsof"
 	if ! [ -x "$(command -v lsof)" ]; then
+		echoColor green "*lsof"
 		${installType} "lsof"
-	else
-		echoColor purple 'Installed.Ignore.' >&2
+	fi
+	if ! [ -x "$(command -v dig)" ]; then
+		echoColor green "*dnsutils"
+		if [[ ${release} == "centos" ]]; then
+			${installType} "bind-utils"
+		else
+			${installType} "dnsutils"
+		fi
 	fi
     echoColor purple "\nDone."
     
@@ -115,7 +116,8 @@ function reinstall(){
 }
 
 function printMsg(){
-	remarks=`cat /etc/hihy/conf/hihy.conf | grep 'remarks' | awk -F ':' '{print $2}'`
+	msg=`cat /etc/hihy/conf/hihy.conf | grep "remarks"`
+	remarks=${msg#*:}
 	cp -P /etc/hihy/result/hihyClient.json ./Hys-${remarks}\(v2rayN\).json
 	cp -P /etc/hihy/result/metaHys.yaml ./Hys-${remarks}\(clashMeta\).yaml
 	echo ""
@@ -197,7 +199,13 @@ function getPortBindMsg(){
 					exit
 				elif [ "${bindP}" == "y" ] ||  [ "${bindP}" == "Y" ];then
 					kill -9 ${pid}
-					echoColor green "端口解绑成功..."
+					msg=`lsof -i:${2} | grep ${1}`
+        			if [ "${msg}" != "" ];then
+						echoColor red "端口占用关闭失败,强制杀死进程后进程重启,请查看是否存在守护进程..."
+						exit
+					else
+						echoColor green "端口解绑成功..."
+					fi
 				else
 					echoColor red "由于端口被占用，退出安装。请手动关闭或者更换端口..."
 					if [ "${1}" == "TCP" ] && [ "${2}" == "80" ] || [ "${1}" == "TCP" ] && [ "${2}" == "443" ];then
@@ -223,6 +231,28 @@ function setHysteriaConfig(){
 			domain="wechat.com"
 		fi
 		ip=`curl -4 -s -m 8 ip.sb`
+		if [ -z "${ip}" ];then
+			ip=`curl -s -m 8 ipinfo.io/ip`
+		fi
+		echoColor green "判断自签证书,客户端连接所使用的地址是否正确?公网ip:"`echoColor red ${ip}`"\n"
+		while true
+		do	
+			echo -e "\033[32m请选择:\n\n\033[0m\033[33m\033[01m1、正确(默认)\n2、不正确,手动输入ip\033[0m\033[32m\n\n输入序号:\033[0m"
+			read ipNum
+			if [ -z "${ipNum}" ] || [ "${ipNum}" == "1" ];then
+				break
+			elif [ "${ipNum}" == "2" ];then
+				echoColor green "请输入正确的公网ip(ipv6地址不需要加[]):"
+				read ip
+				if [ -z "${ip}" ];then
+					echoColor red "输入错误,请重新输入..."
+					continue
+				fi
+				break
+			else
+				echoColor red "->输入错误,请重新输入:"
+			fi
+		done		
 		cert="/etc/hihy/cert/${domain}.crt"
 		key="/etc/hihy/cert/${domain}.key"
 		useAcme=false
@@ -284,17 +314,19 @@ function setHysteriaConfig(){
 			fi
 		done
 		while :
-		do
-			remoteip=`ping ${domain} -c 1 | sed '1{s/[^(]*(//;s/).*//;q}'`
-			if [ -z "${remoteip}" ];then
-				remoteip=`ping6 ${domain} -c 1 | sed '1{s/[^(]*(//;s/).*//;q}'`
-				if [ -z "${remoteip}" ];then
-					echoColor red "\n->域名解析失败,请检查域名是否正确解析到本机,关闭CDN!"
-					echoColor green "请输入域名(需正确解析到本机,关闭CDN):"
-					read  domain
-					continue
-				fi
+		do	
+			echoColor purple "->检测${domain},DNS解析..."
+			ip_resolv=`dig +short ${domain} A`
+			if [ -z "${ip_resolv}" ];then
+				ip_resolv=`dig +short ${domain} AAAA`
 			fi
+			if [ -z "${ip_resolv}" ];then
+				echoColor red "\n->域名解析失败,没有获得任何dns记录(A/AAAA),请检查域名是否正确解析到本机!"
+				echoColor green "请输入域名(需正确解析到本机,关闭CDN):"
+				read  domain
+				continue
+			fi
+			remoteip=`echo ${ip_resolv} | awk -F " " '{print $1}'`
 			v6str=":" #Is ipv6?
 			result=$(echo ${remoteip} | grep ${v6str})
 			if [ "${result}" != "" ];then
@@ -303,12 +335,15 @@ function setHysteriaConfig(){
 				localip=`curl -4 -s -m 8 ip.sb`
 			fi
 			if [ -z "${localip}" ];then
-				echoColor red "\n->获取本机ip失败,请检查网络连接!curl -s -m 8 ip.sb"
-				exit 1
+				localip=`curl -s -m 8 ip.sb` #如果上面的ip.sb都失败了,最后检测一次
+				if [ -z "${localip}" ];then
+					echoColor red "\n->获取本机ip失败,请检查网络连接!curl -s -m 8 ip.sb"
+					exit 1
+				fi
 			fi
 			if [ "${localip}" != "${remoteip}" ];then
 				echo -e " \n->本机ip: "`echoColor red ${localip}`" \n->域名ip: "`echoColor red ${remoteip}`"\n"
-				echoColor yellow "检测可能有问题,如果你正确解析到了本机,是否自己指定本机ip? [y/N]:"
+				echoColor green "多ip或者dns未生效时可能检测失败,如果你确定正确解析到了本机,是否自己指定本机ip? [y/N]:"
 				read isLocalip
 				if [ "${isLocalip}" == "y" ];then
 					echoColor green "请自行输入本机ip:"
@@ -337,7 +372,7 @@ function setHysteriaConfig(){
 			fi
 		done
 		useAcme=true
-		echoColor purple "\n->您已选择hysteria内置ACME申请证书.域名:"`echoColor red ${domain}`"\n"
+		echoColor purple "\n->解析正确,使用hysteria内置ACME申请证书.域名:"`echoColor red ${domain}`"\n"
     fi
 
 	while :
@@ -349,6 +384,10 @@ function setHysteriaConfig(){
 			echo -e "->随机端口:"`echoColor red ${port}`"\n"
 		else
 			echo -e "->您输入的端口:"`echoColor red ${port}`"\n"
+		fi
+		if [ "${port}" -gt 65535 ];then
+			echoColor red "端口范围错误,请重新输入!"
+			continue
 		fi
 		pIDa=`lsof -i :${port}|grep -v "PID" | awk '{print $2}'`
 		if [ "$pIDa" != "" ];
@@ -383,7 +422,7 @@ function setHysteriaConfig(){
 		if [ -z "${portHoppingStatus}" ] || [ $portHoppingStatus == "1" ];then
 			portHoppingStatus="true"
 			echoColor purple "->您选择启用端口跳跃/多端口(Port Hopping)功能"
-			echo -e "端口跳跃/多端口(Port Hopping)功能需要占用多个端口,请保证这些端口没有监听其他服务\nTip: 端口选择数量不宜过多,推荐1000个左右,建议选择连续的端口范围.\n更多介绍参考: https://hysteria.network/docs/port-hopping/"
+			echo -e "端口跳跃/多端口(Port Hopping)功能需要占用多个端口,请保证这些端口没有监听其他服务\nTip: 端口选择数量不宜过多,推荐1000个左右,范围1-65535,建议选择连续的端口范围.\n更多介绍参考: https://hysteria.network/docs/port-hopping/"
 			while :
 			do
 				echoColor green "请输入起始端口(默认47000):"
@@ -391,11 +430,19 @@ function setHysteriaConfig(){
 				if [ -z "${portHoppingStart}" ];then
 					portHoppingStart=47000
 				fi
+				if [ $portHoppingStart -gt 65535 ];then
+					echoColor red "->端口范围错误,请重新输入!"
+					continue
+				fi
 				echo -e "->起始端口:"`echoColor red ${portHoppingStart}`"\n"
 				echoColor green "请输入结束端口(默认48000):"
 				read  portHoppingEnd
 				if [ -z "${portHoppingEnd}" ];then
 					portHoppingEnd=48000
+				fi
+				if [ $portHoppingEnd -gt 65535 ];then
+					echoColor red "->端口范围错误,请重新输入!"
+					continue
 				fi
 				echo -e "->结束端口:"`echoColor red ${portHoppingEnd}`"\n"
 				if [ $portHoppingStart -ge $portHoppingEnd ];then
@@ -776,28 +823,24 @@ function changeServerConfig(){
 		echoColor red "请先安装hysteria,再去修改配置..."
 		exit
 	fi
-	portHoppingStatus=`cat /etc/hihy/conf/hihy.conf | grep "portHopping" | awk -F ":" '{print $2}'`
-	portHoppingStart=`cat /etc/hihy/conf/hihy.conf | grep "portHoppingStart" | awk -F ":" '{print $2}'`
-	portHoppingEnd=`cat /etc/hihy/conf/hihy.conf | grep "portHoppingEnd" | awk -F ":" '{print $2}'`
-	serverPort=`cat /etc/hihy/conf/hihy.conf | grep "serverPort" | awk -F ":" '{print $2}'`
-	remarks=`cat /etc/hihy/conf/hihy.conf | grep 'remarks' | awk -F ':' '{print $2}'`
-	if [ -f "/etc/hihy/conf/hihy.conf" ]; then
-		if [ -f "/etc/hihy/conf/hihy.conf" ]; then
-			rm -r /etc/hihy/conf/hihy.conf
-		fi
-		if [ -f "./Hys-${remarks}(v2rayN).json" ];then
-			rm ./Hys-${remarks}\(v2rayN\).json
-		fi
-		if [ -f "./Hys-${remarks}(clashMeta).yaml" ];then
-			rm ./Hys-${remarks}\(clashMeta\).yaml
-		fi
-	fi
+	echoColor red "Stop hihy service..."
 	systemctl stop hihy
-	delHihyFirewallPort
-	if echo "${portHoppingStatus}" | grep -q "true";then
-		delPortHoppingNat ${portHoppingStart} ${portHoppingEnd} ${serverPort}
+	echoColor red "Delete old config..."
+	if [ -f "/etc/hihy/conf/hihy.conf" ]; then
+		portHoppingStatus=`cat /etc/hihy/conf/hihy.conf | grep "portHopping" | awk -F ":" '{print $2}'`
+		portHoppingStart=`cat /etc/hihy/conf/hihy.conf | grep "portHoppingStart" | awk -F ":" '{print $2}'`
+		portHoppingEnd=`cat /etc/hihy/conf/hihy.conf | grep "portHoppingEnd" | awk -F ":" '{print $2}'`
+		serverPort=`cat /etc/hihy/conf/hihy.conf | grep "serverPort" | awk -F ":" '{print $2}'`
+		msg=`cat /etc/hihy/conf/hihy.conf | grep "remarks"`
+		remarks=${msg#*:}
+		rm -r /etc/hihy/conf/hihy.conf
+		rm ./Hys-${remarks}\(v2rayN\).json
+		rm ./Hys-${remarks}\(clashMeta\).yaml
+		if echo "${portHoppingStatus}" | grep -q "true";then
+			delPortHoppingNat ${portHoppingStart} ${portHoppingEnd} ${serverPort}
+		fi
 	fi
-	echoColor red "Stop hihy service...\nDelete old config..."
+	delHihyFirewallPort
 	updateHysteriaCore
 	setHysteriaConfig
 	systemctl start hihy
@@ -892,7 +935,7 @@ EOF
     sysctl -w net.core.rmem_max=8000000
 	if echo "${portHoppingStatus}" | grep -q "true";then
 		sysctl -w net.ipv4.ip_forward=1
-		sysctl -w net.ipv6.ip_forward=1
+		sysctl -w net.ipv6.conf.all.forwarding=1
 	fi
     sysctl -p
     chmod 644 /etc/systemd/system/hihy.service
@@ -1105,13 +1148,14 @@ function editProtocol(){
 	sed -i "s/protocol: ${1}/protocol: ${2}/g" /etc/hihy/result/metaHys.yaml
 	sed -i "s/protocol=${1}/protocol=${2}/g" /etc/hihy/result/url.txt
 	if echo "${portHoppingStatus}" | grep -q "true";then
-		serverAddress=`cat /etc/hihy/conf/hihy.conf | grep "serverAddress" | grep ":" | awk -F ':' '{print $2}'`
+		msg=`cat /etc/hihy/conf/hihy.conf | grep "serverAddress"`
+		serverAddress=${msg#*:}
 		delPortHoppingNat ${portHoppingStart} ${portHoppingEnd} ${serverPort}
 		msg=`cat /etc/hihy/result/hihyClient.json | grep \"server\" | awk '{print $2}' | awk '{split($1, arr, ":"); print arr[2]}'`
 		port_before=${msg::length-2}
 		port_after=${msg%%,*}
 		sed -i "s/\"server\": \"${serverAddress}:${port_before}\"/\"server\": \"${serverAddress}:${port_after}\"/g" /etc/hihy/result/hihyClient.json
-		sed -i "s/\portHoppingStatus=true/portHoppingStatus=false/g" /etc/hihy/conf/hihy.conf
+		sed -i "s/\portHoppingStatus:true/portHoppingStatus:false/g" /etc/hihy/conf/hihy.conf
 	fi
 }
 
@@ -1389,6 +1433,7 @@ case $input in
 	;;
 	2)
 		uninstall
+		exit 0
 	;;
 	3)
 		systemctl start hihy
@@ -1432,9 +1477,11 @@ case $input in
     ;;
 	11)
         hihyUpdate
+		exit 0
     ;;
 	12)
         reinstall
+		exit 0
 	;;
 	13)
         changeMode
@@ -1443,7 +1490,7 @@ case $input in
 		checkLogs
     ;;
 	0)
-		exit
+		exit 0
 	;;
 	*)
 		echoColor red "Input Error !!!"

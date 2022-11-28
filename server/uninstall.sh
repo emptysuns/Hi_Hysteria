@@ -1,7 +1,8 @@
 #!/bin/bash
 
 function rmhy(){
-	remarks=`cat /etc/hihy/conf/hihy.conf | grep 'remarks' | awk -F ':' '{print $2}'`
+	msg=`cat /etc/hihy/conf/hihy.conf | grep "remarks"`
+	remarks=${msg#*:}
 	portHoppingStatus=`cat /etc/hihy/conf/hihy.conf | grep "portHopping" | awk -F ":" '{print $2}'`
 	portHoppingStart=`cat /etc/hihy/conf/hihy.conf | grep "portHoppingStart" | awk -F ":" '{print $2}'`
 	portHoppingEnd=`cat /etc/hihy/conf/hihy.conf | grep "portHoppingEnd" | awk -F ":" '{print $2}'`
@@ -88,10 +89,4 @@ fi
 systemctl daemon-reload
 
 echo -e "\033[1;33;40mUninstall completed!\033[0m\n"
-
-
-if firewall-cmd --query-masquerade --permanent 2>/dev/null | grep -q "yes"`; then
-			firewall-cmd --add-masquerade --permanent 2>/dev/null
-			firewall-cmd --reload 2>/dev/null
-			echoColor purple "FIREWALLD MASQUERADE OPEN"
-fi
+exit 0
