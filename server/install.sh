@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="0.4.4.j"
+hihyV="0.4.4.k"
 function echoColor() {
 	case $1 in
 		# 红色
@@ -121,6 +121,7 @@ function printMsg(){
 	remarks=${msg#*:}
 	cp -P /etc/hihy/result/hihyClient.json ./Hys-${remarks}\(v2rayN\).json
 	cp -P /etc/hihy/result/metaHys.yaml ./Hys-${remarks}\(clashMeta\).yaml
+	echoColor yellow "--------------------------------------------"
 	echo ""
 	echo -e  "\033[1;;35m1* [\033[0m\033[31mv2rayN/nekoray\033[0m\033[1;;35m] 使用hysteria core直接运行: \033[0m"
 	echoColor green "客户端配置文件输出至: `pwd`/Hys-${remarks}(v2rayN).json ( 直接下载生成的配置文件[推荐] / 自行复制粘贴下方配置到本地 )"
@@ -133,6 +134,7 @@ function printMsg(){
 	echoColor green ${url}
 	echo -e "\n"
 	echo -e  "\033[1;;35m3* [\033[0m\033[31mClash.Meta\033[0m\033[1;;35m] 配置文件已在`pwd`/Hys-${remarks}(clashMeta).yaml输出,请下载至客户端使用(beta)\033[0m"
+	echoColor yellow "--------------------------------------------"
 }
 
 function hihy(){
@@ -182,7 +184,11 @@ function changeIp64(){
 function getPortBindMsg(){
         # $1 type UDP or TCP
         # $2 port
-        msg=`lsof -i:${2} | grep ${1}`
+		if [ $1 == "UDP" ]; then
+        	msg=`lsof -i ${1}:${2} | grep ${2}`
+		else
+			msg=`lsof -i ${1}:${2} | grep LISTEN | grep ${2}"`
+		fi
         if [ "${msg}" == "" ];then
                 return
         else	
@@ -194,13 +200,17 @@ function getPortBindMsg(){
 				read bindP
 				if [ -z "${bindP}" ];then
 					echoColor red "由于端口被占用，退出安装。请手动关闭或者更换端口..."
-					if [ "${1}" == "TCP" ] && [ "${2}" == "80" ] || [ "${1}" == "TCP" ] && [ "${2}" == "443" ];then
+					if [ "${1}" == "TCP" ] && [ "${2}" == "80" ];then
 						echoColor "如果需求上无法关闭 ${1}/${2}端口，请使用其他证书获取方式"
 					fi
 					exit
 				elif [ "${bindP}" == "y" ] ||  [ "${bindP}" == "Y" ];then
 					kill -9 ${pid}
-					msg=`lsof -i:${2} | grep ${1}`
+					if [ $1 == "TCP" ]; then
+						msg=`lsof -i ${1}:${2} | grep LISTEN | grep ${2}`
+					else
+						msg=`lsof -i ${1}:${2} | grep ${2}`
+					fi
         			if [ "${msg}" != "" ];then
 						echoColor red "端口占用关闭失败,强制杀死进程后进程重启,请查看是否存在守护进程..."
 						exit
@@ -209,7 +219,7 @@ function getPortBindMsg(){
 					fi
 				else
 					echoColor red "由于端口被占用，退出安装。请手动关闭或者更换端口..."
-					if [ "${1}" == "TCP" ] && [ "${2}" == "80" ] || [ "${1}" == "TCP" ] && [ "${2}" == "443" ];then
+					if [ "${1}" == "TCP" ] && [ "${2}" == "80" ];then
 						echoColor "如果需求上如果无法关闭 ${1}/${2}端口，请使用其他证书获取方式"
 					fi
 					exit
@@ -260,7 +270,7 @@ function setHysteriaConfig(){
 		echoColor purple "\n->您已选择自签${domain}证书加密.公网ip:"`echoColor red ${ip}`"\n"
 		echo -e "\n"
     elif [ "${certNum}" == "2" ];then
-		echoColor green "请输入证书cert文件路径:"
+		echoColor green "请输入证书cert文件路径(需fullchain cert,提供完整证书链):"
 		read cert
 		while :
 		do
@@ -376,28 +386,6 @@ function setHysteriaConfig(){
 		echoColor purple "\n->解析正确,使用hysteria内置ACME申请证书.域名:"`echoColor red ${domain}`"\n"
     fi
 
-	while :
-	do
-		echoColor green "请输入你想要开启的端口,此端口是server端口,建议10000-65535.(默认随机)"
-		read  port
-		if [ -z "${port}" ];then
-			port=$(($(od -An -N2 -i /dev/random) % (65534 - 10001) + 10001))
-			echo -e "->随机端口:"`echoColor red ${port}`"\n"
-		else
-			echo -e "->您输入的端口:"`echoColor red ${port}`"\n"
-		fi
-		if [ "${port}" -gt 65535 ];then
-			echoColor red "端口范围错误,请重新输入!"
-			continue
-		fi
-		pIDa=`lsof -i :${port}|grep -v "PID" | awk '{print $2}'`
-		if [ "$pIDa" != "" ];
-		then
-			echoColor red "->端口${port}被占用,PID:${pIDa}!请重新输入或者运行kill -9 ${pIDa}后重新安装!"
-		else
-			break
-		fi
-	done
     echo -e "\033[32m选择协议类型:\n\n\033[0m\033[33m\033[01m1、udp(QUIC,可启动端口跳跃)\n2、faketcp\n3、wechat-video(默认)\033[0m\033[32m\n\n输入序号:\033[0m"
     read protocol
 	ut=
@@ -413,8 +401,37 @@ function setHysteriaConfig(){
     fi
 	clientPort="${port}"
     echo -e "->传输协议:"`echoColor red ${protocol}`"\n"
+
+	while :
+	do
+		echoColor green "请输入你想要开启的端口,此端口是server端口,建议10000-65535.(默认随机)"
+		read  port
+		if [ -z "${port}" ];then
+			port=$(($(od -An -N2 -i /dev/random) % (65534 - 10001) + 10001))
+			echo -e "->使用随机端口:"`echoColor red ${ut}/${port}`"\n"
+		else
+			echo -e "->您输入的端口:"`echoColor red ${ut}/${port}`"\n"
+		fi
+		if [ "${port}" -gt 65535 ];then
+			echoColor red "端口范围错误,请重新输入!"
+			continue
+		fi
+		if [ "${ut}" != "udp" ];then
+			pIDa=`lsof -i ${ut}:${port} | grep "LISTEN" | grep -v "PID" | awk '{print $2}'`
+		else
+			pIDa=`lsof -i ${ut}:${port} | grep -v "PID" | awk '{print $2}'`
+		fi
+		if [ "$pIDa" != "" ];
+		then
+			echoColor red "->端口${port}被占用,PID:${pIDa}!请重新输入或者运行kill -9 ${pIDa}后重新安装!"
+		else
+			break
+		fi
+		
+	done
+
 	if [ "${protocol}" == "udp" ];then
-		echoColor purple "->您选择udp协议,可使用[端口跳跃/多端口](Port Hopping)功能"
+		echoColor green "->检测到您选择udp协议,可使用[端口跳跃/多端口](Port Hopping)功能"
 		echoColor red "强烈推荐,但是处于beta测试中,目前hihy对此功能支持尚不完善,后续会慢慢修改更新,如有问题请反馈给作者,谢谢!\n"
 		echo -e "Tip: 长时间单端口 UDP 连接容易被运营商封锁/QoS/断流,启动此功能可以有效避免此问题."
 		echo -e "更加详细介绍请参考: https://github.com/emptysuns/Hi_Hysteria/blob/main/md/portHopping.md\n"
@@ -692,11 +709,16 @@ EOF
 }
 EOF
     fi
-
+	sysctl -w net.core.rmem_max=8000000
+	if echo "${portHoppingStatus}" | grep -q "true";then
+		sysctl -w net.ipv4.ip_forward=1
+		sysctl -w net.ipv6.conf.all.forwarding=1
+	fi
+    sysctl -p
 	echo -e "\033[1;;35m\nTest config...\n\033[0m"
 	echo "block all udp/443" > /etc/hihy/acl/hihyServer.acl
 	/etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server > /tmp/hihy_debug.info 2>&1 &
-	sleep 10
+	sleep 5
 	msg=`cat /tmp/hihy_debug.info`
 	case ${msg} in 
 		*"Failed to get a certificate with ACME"*)
@@ -720,12 +742,24 @@ EOF
 			exit
 			;;
 		*"Server up and running"*) 
+			if [ "${portHoppingStatus}" == "true" ];then
+				addPortHoppingNat ${portHoppingStart} ${portHoppingEnd} ${port}
+			fi
+			allowPort ${ut} ${port}
 			echoColor purple "Test success!Generating config..."
-			pIDa=`lsof -i :${port}|grep -v "PID" | awk '{print $2}'`
+			if [ "${ut}" == "tcp" ];then
+				pIDa=`lsof -i ${ut}:${port} | grep LISTEN | grep -v "PID" | awk '{print $2}'`
+			else
+				pIDa=`lsof -i ${ut}:${port} | grep -v "PID" | awk '{print $2}'`
+			fi
 			kill -9 ${pIDa} > /dev/null 2>&1
 			;;
 		*) 	
-			pIDa=`lsof -i :${port}|grep -v "PID" | awk '{print $2}'`
+			if [ "${ut}" == "tcp" ];then
+				pIDa=`lsof -i ${ut}:${port} | grep LISTEN | grep -v "PID" | awk '{print $2}'`
+			else
+				pIDa=`lsof -i ${ut}:${port} | grep -v "PID" | awk '{print $2}'`
+			fi
 			kill -9 ${pIDa} > /dev/null 2>&1
 			rm /etc/hihy/result/hihyClient.json
 			delHihyFirewallPort
@@ -738,10 +772,6 @@ EOF
 			;;
 	esac
 	rm /tmp/hihy_debug.info
-	if [ "${portHoppingStatus}" == "true" ];then
-		addPortHoppingNat ${portHoppingStart} ${portHoppingEnd} ${port}
-	fi
-	allowPort ${ut} ${port}
 	echo "remarks:${remarks}" >> /etc/hihy/conf/hihy.conf
 	echo "serverAddress:${u_host}" >> /etc/hihy/conf/hihy.conf
 	echo "serverPort:${port}" >> /etc/hihy/conf/hihy.conf
@@ -756,7 +786,6 @@ EOF
 		skip_cert_verify="false"
 	fi
 	generateMetaYaml "Hys-${remarks}" ${u_host} ${port} ${auth_str} ${protocol} ${upload} ${download} ${u_domain} ${skip_cert_verify} ${r_conn} ${r_client}
-	sleep 10
 	echoColor greenWhite "安装成功,请查看下方配置详细信息"
 }
 
@@ -936,12 +965,6 @@ ExecStart=/etc/hihy/bin/appS --log-level info -c /etc/hihy/conf/hihyServer.json 
 [Install]
 WantedBy=multi-user.target
 EOF
-    sysctl -w net.core.rmem_max=8000000
-	if echo "${portHoppingStatus}" | grep -q "true";then
-		sysctl -w net.ipv4.ip_forward=1
-		sysctl -w net.ipv6.conf.all.forwarding=1
-	fi
-    sysctl -p
     chmod 644 /etc/systemd/system/hihy.service
     systemctl daemon-reload
     systemctl enable hihy
@@ -1383,7 +1406,7 @@ EOF
 
 function checkLogs(){
 	echoColor purple "hysteria 实时日志,等级:info,按Ctrl+C退出:"
-	journalctl -fu hihy
+	journalctl -u hihy --output cat -f
 }
 
 function cronTask(){
@@ -1441,10 +1464,13 @@ case $input in
 	;;
 	3)
 		systemctl start hihy
-		if [ $? -eq 0 ];then
-			echoColor green "重启成功"
+		echoColor purple "Waiting for hysteria to start..."
+		sleep 5
+		status=`systemctl is-active hihy`
+		if [ "${status}" = "active" ];then
+			echoColor green "启动成功"
 		else
-			echoColor red "重启失败"
+			echoColor red "启动失败"
 			echo -e "未知错误:请手动运行:\033[32m/etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server\033[0m"
 			echoColor red "查看错误日志,反馈到issue!"
 		fi
@@ -1455,14 +1481,16 @@ case $input in
 	;;
     5)
         systemctl restart hihy
-		if [ $? -eq 0 ];then
+		echoColor purple "Waiting for hysteria to restart..."
+		sleep 5
+		status=`systemctl is-active hihy`
+		if [ "${status}" = "active" ];then
 			echoColor green "重启成功"
 		else
 			echoColor red "重启失败"
 			echo -e "未知错误:请手动运行:\033[32m/etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server\033[0m"
 			echoColor red "查看错误日志,反馈到issue!"
 		fi
-
     ;;
     6)
         checkStatus
