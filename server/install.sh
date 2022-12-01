@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="0.4.4.k"
+hihyV="0.4.4.l"
 function echoColor() {
 	case $1 in
 		# 红色
@@ -187,7 +187,7 @@ function getPortBindMsg(){
 		if [ $1 == "UDP" ]; then
         	msg=`lsof -i ${1}:${2} | grep ${2}`
 		else
-			msg=`lsof -i ${1}:${2} | grep LISTEN | grep ${2}"`
+			msg=`lsof -i ${1}:${2} | grep LISTEN | grep ${2}`
 		fi
         if [ "${msg}" == "" ];then
                 return
