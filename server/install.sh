@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="0.4.4.l"
+hihyV="0.4.4.m"
 function echoColor() {
 	case $1 in
 		# 红色
@@ -241,7 +241,7 @@ function setHysteriaConfig(){
 		if [ -z "${domain}" ];then
 			domain="wechat.com"
 		fi
-		ip=`curl -4 -s -m 8 ip.sb`
+		ip=`curl -4 -s -m 8 ipinfo.io/ip`
 		if [ -z "${ip}" ];then
 			ip=`curl -s -m 8 ipinfo.io/ip`
 		fi
@@ -341,14 +341,14 @@ function setHysteriaConfig(){
 			v6str=":" #Is ipv6?
 			result=$(echo ${remoteip} | grep ${v6str})
 			if [ "${result}" != "" ];then
-				localip=`curl -6 -s -m 8 ip.sb`
+				localip=`curl -6 -s -m 8 ipinfo.io/ip`
 			else
-				localip=`curl -4 -s -m 8 ip.sb`
+				localip=`curl -4 -s -m 8 ipinfo.io/ip`
 			fi
 			if [ -z "${localip}" ];then
-				localip=`curl -s -m 8 ip.sb` #如果上面的ip.sb都失败了,最后检测一次
+				localip=`curl -s -m 8 ipinfo.io/ip` #如果上面的ipinfo.io/ip都失败了,最后检测一次
 				if [ -z "${localip}" ];then
-					echoColor red "\n->获取本机ip失败,请检查网络连接!curl -s -m 8 ip.sb"
+					echoColor red "\n->获取本机ip失败,请检查网络连接!curl -s -m 8 ipinfo.io/ip"
 					exit 1
 				fi
 			fi
@@ -399,7 +399,6 @@ function setHysteriaConfig(){
     	protocol="udp"
 		ut="udp"
     fi
-	clientPort="${port}"
     echo -e "->传输协议:"`echoColor red ${protocol}`"\n"
 
 	while :
@@ -429,7 +428,7 @@ function setHysteriaConfig(){
 		fi
 		
 	done
-
+	clientPort="${port}"
 	if [ "${protocol}" == "udp" ];then
 		echoColor green "->检测到您选择udp协议,可使用[端口跳跃/多端口](Port Hopping)功能"
 		echoColor red "强烈推荐,但是处于beta测试中,目前hihy对此功能支持尚不完善,后续会慢慢修改更新,如有问题请反馈给作者,谢谢!\n"

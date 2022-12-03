@@ -1,6 +1,6 @@
 # Hi Hysteria
 
-##### (2022/11/26) 0.4.4.k:
+##### (2022/12/04) 0.4.4.m:
 
 ```
 hysteria 1.3.1发布,支持了fast_open加快响应速度和提升了些许性能(目前fast_open仅适用hysteria内核直接运行方式(V2rayN),其他客户端未直接支持)
@@ -133,33 +133,7 @@ Tips:hihy 命令再次运行本脚本.
 <details>
   <summary>演示较长，点我查看</summary>
   <pre><blockcode> 
-  请选择:1
-Ready to install.
-
-Update.wait...
-Hit:1 [http://security.debian.org](http://security.debian.org) buster/updates InRelease
-Hit:2 [http://ftp.debian.org/debian](http://ftp.debian.org/debian) buster InRelease
-Hit:3 [http://ftp.debian.org/debian](http://ftp.debian.org/debian) buster-updates InRelease
-Reading package lists... Done
-Building dependency tree
-Reading state information... Done
-4 packages can be upgraded. Run 'apt list --upgradable' to see them.
-
-Done.
-Install wget curl lsof
-*wget
-Installed.Ignore.
-*curl
-Installed.Ignore.
-*lsof
-Installed.Ignore.
-
-Done.
-The Latest hysteria version:v1.3.1
-Download...
-
-Download completed.
-开始配置:
+  开始配置:
 请选择证书申请方式:
 
 1、使用ACME申请(推荐,需打开tcp 80/443)
@@ -170,13 +144,9 @@ Download completed.
 1
 请输入域名(需正确解析到本机,关闭CDN):
 test.example.com
+->检测test.example.com,DNS解析...
 
-您已选择使用ACME自动签发可信的test.example.com证书加密.
-
-请输入你想要开启的端口,此端口是server端口,建议10000-65535.(默认随机)
-
-随机端口:60853
-
+->解析正确,使用hysteria内置ACME申请证书.域名:test.example.com
 选择协议类型:
 
 1、udp(QUIC,可启动端口跳跃)
@@ -185,9 +155,13 @@ test.example.com
 
 输入序号:
 1
-传输协议:udp
+->传输协议:udp
 
-您选择udp协议,可使用[端口跳跃/多端口](Port Hopping)功能
+请输入你想要开启的端口,此端口是server端口,建议10000-65535.(默认随机)
+
+->使用随机端口:udp/58210
+
+->检测到您选择udp协议,可使用[端口跳跃/多端口](Port Hopping)功能
 强烈推荐,但是处于beta测试中,目前hihy对此功能支持尚不完善,后续会慢慢修改更新,如有问题请反馈给作者,谢谢!
 
 Tip: 长时间单端口 UDP 连接容易被运营商封锁/QoS/断流,启动此功能可以有效避免此问题.
@@ -199,74 +173,66 @@ Tip: 长时间单端口 UDP 连接容易被运营商封锁/QoS/断流,启动此�
 2、跳过
 
 输入序号:
-
-您选择启用端口跳跃/多端口(Port Hopping)功能
+1
+->您选择启用端口跳跃/多端口(Port Hopping)功能
 端口跳跃/多端口(Port Hopping)功能需要占用多个端口,请保证这些端口没有监听其他服务
-Tip: 端口选择数量不宜过多,推荐1000个左右,建议选择连续的端口范围.
+Tip: 端口选择数量不宜过多,推荐1000个左右,范围1-65535,建议选择连续的端口范围.
 更多介绍参考: [https://hysteria.network/docs/port-hopping/](https://hysteria.network/docs/port-hopping/)
 请输入起始端口(默认47000):
-
-起始端口:47000
+30000
+->起始端口:30000
 
 请输入结束端口(默认48000):
+40000
+->结束端口:40000
 
-结束端口:48000
-
-您选择的端口跳跃/多端口(Port Hopping)参数为: 47000:48000
+->您选择的端口跳跃/多端口(Port Hopping)参数为: 30000:40000
 
 请输入您到此服务器的平均延迟,关系到转发速度(默认200,单位:ms):
-
-延迟:200 ms
+350
+->延迟:350 ms
 
 期望速度,这是客户端的峰值速度,服务端默认不受限。Tips:脚本会自动*1.10做冗余，您期望过低或者过高会影响转发效率,请如实填写!
 请输入客户端期望的下行速度:(默认50,单位:mbps):
-100
-客户端下行速度：100 mbps
+130
+->客户端下行速度：130 mbps
 
 请输入客户端期望的上行速度(默认10,单位:mbps):
-10
-客户端上行速度：10 mbps
+20
+->客户端上行速度：20 mbps
 
 请输入认证口令(默认随机生成,建议20位以上强密码):
 
-认证口令:f45fd50b526907b2ba8f03df0
+->认证口令:vSIalxEIkTlJlkairDbqUdGZLb3EKqeBT1ESirdPSLI8PmgE8i
 
 请输入客户端名称备注(默认使用域名/IP区分,例如输入test,则名称为Hys-test):
-ppeko
+sam
 
 配置录入完成!
 
 执行配置...
-IPTABLES OPEN: udp/60853
-Reading package lists...
-Building dependency tree...
-Reading state information...
-wget is already the newest version (1.20.1-1.1).
-0 upgraded, 0 newly installed, 0 to remove and 4 not upgraded.
-Port: TCP/80 已经被 apache2(*:http) 占用,进程pid为: 6371.
-是否自动关闭端口占用?(y/N)
-y
-端口解绑成功...
 IPTABLES OPEN: tcp/80
-IPTABLES OPEN: tcp/443
+net.core.rmem_max = 8000000
+net.ipv4.ip_forward = 1
+net.ipv6.conf.all.forwarding = 1
 
 Test config...
 
+IPTABLES OPEN: udp/58210
 Test success!Generating config...
-in.sh: line 211:  5296 Killed                  /etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server > /tmp/hihy_debug.info 2>&1
+nezha.sh: line 1242: 65988 Killed                  /etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server > /tmp/hihy_debug.info 2>&1
 安装成功,请查看下方配置详细信息
-sysctl: cannot stat /proc/sys/net/core/rmem_max: No such file or directory
-Created symlink /etc/systemd/system/multi-user.target.wants/hihy.service → /etc/systemd/system/hihy.service.
+-------------------------------
 
 1* [v2rayN/nekoray] 使用hysteria core直接运行:
-客户端配置文件输出至: /root/Hys-ppeko(v2rayN).json ( 直接下载生成的配置文件[推荐] / 自行复制粘贴下方配置到本地 )
+客户端配置文件输出至: /root/Hys-sam(v2rayN).json ( 直接下载生成的配置文件[推荐] / 自行复制粘贴下方配置到本地 )
 Tips:客户端默认只开启http(8888)、socks5(8889)代理!其他方式请参照hysteria文档自行修改客户端config.json
 ↓***********************************↓↓↓copy↓↓↓*******************************↓
 {
-"server": "test.example.com:60853,47000-48000",
+"server": "test.example.com:58210,30000-40000",
 "protocol": "udp",
-"up_mbps": 11,
-"down_mbps": 110,
+"up_mbps": 22,
+"down_mbps": 143,
 "http": {
 "listen": "127.0.0.1:10809",
 "timeout" : 300,
@@ -280,11 +246,11 @@ Tips:客户端默认只开启http(8888)、socks5(8889)代理!其他方式请参�
 "alpn": "h3",
 "acl": "acl/routes.acl",
 "mmdb": "acl/Country.mmdb",
-"auth_str": "f45fd50b526907b2ba8f03df0",
+"auth_str": "vSIalxEIkTlJlkairDbqUdGZLb3EKqeBT1ESirdPSLI8PmgE8i",
 "server_name": "test.example.com",
 "insecure": false,
-"recv_window_conn": 11534336,
-"recv_window": 46137344,
+"recv_window_conn": 26214400,
+"recv_window": 104857600,
 "disable_mtu_discovery": true,
 "resolver": "https://223.5.5.5/dns-query",
 "retry": 3,
@@ -298,12 +264,11 @@ Tips:客户端默认只开启http(8888)、socks5(8889)代理!其他方式请参�
 ↑***********************************↑↑↑copy↑↑↑*******************************↑
 
 2* [Shadowrocket/Sagernet/Passwall] 一键链接:
-hysteria://test.example.com:60853?protocol=udp&auth=f45fd50b526907b2ba8f03df0&peer=test.example.com&insecure=0&upmbps=11&downmbps=110&alpn=h3#Hys-ppeko
+hysteria://test.example.com:58210?protocol=udp&auth=vSIalxEIkTlJlkairDbqUdGZLb3EKqeBT1ESirdPSLI8PmgE8i&peer=test.example.com&insecure=0&upmbps=22&downmbps=143&alpn=h3#Hys-sam
 
-3* [Clash.Meta] 配置文件已在/root/Hys-ppeko(clashMeta).yaml输出,请下载至客户端使用(beta)
-安装完毕
+3* [Clash.Meta] 配置文件已在/root/Hys-sam(clashMeta).yaml输出,请下载至客户端使用(beta)
 
-  `</blockcode></pre>`
+  </blockcode></pre>
 
 </details>
 
