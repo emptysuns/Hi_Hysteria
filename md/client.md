@@ -51,7 +51,7 @@ v2rayN已经在添加自定义配置时支持hysteria并能自动识别config的
 **你也可以直接下载我打包好的[v2rayN-hysteriaCore](https://github.com/emptysuns/Hi_Hysteria/releases/latest)，可忽略下方的配置v2n的过程。**
 
 1. [点我下载](https://github.com/2dust/v2rayN/releases/latest/download/v2rayN.zip)最新的v2rayN，并解压。
-2. [点我下载](https://github.com/HyNetwork/hysteria/releases/download/v1.2.0/hysteria-windows-amd64.exe)hysteria最新版本的Core，修改名称为 `hysteria.exe`,将它放到v2rayN的根目录里。
+2. [点我下载](https://github.com/apernet/hysteria/releases/)hysteria最新版本的Core，修改名称为 `hysteria.exe`,将它放到v2rayN的根目录里。
 3. 使用提供的[脚本](https://github.com/emptysuns/Hi_Hysteria/tree/main/acl)生成acl文件和Country.mmdb文件,在v2rayN根目录创建一个新的文件夹名称为 `acl`并将这两个文件放到这个目录里。
 4. 开始使用时需要得到hihy生成的config.json配置文件，v2rayN选择这个文件，双击选择此节点。如下图:
 
