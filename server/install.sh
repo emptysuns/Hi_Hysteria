@@ -185,9 +185,9 @@ function getPortBindMsg(){
         # $1 type UDP or TCP
         # $2 port
 		if [ $1 == "UDP" ]; then
-        	msg=`lsof -i ${1}:${2} | grep ${2}`
+        	msg=`lsof -i ${1}:${2}`
 		else
-			msg=`lsof -i ${1}:${2} | grep LISTEN | grep ${2}`
+			msg=`lsof -i ${1}:${2} | grep LISTEN`
 		fi
         if [ "${msg}" == "" ];then
                 return
@@ -206,10 +206,12 @@ function getPortBindMsg(){
 					exit
 				elif [ "${bindP}" == "y" ] ||  [ "${bindP}" == "Y" ];then
 					kill -9 ${pid}
+					echoColor purple "正在解绑..."
+					sleep 3
 					if [ $1 == "TCP" ]; then
-						msg=`lsof -i ${1}:${2} | grep LISTEN | grep ${2}`
+						msg=`lsof -i ${1}:${2} | grep LISTEN`
 					else
-						msg=`lsof -i ${1}:${2} | grep ${2}`
+						msg=`lsof -i ${1}:${2}`
 					fi
         			if [ "${msg}" != "" ];then
 						echoColor red "端口占用关闭失败,强制杀死进程后进程重启,请查看是否存在守护进程..."
@@ -717,17 +719,18 @@ EOF
 	echo -e "\033[1;;35m\nTest config...\n\033[0m"
 	echo "block all udp/443" > /etc/hihy/acl/hihyServer.acl
 	/etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server > /tmp/hihy_debug.info 2>&1 &
-	sleep 5
+	sleep 10
 	msg=`cat /tmp/hihy_debug.info`
 	case ${msg} in 
 		*"Failed to get a certificate with ACME"*)
-			echoColor red "域名:${u_host},申请证书失败!请查看服务器提供的面板防火墙是否开启(TCP:80,443)\n或者域名是否正确解析到此ip(不要开CDN!)\n如果无法满足以上两点,请重新安装使用自签证书."
+			echoColor red "域名:${u_host},申请证书失败!请查看服务器提供的面板防火墙是否开启(TCP:80,443)\n域名是否正确解析到此ip(不要开CDN!)\n如果无法满足以上两点,请重新安装使用自签证书."
 			rm /etc/hihy/conf/hihyServer.json
 			rm /etc/hihy/result/hihyClient.json
 			delHihyFirewallPort
 			if echo ${portHoppingStatus} | grep -q "true";then
 				delHihyFirewallPort ${portHoppingStart} ${portHoppingEnd} ${port}
 			fi
+			rm /tmp/hihy_debug.info
 			exit
 			;;
 		*"bind: address already in use"*)
@@ -738,6 +741,7 @@ EOF
 				delHihyFirewallPort ${portHoppingStart} ${portHoppingEnd} ${port}
 			fi
 			echoColor red "端口被占用,请更换端口!"
+			rm /tmp/hihy_debug.info
 			exit
 			;;
 		*"Server up and running"*) 
@@ -745,13 +749,15 @@ EOF
 				addPortHoppingNat ${portHoppingStart} ${portHoppingEnd} ${port}
 			fi
 			allowPort ${ut} ${port}
-			echoColor purple "Test success!Generating config..."
+			echoColor green "Test success!"
+			echoColor purple "Generating config..."
 			if [ "${ut}" == "tcp" ];then
 				pIDa=`lsof -i ${ut}:${port} | grep LISTEN | grep -v "PID" | awk '{print $2}'`
 			else
 				pIDa=`lsof -i ${ut}:${port} | grep -v "PID" | awk '{print $2}'`
 			fi
 			kill -9 ${pIDa} > /dev/null 2>&1
+			rm /tmp/hihy_debug.info
 			;;
 		*) 	
 			if [ "${ut}" == "tcp" ];then
@@ -765,12 +771,12 @@ EOF
 			if echo ${portHoppingStatus} | grep -q "true";then
 				delHihyFirewallPort ${portHoppingStart} ${portHoppingEnd} ${port}
 			fi
-			echoColor red "未知错误:请手动运行:`echoColor green "/etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server"`"
-			echoColor red "查看错误日志,反馈到issue!"
+			echoColor red "未知错误: 请查看下方错误信息,并提交issue到github"
+			cat /tmp/hihy_debug.info
+			rm /tmp/hihy_debug.info
 			exit
 			;;
 	esac
-	rm /tmp/hihy_debug.info
 	echo "remarks:${remarks}" >> /etc/hihy/conf/hihy.conf
 	echo "serverAddress:${u_host}" >> /etc/hihy/conf/hihy.conf
 	echo "serverPort:${port}" >> /etc/hihy/conf/hihy.conf
