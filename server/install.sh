@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="0.4.4.m"
+hihyV="0.4.4.n"
 function echoColor() {
 	case $1 in
 		# 红色
@@ -567,7 +567,7 @@ function setHysteriaConfig(){
 "handshake_timeout": 15,
 "idle_timeout": 30,
 "fast_open": true,
-"hop_interval": 180
+"hop_interval": 120
 }
 EOF
 		else
@@ -609,7 +609,7 @@ EOF
 "handshake_timeout": 15,
 "idle_timeout": 30,
 "fast_open": true,
-"hop_interval": 180
+"hop_interval": 120
 }
 EOF
 		fi		
@@ -706,7 +706,7 @@ EOF
 "handshake_timeout": 15,
 "idle_timeout": 30,
 "fast_open": true,
-"hop_interval": 180
+"hop_interval": 120
 }
 EOF
     fi
