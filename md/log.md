@@ -1,3 +1,28 @@
+##### (2022/12/04) 0.4.4.m
+
+```
+hysteria 1.3.1发布,支持了fast_open加快响应速度和提升了些许性能(目前fast_open仅适用hysteria内核直接运行方式(V2rayN),其他客户端未直接支持)
+1. 支持对配置进行备注
+2. 增加对自签证书的提示，最近GFW对自签证书阻断情况严重，不再推荐使用
+3. 增加了一些提示信息方便配置过程
+4. 增加随机密码功能
+5. 完善对PortHopping的支持，修复重启系统后iptables规则消失的bug
+6. 修复ip被github拉黑无法获得hysteria core时下载为空的bug
+7. 增加重启hysteria后的检测，修复重启失败时提示成功的bug
+8. 修复netfilter-persistent规则无法删除的bug
+9. 一些其它bug修复
+10.支持fast_open
+11.在release上增加其他客户端下载方便直接取得
+12.修复lsof不区分端口类型和监听状态的bug
+13.完善对端口合法性的判断，引导用户尽可能输入正确的端口
+14.修改测试配置的方式，加快配置打印时间
+15.修复实时日志打印的方式，使用重定向到cat防止更新不及时
+
+Q: 为什么0.4.4更新这么频繁，内容这么多?
+A: 上个版本为了兼容portHopping动了很多祖传代码，导致一堆bug，所以修复的比较多
+```
+
+
 ##### (2022/11/08) 0.4.3.c
 
 **hysteria原仓库由[@HyNetwork](https://github.com/HyNetwork/hysteria)更名为[@apernet](https://github.com/apernet/hysteria)，请低于0.4.3.c版本的用户更新后再使用，否则无法获取core信息导致安装失败!!!**

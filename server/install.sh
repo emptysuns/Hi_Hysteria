@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="0.4.4.n"
+hihyV="0.4.5"
 function echoColor() {
 	case $1 in
 		# 红色
@@ -153,7 +153,7 @@ function changeIp64(){
     case ${now} in 
 		*"64"*)
 			echoColor purple "当前ipv6优先"
-            echoColor yellow " ->设置ipv4优先级高于ipv6?(Y/N,默认N)"
+            echoColor yellow " \n->设置ipv4优先级高于ipv6?(Y/N,默认N)"
             read input
             if [ -z "${input}" ];then
                 echoColor green "Ignore."
@@ -167,7 +167,7 @@ function changeIp64(){
 		;;
 		*"46"*)
 			echoColor purple "当前ipv4优先"
-            echoColor yellow " ->设置ipv6优先级高于ipv4?(Y/N,默认N)"
+            echoColor yellow " \n->设置ipv6优先级高于ipv4?(Y/N,默认N)"
             read input
             if [ -z "${input}" ];then
                 echoColor green "Ignore."
@@ -238,7 +238,8 @@ function setHysteriaConfig(){
 	useLocalCert=false
 	if [ -z "${certNum}" ] || [ "${certNum}" == "3" ];then
 		echoColor green "请输入自签证书的域名(默认:wechat.com):"
-		echoColor red "注意:自签证书近一段时间来遭到大量随机阻断,请谨慎使用(这条提示不消失说明阻断还在继续)"
+		echo -e  "注意:自签证书近一段时间来遭到大量随机阻断,请谨慎使用(这条提示不消失说明阻断还在继续)"
+		echoColor red "如果一定要使用自签证书,请在下方配置选择使用obfs混淆验证,保证安全性"
 		read domain
 		if [ -z "${domain}" ];then
 			domain="wechat.com"
@@ -263,13 +264,13 @@ function setHysteriaConfig(){
 				fi
 				break
 			else
-				echoColor red "->输入错误,请重新输入:"
+				echoColor red "\n->输入错误,请重新输入:"
 			fi
 		done		
 		cert="/etc/hihy/cert/${domain}.crt"
 		key="/etc/hihy/cert/${domain}.key"
 		useAcme=false
-		echoColor purple "\n->您已选择自签${domain}证书加密.公网ip:"`echoColor red ${ip}`"\n"
+		echoColor purple "\n\n->您已选择自签${domain}证书加密.公网ip:"`echoColor red ${ip}`"\n"
 		echo -e "\n"
     elif [ "${certNum}" == "2" ];then
 		echoColor green "请输入证书cert文件路径(需fullchain cert,提供完整证书链):"
@@ -277,33 +278,33 @@ function setHysteriaConfig(){
 		while :
 		do
 			if [ ! -f "${cert}" ];then
-				echoColor red "\n->路径不存在,请重新输入!"
+				echoColor red "\n\n->路径不存在,请重新输入!"
 				echoColor green "请输入证书cert文件路径:"
 				read  cert
 			else
 				break
 			fi
 		done
-		echo -e "\n->cert文件路径: "`echoColor red ${cert}`"\n"
+		echo -e "\n\n->cert文件路径: "`echoColor red ${cert}`"\n"
 		echoColor green "请输入证书key文件路径:"
 		read key
 		while :
 		do
 			if [ ! -f "${key}" ];then
-				echoColor red "\n->路径不存在,请重新输入!"
+				echoColor red "\n\n->路径不存在,请重新输入!"
 				echoColor green "请输入证书key文件路径:"
 				read  key
 			else
 				break
 			fi
 		done
-		echo -e "\n->key文件路径: "`echoColor red ${key}`"\n"
+		echo -e "\n\n->key文件路径: "`echoColor red ${key}`"\n"
 		echoColor green "请输入所选证书域名:"
 		read domain
 		while :
 		do
 			if [ -z "${domain}" ];then
-				echoColor red "\n->此选项不能为空,请重新输入!"
+				echoColor red "\n\n->此选项不能为空,请重新输入!"
 				echoColor green "请输入所选证书域名:"
 				read  domain
 			else
@@ -312,14 +313,14 @@ function setHysteriaConfig(){
 		done
 		useAcme=false
 		useLocalCert=true
-		echoColor purple "\n->您已选择本地证书加密.域名:"`echoColor red ${domain}`"\n"
+		echoColor purple "\n\n->您已选择本地证书加密.域名:"`echoColor red ${domain}`"\n"
     else 
     	echoColor green "请输入域名(需正确解析到本机,关闭CDN):"
 		read domain
 		while :
 		do
 			if [ -z "${domain}" ];then
-				echoColor red "\n->此选项不能为空,请重新输入!"
+				echoColor red "\n\n->此选项不能为空,请重新输入!"
 				echoColor green "请输入域名(需正确解析到本机,关闭CDN):"
 				read  domain
 			else
@@ -328,13 +329,13 @@ function setHysteriaConfig(){
 		done
 		while :
 		do	
-			echoColor purple "->检测${domain},DNS解析..."
+			echoColor purple "\n->检测${domain},DNS解析..."
 			ip_resolv=`dig +short ${domain} A`
 			if [ -z "${ip_resolv}" ];then
 				ip_resolv=`dig +short ${domain} AAAA`
 			fi
 			if [ -z "${ip_resolv}" ];then
-				echoColor red "\n->域名解析失败,没有获得任何dns记录(A/AAAA),请检查域名是否正确解析到本机!"
+				echoColor red "\n\n->域名解析失败,没有获得任何dns记录(A/AAAA),请检查域名是否正确解析到本机!"
 				echoColor green "请输入域名(需正确解析到本机,关闭CDN):"
 				read  domain
 				continue
@@ -350,12 +351,12 @@ function setHysteriaConfig(){
 			if [ -z "${localip}" ];then
 				localip=`curl -s -m 8 ipinfo.io/ip` #如果上面的ipinfo.io/ip都失败了,最后检测一次
 				if [ -z "${localip}" ];then
-					echoColor red "\n->获取本机ip失败,请检查网络连接!curl -s -m 8 ipinfo.io/ip"
+					echoColor red "\n\n->获取本机ip失败,请检查网络连接!curl -s -m 8 ipinfo.io/ip"
 					exit 1
 				fi
 			fi
 			if [ "${localip}" != "${remoteip}" ];then
-				echo -e " \n->本机ip: "`echoColor red ${localip}`" \n->域名ip: "`echoColor red ${remoteip}`"\n"
+				echo -e " \n\n->本机ip: "`echoColor red ${localip}`" \n\n->域名ip: "`echoColor red ${remoteip}`"\n"
 				echoColor green "多ip或者dns未生效时可能检测失败,如果你确定正确解析到了本机,是否自己指定本机ip? [y/N]:"
 				read isLocalip
 				if [ "${isLocalip}" == "y" ];then
@@ -364,7 +365,7 @@ function setHysteriaConfig(){
 					while :
 					do
 						if [ -z "${localip}" ];then
-							echoColor red "\n->此选项不能为空,请重新输入!"
+							echoColor red "\n\n->此选项不能为空,请重新输入!"
 							echoColor green "请输入本机ip:"
 							read  localip
 						else
@@ -373,7 +374,7 @@ function setHysteriaConfig(){
 					done
 				fi
 				if [ "${localip}" != "${remoteip}" ];then
-					echoColor red "\n->域名解析到的ip与本机ip不一致,请重新输入!"
+					echoColor red "\n\n->域名解析到的ip与本机ip不一致,请重新输入!"
 					echoColor green "请输入域名(需正确解析到本机,关闭CDN):"
 					read  domain
 					continue
@@ -385,7 +386,7 @@ function setHysteriaConfig(){
 			fi
 		done
 		useAcme=true
-		echoColor purple "\n->解析正确,使用hysteria内置ACME申请证书.域名:"`echoColor red ${domain}`"\n"
+		echoColor purple "\n\n->解析正确,使用hysteria内置ACME申请证书.域名:"`echoColor red ${domain}`"\n"
     fi
 
     echo -e "\033[32m选择协议类型:\n\n\033[0m\033[33m\033[01m1、udp(QUIC,可启动端口跳跃)\n2、faketcp\n3、wechat-video(默认)\033[0m\033[32m\n\n输入序号:\033[0m"
@@ -401,7 +402,7 @@ function setHysteriaConfig(){
     	protocol="udp"
 		ut="udp"
     fi
-    echo -e "->传输协议:"`echoColor red ${protocol}`"\n"
+    echo -e "\n->传输协议:"`echoColor red ${protocol}`"\n"
 
 	while :
 	do
@@ -409,9 +410,9 @@ function setHysteriaConfig(){
 		read  port
 		if [ -z "${port}" ];then
 			port=$(($(od -An -N2 -i /dev/random) % (65534 - 10001) + 10001))
-			echo -e "->使用随机端口:"`echoColor red ${ut}/${port}`"\n"
+			echo -e "\n->使用随机端口:"`echoColor red ${ut}/${port}`"\n"
 		else
-			echo -e "->您输入的端口:"`echoColor red ${ut}/${port}`"\n"
+			echo -e "\n->您输入的端口:"`echoColor red ${ut}/${port}`"\n"
 		fi
 		if [ "${port}" -gt 65535 ];then
 			echoColor red "端口范围错误,请重新输入!"
@@ -424,7 +425,7 @@ function setHysteriaConfig(){
 		fi
 		if [ "$pIDa" != "" ];
 		then
-			echoColor red "->端口${port}被占用,PID:${pIDa}!请重新输入或者运行kill -9 ${pIDa}后重新安装!"
+			echoColor red "\n->端口${port}被占用,PID:${pIDa}!请重新输入或者运行kill -9 ${pIDa}后重新安装!"
 		else
 			break
 		fi
@@ -432,16 +433,15 @@ function setHysteriaConfig(){
 	done
 	clientPort="${port}"
 	if [ "${protocol}" == "udp" ];then
-		echoColor green "->检测到您选择udp协议,可使用[端口跳跃/多端口](Port Hopping)功能"
-		echoColor red "强烈推荐,但是处于beta测试中,目前hihy对此功能支持尚不完善,后续会慢慢修改更新,如有问题请反馈给作者,谢谢!\n"
+		echoColor green "\n->检测到您选择udp协议,可使用[端口跳跃/多端口](Port Hopping)功能,推荐使用"
 		echo -e "Tip: 长时间单端口 UDP 连接容易被运营商封锁/QoS/断流,启动此功能可以有效避免此问题."
 		echo -e "更加详细介绍请参考: https://github.com/emptysuns/Hi_Hysteria/blob/main/md/portHopping.md\n"
 		echo -e "\033[32m选择是否启用:\n\n\033[0m\033[33m\033[01m1、启用(默认)\n2、跳过\033[0m\033[32m\n\n输入序号:\033[0m"
 		read portHoppingStatus
 		if [ -z "${portHoppingStatus}" ] || [ $portHoppingStatus == "1" ];then
 			portHoppingStatus="true"
-			echoColor purple "->您选择启用端口跳跃/多端口(Port Hopping)功能"
-			echo -e "端口跳跃/多端口(Port Hopping)功能需要占用多个端口,请保证这些端口没有监听其他服务\nTip: 端口选择数量不宜过多,推荐1000个左右,范围1-65535,建议选择连续的端口范围.\n更多介绍参考: https://hysteria.network/docs/port-hopping/"
+			echoColor purple "\n->您选择启用端口跳跃/多端口(Port Hopping)功能"
+			echo -e "端口跳跃/多端口(Port Hopping)功能需要占用多个端口,请保证这些端口没有监听其他服务\nTip: 端口选择数量不宜过多,推荐1000个左右,范围1-65535,建议选择连续的端口范围.\n"
 			while :
 			do
 				echoColor green "请输入起始端口(默认47000):"
@@ -450,31 +450,31 @@ function setHysteriaConfig(){
 					portHoppingStart=47000
 				fi
 				if [ $portHoppingStart -gt 65535 ];then
-					echoColor red "->端口范围错误,请重新输入!"
+					echoColor red "\n->端口范围错误,请重新输入!"
 					continue
 				fi
-				echo -e "->起始端口:"`echoColor red ${portHoppingStart}`"\n"
+				echo -e "\n->起始端口:"`echoColor red ${portHoppingStart}`"\n"
 				echoColor green "请输入结束端口(默认48000):"
 				read  portHoppingEnd
 				if [ -z "${portHoppingEnd}" ];then
 					portHoppingEnd=48000
 				fi
 				if [ $portHoppingEnd -gt 65535 ];then
-					echoColor red "->端口范围错误,请重新输入!"
+					echoColor red "\n->端口范围错误,请重新输入!"
 					continue
 				fi
-				echo -e "->结束端口:"`echoColor red ${portHoppingEnd}`"\n"
+				echo -e "\n->结束端口:"`echoColor red ${portHoppingEnd}`"\n"
 				if [ $portHoppingStart -ge $portHoppingEnd ];then
-					echoColor red "->起始端口必须小于结束端口,请重新输入!"
+					echoColor red "\n->起始端口必须小于结束端口,请重新输入!"
 				else
 					break
 				fi
 			done
 			clientPort="${port},${portHoppingStart}-${portHoppingEnd}"
-			echo -e "->您选择的端口跳跃/多端口(Port Hopping)参数为: "`echoColor red ${portHoppingStart}:${portHoppingEnd}`"\n"
+			echo -e "\n->您选择的端口跳跃/多端口(Port Hopping)参数为: "`echoColor red ${portHoppingStart}:${portHoppingEnd}`"\n"
 		else
 			portHoppingStatus="false"
-			echoColor red "->您选择跳过端口跳跃/多端口(Port Hopping)功能"
+			echoColor red "\n->您选择跳过端口跳跃/多端口(Port Hopping)功能"
 		fi
 	fi
 
@@ -483,27 +483,53 @@ function setHysteriaConfig(){
     if [ -z "${delay}" ];then
 		delay=200
     fi
-	echo -e "->延迟:`echoColor red ${delay}`ms\n"
+	echo -e "\n->延迟:`echoColor red ${delay}`ms\n"
     echo -e "\n期望速度,这是客户端的峰值速度,服务端默认不受限。"`echoColor red Tips:脚本会自动*1.10做冗余，您期望过低或者过高会影响转发效率,请如实填写!`
     echoColor green "请输入客户端期望的下行速度:(默认50,单位:mbps):"
     read  download
     if [ -z "${download}" ];then
         download=50
     fi
-	echo -e "->客户端下行速度："`echoColor red ${download}`"mbps\n"
+	echo -e "\n->客户端下行速度："`echoColor red ${download}`"mbps\n"
     echo -e "\033[32m请输入客户端期望的上行速度(默认10,单位:mbps):\033[0m" 
     read  upload
     if [ -z "${upload}" ];then
         upload=10
     fi
-	echo -e "->客户端上行速度："`echoColor red ${upload}`"mbps\n"
-	auth_str=""
+	echo -e "\n->客户端上行速度："`echoColor red ${upload}`"mbps\n"
 	echoColor green "请输入认证口令(默认随机生成,建议20位以上强密码):"
-	read auth_str
-	if [ -z "${auth_str}" ];then
-		auth_str=`tr -cd '[:alnum:]' < /dev/urandom | fold -w50 | head -n1`
+	read auth_secret
+	if [ -z "${auth_secret}" ];then
+		auth_secret=`tr -cd '[:alnum:]' < /dev/urandom | fold -w50 | head -n1`
 	fi
-	echo -e "->认证口令:"`echoColor red ${auth_str}`"\n"
+	echo -e "\n->认证口令:"`echoColor red ${auth_secret}`"\n"
+	auth_str=""
+	obfs_str=""
+	echo -e "Tips: 如果使用obfs混淆加密,抗封锁能力更强,能被识别为未知udp流量,但是会增加cpu负载导致峰值速度下降,如果您追求性能且未被针对封锁建议不使用"
+	echo -e "\033[32m选择验证方式:\n\n\033[0m\033[33m\033[01m1、auth_str(默认)\n2、obfs\033[0m\033[32m\n\n输入序号:\033[0m"
+	read auth_num
+	if [ -z "${auth_num}" ] || [ ${auth_num} == "1" ];then
+		auth_type="auth_str"
+		auth_str=${auth_secret}
+		server_auth_conf=$(cat <<- EOF
+"auth": {
+"mode": "password",
+"config": {
+"password": "${auth_str}"
+}
+},
+EOF
+)
+	else
+		auth_type="obfs"
+		auth_str=""
+		obfs_str=${auth_secret}
+		server_auth_conf=$(cat <<- EOF
+"obfs": "${obfs_str}",
+EOF
+)
+	fi
+	echo -e "\n->您选择的验证方式为:"`echoColor red ${auth_type}`"\n"
 	echoColor green "请输入客户端名称备注(默认使用域名/IP区分,例如输入test,则名称为Hys-test):"
 	read remarks
     echoColor green "\n配置录入完成!\n"
@@ -551,10 +577,11 @@ function setHysteriaConfig(){
 "timeout": 300,
 "disable_udp": false
 },
+"obfs": "${obfs_str}",
+"auth_str": "${auth_str}",
 "alpn": "h3",
 "acl": "acl/routes.acl",
 "mmdb": "acl/Country.mmdb",
-"auth_str": "${auth_str}",
 "server_name": "${domain}",
 "insecure": true,
 "recv_window_conn": ${r_conn},
@@ -593,6 +620,7 @@ EOF
 "timeout": 300,
 "disable_udp": false
 },
+"obfs": "${obfs_str}",
 "alpn": "h3",
 "acl": "acl/routes.acl",
 "mmdb": "acl/Country.mmdb",
@@ -620,12 +648,7 @@ EOF
 "disable_udp": false,
 "cert": "${cert}",
 "key": "${key}",
-"auth": {
-	"mode": "password",
-	"config": {
-	"password": "${auth_str}"
-	}
-},
+${server_auth_conf}
 "alpn": "h3",
 "acl": "/etc/hihy/acl/hihyServer.acl",
 "recv_window_conn": ${r_conn},
@@ -651,18 +674,13 @@ EOF
 "listen": ":${port}",
 "protocol": "${protocol}",
 "acme": {
-    "domains": [
-    "${domain}"
-    ],
-    "email": "pekora@${domain}"
+"domains": [
+"${domain}"
+],
+"email": "pekora@${domain}"
 },
 "disable_udp": false,
-"auth": {
-    "mode": "password",
-    "config": {
-    "password": "${auth_str}"
-    }
-},
+${server_auth_conf}
 "alpn": "h3",
 "acl": "/etc/hihy/acl/hihyServer.acl",
 "recv_window_conn": ${r_conn},
@@ -690,6 +708,7 @@ EOF
 "timeout": 300,
 "disable_udp": false
 },
+"obfs": "${obfs_str}",
 "alpn": "h3",
 "acl": "acl/routes.acl",
 "mmdb": "acl/Country.mmdb",
@@ -783,14 +802,14 @@ EOF
 	echo "portHoppingStatus:${portHoppingStatus}" >> /etc/hihy/conf/hihy.conf
 	echo "portHoppingStart:${portHoppingStart}" >> /etc/hihy/conf/hihy.conf
 	echo "portHoppingEnd:${portHoppingEnd}" >> /etc/hihy/conf/hihy.conf
-	url="hysteria://${u_host}:${port}?protocol=${protocol}&auth=${auth_str}&peer=${u_domain}&insecure=${sec}&upmbps=${upload}&downmbps=${download}&alpn=h3#Hys-${remarks}"
+	url="hysteria://${u_host}:${port}?protocol=${protocol}&auth=${auth_str}&obfsParam=${obfs_str}&peer=${u_domain}&insecure=${sec}&upmbps=${upload}&downmbps=${download}&alpn=h3#Hys-${remarks}"
 	echo ${url} > /etc/hihy/result/url.txt
 	if [ $sec = "1" ];then
 		skip_cert_verify="true"
 	else
 		skip_cert_verify="false"
 	fi
-	generateMetaYaml "Hys-${remarks}" ${u_host} ${port} ${auth_str} ${protocol} ${upload} ${download} ${u_domain} ${skip_cert_verify} ${r_conn} ${r_client}
+	generateMetaYaml "Hys-${remarks}" "${u_host}" "${port}" "${auth_str}" "${protocol}" "${upload}" "${download}" "${u_domain}" "${skip_cert_verify}" "${r_conn}" "${r_client}" "${obfs_str}"
 	echoColor greenWhite "安装成功,请查看下方配置详细信息"
 }
 
@@ -871,8 +890,12 @@ function changeServerConfig(){
 		msg=`cat /etc/hihy/conf/hihy.conf | grep "remarks"`
 		remarks=${msg#*:}
 		rm -r /etc/hihy/conf/hihy.conf
-		rm ./Hys-${remarks}\(v2rayN\).json
-		rm ./Hys-${remarks}\(clashMeta\).yaml
+		if [ -f "./Hys-${remarks}\(v2rayN\).json" ];then
+			rm ./Hys-${remarks}\(v2rayN\).json
+		fi
+		if [ -f "./Hys-${remarks}\(clashMeta\).yaml" ];then
+			rm ./Hys-${remarks}\(clashMeta\).yaml
+		fi
 		if echo "${portHoppingStatus}" | grep -q "true";then
 			delPortHoppingNat ${portHoppingStart} ${portHoppingEnd} ${serverPort}
 		fi
@@ -1227,7 +1250,7 @@ function changeMode(){
 	elif [ "${protocol}" = "wechat-video" ];then
 		echo -e "\033[32m\n请选择修改的协议类型:\n\n\033[0m\033[33m\033[01m1、udp\n2、faketcp\033[0m\033[32m\n\n输入序号:\033[0m"
     	read pNum
-		if [ -z "${pNum}" ] || [ "${pNum}" == "1" ];then
+		if [ -z "${pNum}" ] || [[ "${pNum}" == "1" ]];then
 			echoColor purple "选择修改协议类型为udp."
 			editProtocol wechat-video udp
 		else
@@ -1246,6 +1269,17 @@ function changeMode(){
 
 
 function generateMetaYaml(){
+	if [[ ${4} == "" ]];then
+		clashClient_auth_conf=$(cat <<- EOF
+	obfs: ${12}
+EOF
+)
+	else
+		clashClient_auth_conf=$(cat <<- EOF
+	auth_str: ${4}
+EOF
+)
+	fi
 	cat <<EOF > /etc/hihy/result/metaHys.yaml
 mixed-port: 7890
 allow-lan: true
@@ -1270,16 +1304,16 @@ dns:
 proxies:
   - name: "$1"
     type: hysteria
-    server: $2
-    port: $3
-    auth_str: $4
+    server: ${2}
+    port: ${3}
+    ${clashClient_auth_conf}
     alpn:
       - h3
-    protocol: $5
-    up: $6
-    down: $7
-    sni: $8
-    skip-cert-verify: $9
+    protocol: ${5}
+    up: ${6}
+    down: ${7}
+    sni: ${8}
+    skip-cert-verify: ${9}
     recv_window_conn: ${10}
     recv_window: ${11}
     disable_mtu_discovery: true
@@ -1393,6 +1427,7 @@ rules:
   - RULE-SET,applications,DIRECT
   - DOMAIN,clash.razord.top,DIRECT
   - DOMAIN,yacd.haishan.me,DIRECT
+  - DOMAIN,services.googleapis.cn,PROXY
   - RULE-SET,private,DIRECT
   - RULE-SET,reject,REJECT
   - RULE-SET,icloud,DIRECT
@@ -1469,7 +1504,7 @@ case $input in
 	;;
 	3)
 		systemctl start hihy
-		echoColor purple "Waiting for hysteria to start..."
+		echoColor purple "start..."
 		sleep 5
 		status=`systemctl is-active hihy`
 		if [ "${status}" = "active" ];then
@@ -1486,7 +1521,7 @@ case $input in
 	;;
     5)
         systemctl restart hihy
-		echoColor purple "Waiting for hysteria to restart..."
+		echoColor purple "restart..."
 		sleep 5
 		status=`systemctl is-active hihy`
 		if [ "${status}" = "active" ];then
