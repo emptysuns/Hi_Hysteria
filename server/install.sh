@@ -238,17 +238,18 @@ function setHysteriaConfig(){
 	useLocalCert=false
 	if [ -z "${certNum}" ] || [ "${certNum}" == "3" ];then
 		echoColor green "请输入自签证书的域名(默认:wechat.com):"
-		echo -e  "注意:自签证书近一段时间来遭到大量随机阻断,请谨慎使用(这条提示不消失说明阻断还在继续)"
-		echoColor red "如果一定要使用自签证书,请在下方配置选择使用obfs混淆验证,保证安全性"
+		echo -e  "注意:自签证书近一段时间来无obfs情况下,遭到大量随机阻断"
+		echoColor red "如果一定要使用自签证书,请在下方配置选择使用obfs混淆验证,保证安全"
 		read domain
 		if [ -z "${domain}" ];then
 			domain="wechat.com"
 		fi
+		echo -e "->自签证书域名为: ${domain}"
 		ip=`curl -4 -s -m 8 ipinfo.io/ip`
 		if [ -z "${ip}" ];then
 			ip=`curl -s -m 8 ipinfo.io/ip`
 		fi
-		echoColor green "判断自签证书,客户端连接所使用的地址是否正确?公网ip:"`echoColor red ${ip}`"\n"
+		echoColor green "判断客户端连接所使用的地址是否正确?公网ip:"`echoColor red ${ip}`"\n"
 		while true
 		do	
 			echo -e "\033[32m请选择:\n\n\033[0m\033[33m\033[01m1、正确(默认)\n2、不正确,手动输入ip\033[0m\033[32m\n\n输入序号:\033[0m"
@@ -1130,7 +1131,7 @@ function addPortHoppingNat() {
 		if ! [ -x "$(command -v netfilter-persistent)" ]; then
 			echoColor purple "\nUpdate.wait..."
 			${upgrade}
-			${installType} "netfilter-persistent"
+			${installType} "iptables-persistent"
 		fi
 		if ! [ -x "$(command -v netfilter-persistent)" ]; then
 			echoColor red "[Warnning]:netfilter-persistent安装失败,但安装进度不会停止,只是您的PortHopping转发规则为临时规则,重启可能失效,是否继续使用临时规则?(y/N)"
