@@ -64,3 +64,4 @@ with open('routes.acl', 'w') as f:
     f.close()
 end = datetime.now()
 print(f'\nUse: {(end-start).seconds}s\nGenerate completed!')
+input('Press any key to exit...')

@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="0.4.5"
+hihyV="0.4.5.b"
 function echoColor() {
 	case $1 in
 		# 红色
@@ -130,7 +130,7 @@ function printMsg(){
 	cat ./Hys-${remarks}\(v2rayN\).json
 	echoColor skyBlue "↑***********************************↑↑↑copy↑↑↑*******************************↑\n"
 	url=`cat /etc/hihy/result/url.txt`
-	echo -e  "\033[1;;35m2* [\033[0m\033[31mShadowrocket/Sagernet/Passwall\033[0m\033[1;;35m] 一键链接: \033[0m"
+	echo -e  "\033[1;;35m2* [\033[0m\033[31mShadowrocket/Matsuri/Passwall\033[0m\033[1;;35m] 一键链接: \033[0m"
 	echoColor green ${url}
 	echo -e "\n"
 	echo -e  "\033[1;;35m3* [\033[0m\033[31mClash.Meta\033[0m\033[1;;35m] 配置文件已在`pwd`/Hys-${remarks}(clashMeta).yaml输出,请下载至客户端使用(beta)\033[0m"
@@ -237,14 +237,14 @@ function setHysteriaConfig(){
 	useAcme=false
 	useLocalCert=false
 	if [ -z "${certNum}" ] || [ "${certNum}" == "3" ];then
-		echoColor green "请输入自签证书的域名(默认:wechat.com):"
-		echo -e  "注意:自签证书近一段时间来无obfs情况下,遭到大量随机阻断"
+		echo -e  "\n注意:自签证书近一段时间来无obfs情况下,遭到大量随机阻断"
 		echoColor red "如果一定要使用自签证书,请在下方配置选择使用obfs混淆验证,保证安全"
+		echoColor green "请输入自签证书的域名(默认:wechat.com):"
 		read domain
 		if [ -z "${domain}" ];then
 			domain="wechat.com"
 		fi
-		echo -e "->自签证书域名为: ${domain}"
+		echo -e "->自签证书域名为:"`echoColor red ${domain}`"\n"
 		ip=`curl -4 -s -m 8 ipinfo.io/ip`
 		if [ -z "${ip}" ];then
 			ip=`curl -s -m 8 ipinfo.io/ip`
@@ -501,7 +501,7 @@ function setHysteriaConfig(){
 	echoColor green "请输入认证口令(默认随机生成,建议20位以上强密码):"
 	read auth_secret
 	if [ -z "${auth_secret}" ];then
-		auth_secret=`tr -cd '[:alnum:]' < /dev/urandom | fold -w50 | head -n1`
+		auth_secret=`tr -cd '0-9A-Za-z' < /dev/urandom | fold -w50 | head -n1`
 	fi
 	echo -e "\n->认证口令:"`echoColor red ${auth_secret}`"\n"
 	auth_str=""
@@ -657,7 +657,7 @@ ${server_auth_conf}
 "max_conn_client": 4096,
 "disable_mtu_discovery": true,
 "resolve_preference": "46",
-"resolver": "https://8.8.8.8:443/dns-query"
+"resolver": "udp://1.1.1.1:53"
 }
 EOF
 
@@ -689,7 +689,7 @@ ${server_auth_conf}
 "max_conn_client": 4096,
 "disable_mtu_discovery": true,
 "resolve_preference": "46",
-"resolver": "https://8.8.8.8:443/dns-query"
+"resolver": "udp://1.1.1.1:53"
 }
 EOF
 
@@ -803,7 +803,11 @@ EOF
 	echo "portHoppingStatus:${portHoppingStatus}" >> /etc/hihy/conf/hihy.conf
 	echo "portHoppingStart:${portHoppingStart}" >> /etc/hihy/conf/hihy.conf
 	echo "portHoppingEnd:${portHoppingEnd}" >> /etc/hihy/conf/hihy.conf
-	url="hysteria://${u_host}:${port}?protocol=${protocol}&auth=${auth_str}&obfsParam=${obfs_str}&peer=${u_domain}&insecure=${sec}&upmbps=${upload}&downmbps=${download}&alpn=h3#Hys-${remarks}"
+	if ${portHoppingStatus};then
+		url="hysteria://${u_host}:${port}?mport=${portHoppingStart}-${portHoppingEnd}&protocol=${protocol}&auth=${auth_str}&obfsParam=${obfs_str}&peer=${u_domain}&insecure=${sec}&upmbps=${upload}&downmbps=${download}&alpn=h3#Hys-${remarks}"
+	else
+		url="hysteria://${u_host}:${port}?protocol=${protocol}&auth=${auth_str}&obfsParam=${obfs_str}&peer=${u_domain}&insecure=${sec}&upmbps=${upload}&downmbps=${download}&alpn=h3#Hys-${remarks}"
+	fi
 	echo ${url} > /etc/hihy/result/url.txt
 	if [ $sec = "1" ];then
 		skip_cert_verify="true"
@@ -935,7 +939,7 @@ function hihyNotify(){
 		echoColor red "Network Error: Can't connect to Github for checking hihy version!"
 	else
 		if [ "${localV}" != "${remoteV}" ];then
-			echoColor purple "[Update] hihy有更新,version:v${remoteV},建议更新并查看日志: https://github.com/emptysuns/Hi_Hysteria"
+			echoColor purple "[Update] hihy有更新,version:v${remoteV},建议更新并查看日志: https://github.com/emptysuns/Hi_Hysteria/commits/main"
 		fi
 	fi
 	
@@ -1211,6 +1215,7 @@ function editProtocol(){
 		port_before=${msg::length-2}
 		port_after=${msg%%,*}
 		sed -i "s/\"server\": \"${serverAddress}:${port_before}\"/\"server\": \"${serverAddress}:${port_after}\"/g" /etc/hihy/result/hihyClient.json
+		sed -i "s/mport=${portHoppingStart}-${portHoppingEnd}&//g" /etc/hihy/result/url.txt
 		sed -i "s/\portHoppingStatus:true/portHoppingStatus:false/g" /etc/hihy/conf/hihy.conf
 	fi
 }
@@ -1455,6 +1460,39 @@ function cronTask(){
 	systemctl restart systemd-journald #防止日志占用内存过大
 }
 
+function start(){
+	systemctl start hihy
+	echoColor purple "start..."
+	sleep 5
+	status=`systemctl is-active hihy`
+	if [ "${status}" = "active" ];then
+		echoColor green "启动成功"
+	else
+		echoColor red "启动失败"
+		echo -e "未知错误:请手动运行:\033[32m/etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server\033[0m"
+		echoColor red "查看错误日志,反馈到issue!"
+	fi
+}
+
+function stop(){
+	systemctl stop hihy
+	echoColor green "暂停成功"
+}
+
+function restart(){
+	systemctl restart hihy
+	echoColor purple "restart..."
+	sleep 5
+	status=`systemctl is-active hihy`
+	if [ "${status}" = "active" ];then
+		echoColor green "重启成功"
+	else
+		echoColor red "重启失败"
+		echo -e "未知错误:请手动运行:\033[32m/etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server\033[0m"
+		echoColor red "查看错误日志,反馈到issue!"
+	fi
+}
+
 function menu()
 {
 hihy
@@ -1501,37 +1539,15 @@ case $input in
 	;;
 	2)
 		uninstall
-		exit 0
 	;;
 	3)
-		systemctl start hihy
-		echoColor purple "start..."
-		sleep 5
-		status=`systemctl is-active hihy`
-		if [ "${status}" = "active" ];then
-			echoColor green "启动成功"
-		else
-			echoColor red "启动失败"
-			echo -e "未知错误:请手动运行:\033[32m/etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server\033[0m"
-			echoColor red "查看错误日志,反馈到issue!"
-		fi
+		start
 	;;
 	4)
-		systemctl stop hihy
-		echoColor green "暂停成功"
+		stop
 	;;
     5)
-        systemctl restart hihy
-		echoColor purple "restart..."
-		sleep 5
-		status=`systemctl is-active hihy`
-		if [ "${status}" = "active" ];then
-			echoColor green "重启成功"
-		else
-			echoColor red "重启失败"
-			echo -e "未知错误:请手动运行:\033[32m/etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server\033[0m"
-			echoColor red "查看错误日志,反馈到issue!"
-		fi
+        restart
     ;;
     6)
         checkStatus
@@ -1550,11 +1566,10 @@ case $input in
     ;;
 	11)
         hihyUpdate
-		exit 0
+		
     ;;
 	12)
         reinstall
-		exit 0
 	;;
 	13)
         changeMode
@@ -1573,34 +1588,48 @@ case $input in
 }
 
 checkRoot
-if [ "$1" == "install" ]; then
+if [ "$1" == "install" ] || [ "$1" == "1" ]; then
+	echoColor purple "-> 1) 安装 hysteria"
 	install
-elif [ "$1" == "uninstall" ]; then
+elif [ "$1" == "uninstall" ] || [ "$1" == "2" ]; then
+	echoColor purple "-> 2) 卸载 hysteria"
 	uninstall
-elif [ "$1" == "update" ]; then
-	updateHysteriaCore
-elif [ "$1" == "reinstall" ]; then
-	reinstall
-elif [ "$1" == "status" ]; then
+elif [ "$1" == "start" ]  || [ "$1" == "3"  ]; then
+	echoColor purple "-> 3) 启动 hysteria"
+	start
+elif [ "$1" == "stop" ]  || [ "$1" == "4" ]; then
+	echoColor purple "-> 4) 暂停 hysteria"
+	stop
+elif [ "$1" == "restart" ]  || [ "$1" == "5" ]; then
+	echoColor purple "-> 5) 重新启动 hysteria"
+	restart
+elif [ "$1" == "checkStatus" ]  || [ "$1" == "6" ]; then
+	echoColor purple "-> 6) 运行状态"
 	checkStatus
-elif [ "$1" == "start" ]; then
-	systemctl start hihy
-elif [ "$1" == "stop" ]; then
-	systemctl stop hihy
-elif [ "$1" == "restart" ]; then
-	systemctl restart hihy
-elif [ "$1" == "logs" ]; then
-	checkLogs
-elif [ "$1" == "config" ]; then
+elif [ "$1" == "updateHysteriaCore" ]  || [ "$1" == "7" ]; then
+	echoColor purple "-> 7) 更新Core"
+	updateHysteriaCore
+elif [ "$1" == "printMsg" ]  || [ "$1" == "8" ]; then
+	echoColor purple "-> 8) 查看当前配置"
 	printMsg
-elif [ "$1" == "change" ]; then
+elif [ "$1" == "changeServerConfig" ]  || [ "$1" == "9" ]; then
+	echoColor purple "-> 9) 重新配置"
 	changeServerConfig
-elif [ "$1" == "changeIp64" ]; then
+elif [ "$1" == "changeIp64" ]  || [ "$1" == "10" ]; then
+	echoColor purple "-> 10) 切换ipv4/ipv6优先级"
 	changeIp64
-elif [ "$1" == "hihyUpdate" ]; then
+elif [ "$1" == "hihyUpdate" ]  || [ "$1" == "11" ]; then
+	echoColor purple "-> 11) 更新hihy"
 	hihyUpdate
-elif [ "$1" == "changeMode" ]; then
+elif [ "$1" == "reinstall" ]  || [ "$1" == "12" ]; then
+	echoColor purple "-> 12) 完全重置所有配置"
+	reinstall
+elif [ "$1" == "changeMode" ]  || [ "$1" == "13" ]; then
+	echoColor purple "-> 13) 修改当前协议类型"
 	changeMode
+elif [ "$1" == "checkLogs" ]  || [ "$1" == "14" ]; then
+	echoColor purple "-> 14) 查看实时日志"
+	checkLogs
 elif [ "$1" == "cronTask" ]; then
 	cronTask
 else
