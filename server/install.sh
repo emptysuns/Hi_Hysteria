@@ -245,9 +245,9 @@ function setHysteriaConfig(){
 			domain="wechat.com"
 		fi
 		echo -e "->自签证书域名为:"`echoColor red ${domain}`"\n"
-		ip=`curl -4 -s -m 8 ipinfo.io/ip`
+		ip=`curl -4 -s -m 8 ip.sb`
 		if [ -z "${ip}" ];then
-			ip=`curl -s -m 8 ipinfo.io/ip`
+			ip=`curl -s -m 8 ip.sb`
 		fi
 		echoColor green "判断客户端连接所使用的地址是否正确?公网ip:"`echoColor red ${ip}`"\n"
 		while true
@@ -345,14 +345,14 @@ function setHysteriaConfig(){
 			v6str=":" #Is ipv6?
 			result=$(echo ${remoteip} | grep ${v6str})
 			if [ "${result}" != "" ];then
-				localip=`curl -6 -s -m 8 ipinfo.io/ip`
+				localip=`curl -6 -s -m 8 ip.sb`
 			else
-				localip=`curl -4 -s -m 8 ipinfo.io/ip`
+				localip=`curl -4 -s -m 8 ip.sb`
 			fi
 			if [ -z "${localip}" ];then
-				localip=`curl -s -m 8 ipinfo.io/ip` #如果上面的ipinfo.io/ip都失败了,最后检测一次
+				localip=`curl -s -m 8 ip.sb` #如果上面的ip.sb都失败了,最后检测一次
 				if [ -z "${localip}" ];then
-					echoColor red "\n\n->获取本机ip失败,请检查网络连接!curl -s -m 8 ipinfo.io/ip"
+					echoColor red "\n\n->获取本机ip失败,请检查网络连接!curl -s -m 8 ip.sb"
 					exit 1
 				fi
 			fi
