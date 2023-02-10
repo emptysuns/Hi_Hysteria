@@ -74,7 +74,7 @@ v2rayN已经在添加自定义配置时支持hysteria并能自动识别config的
 
 ## 3. [matsuri](https://github.com/MatsuriDayo/Matsuri/releases) [android]
 
-  Sagernet已经很久不更新了，建议更换它的魔改分支Matsuri,由https://matsuridayo.github.io/维护
+  Sagernet已经很久不更新了，建议更换它的魔改分支Matsuri,由[https://matsuridayo.github.io](https://matsuridayo.github.io)维护
 
   可通过一键链接导入。
 
