@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="0.4.5.b"
+hihyV="0.4.6"
 function echoColor() {
 	case $1 in
 		# 红色
@@ -655,9 +655,8 @@ ${server_auth_conf}
 "recv_window_conn": ${r_conn},
 "recv_window_client": ${r_client},
 "max_conn_client": 4096,
-"disable_mtu_discovery": true,
 "resolve_preference": "46",
-"resolver": "udp://1.1.1.1:53"
+"disable_mtu_discovery": true
 }
 EOF
 
@@ -687,9 +686,8 @@ ${server_auth_conf}
 "recv_window_conn": ${r_conn},
 "recv_window_client": ${r_client},
 "max_conn_client": 4096,
-"disable_mtu_discovery": true,
 "resolve_preference": "46",
-"resolver": "udp://1.1.1.1:53"
+"disable_mtu_discovery": true
 }
 EOF
 
@@ -803,18 +801,19 @@ EOF
 	echo "portHoppingStatus:${portHoppingStatus}" >> /etc/hihy/conf/hihy.conf
 	echo "portHoppingStart:${portHoppingStart}" >> /etc/hihy/conf/hihy.conf
 	echo "portHoppingEnd:${portHoppingEnd}" >> /etc/hihy/conf/hihy.conf
-	if ${portHoppingStatus};then
-		url="hysteria://${u_host}:${port}?mport=${portHoppingStart}-${portHoppingEnd}&protocol=${protocol}&auth=${auth_str}&obfsParam=${obfs_str}&peer=${u_domain}&insecure=${sec}&upmbps=${upload}&downmbps=${download}&alpn=h3#Hys-${remarks}"
-	else
-		url="hysteria://${u_host}:${port}?protocol=${protocol}&auth=${auth_str}&obfsParam=${obfs_str}&peer=${u_domain}&insecure=${sec}&upmbps=${upload}&downmbps=${download}&alpn=h3#Hys-${remarks}"
-	fi
-	echo ${url} > /etc/hihy/result/url.txt
 	if [ $sec = "1" ];then
 		skip_cert_verify="true"
 	else
 		skip_cert_verify="false"
 	fi
-	generateMetaYaml "Hys-${remarks}" "${u_host}" "${port}" "${auth_str}" "${protocol}" "${upload}" "${download}" "${u_domain}" "${skip_cert_verify}" "${r_conn}" "${r_client}" "${obfs_str}"
+	if echo ${portHoppingStatus} | grep -q "true";then
+		generateMetaYaml "Hys-${remarks}" "${u_host}" "${port}" "${auth_str}" "${protocol}" "${upload}" "${download}" "${u_domain}" "${skip_cert_verify}" "${r_conn}" "${r_client}" "${obfs_str}" "${portHoppingStart}" "${portHoppingEnd}"
+		url="hysteria://${u_host}:${port}?mport=${portHoppingStart}-${portHoppingEnd}&protocol=${protocol}&auth=${auth_str}&obfsParam=${obfs_str}&peer=${u_domain}&insecure=${sec}&upmbps=${upload}&downmbps=${download}&alpn=h3#Hys-${remarks}"
+	else
+		generateMetaYaml "Hys-${remarks}" "${u_host}" "${port}" "${auth_str}" "${protocol}" "${upload}" "${download}" "${u_domain}" "${skip_cert_verify}" "${r_conn}" "${r_client}" "${obfs_str}"
+		url="hysteria://${u_host}:${port}?protocol=${protocol}&auth=${auth_str}&obfsParam=${obfs_str}&peer=${u_domain}&insecure=${sec}&upmbps=${upload}&downmbps=${download}&alpn=h3#Hys-${remarks}"
+	fi
+	echo ${url} > /etc/hihy/result/url.txt
 	echoColor greenWhite "安装成功,请查看下方配置详细信息"
 }
 
@@ -1286,6 +1285,19 @@ EOF
 EOF
 )
 	fi
+
+	if [[ ${13} == "" ]];then
+		port_conf=$(cat <<- EOF
+	port: ${3}
+EOF
+)
+	else
+		port_conf=$(cat <<- EOF
+	ports: ${13}-${14}
+EOF
+)
+	fi
+
 	cat <<EOF > /etc/hihy/result/metaHys.yaml
 mixed-port: 7890
 allow-lan: true
@@ -1311,7 +1323,7 @@ proxies:
   - name: "$1"
     type: hysteria
     server: ${2}
-    port: ${3}
+    ${port_conf}
     ${clashClient_auth_conf}
     alpn:
       - h3
@@ -1323,7 +1335,7 @@ proxies:
     recv_window_conn: ${10}
     recv_window: ${11}
     disable_mtu_discovery: true
-
+    fast-open: true
 proxy-groups:
   - name: "PROXY"
     type: select
