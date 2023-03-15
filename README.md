@@ -1,14 +1,14 @@
 # Hi Hysteria
 
-##### (2023/02/17) 0.4.6:
+##### (2023/03/15) 0.4.7:
 
 ```
-hysteria update to 1.3.3 : 修复了一些bug，更新依赖提升些许性能
+hysteria update to 1.3.4 : 修复了一些bug，更新依赖，客户端提供lazy_start选项，当传入数据时才连接客户端
 
-1. 修复在不使用PortHopping时,生成链接出现-字符，导致导入异常的问题
-2. 取消server配置resovler选项，默认使用系统dns地址
-3. V2rayN选择使用6.0以上版本
-4. 兼容clash.meta 端口跳跃和TCP快速打开
+1. 客户端增加配置lazy_start，目前仅支持v2rayN这种使用core直接运行的客户端，其他等待后续它的版本打包后再加
+2. 增大net.core.rmem_max
+3. 加长5s等待配置测试时间，由于ACME申请证书可能有延迟，防止配置检测失败
+4. 完善了一下client介绍文档
 ```
 
 [历史改进](md/log.md)

@@ -1,5 +1,7 @@
 # 支持的客户端
 
+**所有客户端为了连接速度最好填上** `recv_window_conn`  `recv_window`，使用一键链接时无法导入这两个参数，如果使用生成的v2rayN和clash.meta配置文件则不用担心，passwall和nekoray等由链接导入需要手动填写。
+
 ## 1. [Clash.Meta](https://github.com/emptysuns/Hi_Hysteria/releases/latest)
 
 ### 介绍
@@ -38,17 +40,19 @@ clash.meta可以同时配置支持vless、ss2022、trojan等等多配置，不�
 
 目前许多优秀的特点hihy输出的配置文件没有支持，尽情期待 ～d=v=b～
 
-## 2. v2rayN
+## 2. v2rayN【推荐】
 
 v2rayN已经在添加自定义配置时支持hysteria并能自动识别config的类型，hihy在 `0.3.7`版本之后兼容v2rayN，hihy_cmd已经需要退出舞台了，**不会再对它进行维护**。
-
-**V2rayN比起其他工具来说，直接使用hysteria Core运行，对hysteria新特征支持比起其他工具要更加及时，hihy也会首先将新特征适配V2rayN。**
 
 如果想要及时体验最新的配置，建议使用这个工具。
 
 我将如何使用呢?
 
-**你也可以直接下载我打包好的[v2rayN-hysteriaCore](https://github.com/emptysuns/Hi_Hysteria/releases/latest)，可忽略下方的配置v2n的过程。**
+你也可以直接下载我打包好的[v2rayN-hysteriaCore](https://github.com/emptysuns/Hi_Hysteria/releases/latest)，可忽略下方的配置v2n的过程。
+
+**v2rayN升级至6.0以上版本和老版本配置不同，5.39以下版本请参照下方隐藏信息，选择最新6.0以上可以跳过:**
+
+<details>
 
 1. [点我下载](https://github.com/2dust/v2rayN/releases/latest/download/v2rayN.zip)最新的v2rayN，并解压。
 2. [点我下载](https://github.com/apernet/hysteria/releases/)hysteria最新版本的Core，修改名称为 `hysteria.exe`,将它放到v2rayN的根目录里。
@@ -72,20 +76,36 @@ v2rayN已经在添加自定义配置时支持hysteria并能自动识别config的
 
 5. **Hello World！**
 
+</details>
+
+**6.0以上版本:**
+由于6.0以上的版本v2rayN会把hysteria core打包进去 `v2rayN-Core\bin\hysteria`，所以我们不需要再自己下载core再手动放进去了，但是更新时仍然要自己手动下载core替换
+
+所以我们只需要把hysteria的ACL文件放到 `guiConfigs/acl/`文件夹里，例如:
+
+**如果没有这两个文件夹，自己在v2rayN根目录分别新建 `guiConfigs/` , `guiConfigs/acl/`就行**
+
+* [routes.acl](https://github.com/emptysuns/Hi_Hysteria/raw/main/acl/routes.acl) #hysteria 分流规则
+* [Country.mmdb](https://github.com/emptysuns/Hi_Hysteria/raw/main/acl/Country.mmdb) #GeoIP文件
+
+  ![img](../imgs/v2n6%2B.png)
+
+  当然release里面的是已经打包好ACL的，不然会报错没有ACL文件导致无法正常启动
+
 ## 3. [matsuri](https://github.com/MatsuriDayo/Matsuri/releases) [android]
 
-  Sagernet已经很久不更新了，建议更换它的魔改分支Matsuri,由https://matsuridayo.github.io/维护
+  Sagernet已经很久不更新了，建议更换它的魔改分支Matsuri,由[https://matsuridayo.github.io/](https://matsuridayo.github.io/) 维护
 
-  可通过一键链接导入。
+  可通过一键链接导入，但是无法导入缓冲区，需要手动输入 `recv_window_conn`  `recv_window` 参数
 
-  安装[hysteria-plugin](https://github.com/MatsuriDayo/plugins/releases)并**允许该插件被其他应用启动**，否则提示启动失败（tips: sagernet支持直接剪切板导入hysteria的json配置文本）
+  安装[hysteria-plugin](https://github.com/MatsuriDayo/plugins/releases)并**允许该插件被其他应用启动**，否则提示启动失败（tips: [matsuri](https://github.com/MatsuriDayo/Matsuri/releases)支持直接剪切板导入hysteria的json配置文本）
 
 ## 4. openwrt passwall
 
 只能在编译固件时加进去，请op刷到最新版本,才会支持hysteria，对应config.json看下面
-![image](https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/imgs/passwall.png)
+![image](../imgs/passwall.png)
 
-支持一键导入
+支持一键导入，也是需要手动填入缓冲区配置和端口跳跃地址
 
 ## 5. openclash
 
@@ -95,16 +115,28 @@ v2rayN已经在添加自定义配置时支持hysteria并能自动识别config的
 
 **目录**
 
-- [6.0 项目简介](#nekoray-intro)
-- [6.1 下载 NekoRay](#nekoray-download-client)
-- [6.2 下载 hysteria-core-windows](#nekoray-download-hysteria-core)
-- [6.3 配置 NekoRay 代理核心](#nekoray-set-kernel)
-- [6.4 导入 hysteria 节点](#nekoray-import-nodes)
-- [6.4.1 从分享链接或剪切板添加](#nekoray-import-nodes-by-sharelink)
-- [6.4.2 手动编辑](#nekoray-import-nodes-by-myself)
-- [6.5 启动 hysteria 节点](#nekoray-setup-hysteria-proxy)
-- [6.6 [选读]测试 hysteria 节点](#nekoray-test-hysteria-proxy)
-- [参考资料](#nekoray-reference)
+- [支持的客户端](#支持的客户端)
+  - [1. Clash.Meta](#1-clashmeta)
+    - [介绍](#介绍)
+    - [优点](#优点)
+    - [使用](#使用)
+  - [2. v2rayN【推荐】](#2-v2rayn推荐)
+  - [3. matsuri \[android\]](#3-matsuri-android)
+  - [4. openwrt passwall](#4-openwrt-passwall)
+  - [5. openclash](#5-openclash)
+  - [6. NekoRay \[@QIN2DIM\]](#6-nekoray-qin2dim)
+    - [6.0 项目简介](#60-项目简介)
+    - [6.1 下载 NekoRay](#61-下载-nekoray)
+    - [6.2 下载 hysteria-core-windows](#62-下载-hysteria-core-windows)
+    - [6.3 配置 NekoRay 代理核心](#63-配置-nekoray-代理核心)
+    - [6.4 导入 hysteria 节点](#64-导入-hysteria-节点)
+      - [6.4.1 从分享链接或剪切板添加](#641-从分享链接或剪切板添加)
+      - [6.4.2 手动编辑](#642-手动编辑)
+    - [6.5 启动 hysteria 节点](#65-启动-hysteria-节点)
+    - [6.6 \[选读\]测试 hysteria 节点](#66-选读测试-hysteria-节点)
+    - [参考资料](#参考资料)
+  - [7. shadowrocket](#7-shadowrocket)
+  - [8. ~~hihy\_cmd~~](#8-hihy_cmd)
 
 `<span id="nekoray-intro">`
 

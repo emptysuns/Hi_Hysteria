@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="0.4.6"
+hihyV="0.4.7"
 function echoColor() {
 	case $1 in
 		# 红色
@@ -595,6 +595,7 @@ EOF
 "handshake_timeout": 15,
 "idle_timeout": 30,
 "fast_open": true,
+"lazy_start": true,
 "hop_interval": 120
 }
 EOF
@@ -638,6 +639,7 @@ EOF
 "handshake_timeout": 15,
 "idle_timeout": 30,
 "fast_open": true,
+"lazy_start": true,
 "hop_interval": 120
 }
 EOF
@@ -724,11 +726,12 @@ EOF
 "handshake_timeout": 15,
 "idle_timeout": 30,
 "fast_open": true,
+"lazy_start": true,
 "hop_interval": 120
 }
 EOF
     fi
-	sysctl -w net.core.rmem_max=8000000
+	sysctl -w net.core.rmem_max=80000000
 	if echo "${portHoppingStatus}" | grep -q "true";then
 		sysctl -w net.ipv4.ip_forward=1
 		sysctl -w net.ipv6.conf.all.forwarding=1
@@ -737,7 +740,7 @@ EOF
 	echo -e "\033[1;;35m\nTest config...\n\033[0m"
 	echo "block all udp/443" > /etc/hihy/acl/hihyServer.acl
 	/etc/hihy/bin/appS -c /etc/hihy/conf/hihyServer.json server > /tmp/hihy_debug.info 2>&1 &
-	sleep 10
+	sleep 15
 	msg=`cat /tmp/hihy_debug.info`
 	case ${msg} in 
 		*"Failed to get a certificate with ACME"*)
@@ -762,12 +765,12 @@ EOF
 			rm /tmp/hihy_debug.info
 			exit
 			;;
-		*"Server up and running"*) 
+		*"Server up and running"*)
+			echoColor green "Test success!"
 			if [ "${portHoppingStatus}" == "true" ];then
 				addPortHoppingNat ${portHoppingStart} ${portHoppingEnd} ${port}
 			fi
 			allowPort ${ut} ${port}
-			echoColor green "Test success!"
 			echoColor purple "Generating config..."
 			if [ "${ut}" == "tcp" ];then
 				pIDa=`lsof -i ${ut}:${port} | grep LISTEN | grep -v "PID" | awk '{print $2}'`
@@ -1132,6 +1135,7 @@ function addPortHoppingNat() {
 		firewall-cmd --reload 2>/dev/null
 	else
 		if ! [ -x "$(command -v netfilter-persistent)" ]; then
+			echoColor green "*iptables-persistent"
 			echoColor purple "\nUpdate.wait..."
 			${upgrade}
 			${installType} "iptables-persistent"
