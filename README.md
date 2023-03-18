@@ -3,12 +3,15 @@
 ##### (2023/03/15) 0.4.7:
 
 ```
-hysteria update to 1.3.4 : 修复了一些bug，更新依赖，客户端提供lazy_start选项，当传入数据时才连接客户端
+hysteria update to 1.3.4 : 修复了一些bug，更新依赖，客户端提供lazy_start选项，当传入数据时才连接服务端，客户端功能
 
 1. 客户端增加配置lazy_start，目前仅支持v2rayN这种使用core直接运行的客户端，其他等待后续它的版本打包后再加
 2. 增大net.core.rmem_max
 3. 加长5s等待配置测试时间，由于ACME申请证书可能有延迟，防止配置检测失败
 4. 完善了一下client介绍文档
+
+Tips: 观察到开启lazy_start后会频繁触发运营商UDP QoS规则，为了安全所以0.4.7.a之后暂时默认关闭
+如果需要测试请手动添加客户端选项`"lazy_start": true`,后续会跟进
 ```
 
 [历史改进](md/log.md)

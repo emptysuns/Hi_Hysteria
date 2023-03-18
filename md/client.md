@@ -2,6 +2,29 @@
 
 **所有客户端为了连接速度最好填上** `recv_window_conn`  `recv_window`，使用一键链接时无法导入这两个参数，如果使用生成的v2rayN和clash.meta配置文件则不用担心，passwall和nekoray等由链接导入需要手动填写。
 
+- [支持的客户端](#支持的客户端)
+  - [1. Clash.Meta](#1-clashmeta)
+    - [介绍](#介绍)
+    - [优点](#优点)
+    - [使用](#使用)
+  - [2. v2rayN【推荐】](#2-v2rayn推荐)
+  - [3. matsuri \[android\]](#3-matsuri-android)
+  - [4. openwrt passwall](#4-openwrt-passwall)
+  - [5. openclash](#5-openclash)
+  - [6. NekoRay \[@QIN2DIM\]](#6-nekoray-qin2dim)
+    - [6.0 项目简介](#60-项目简介)
+    - [6.1 下载 NekoRay](#61-下载-nekoray)
+    - [6.2 下载 hysteria-core-windows](#62-下载-hysteria-core-windows)
+    - [6.3 配置 NekoRay 代理核心](#63-配置-nekoray-代理核心)
+    - [6.4 导入 hysteria 节点](#64-导入-hysteria-节点)
+      - [6.4.1 从分享链接或剪切板添加](#641-从分享链接或剪切板添加)
+      - [6.4.2 手动编辑](#642-手动编辑)
+    - [6.5 启动 hysteria 节点](#65-启动-hysteria-节点)
+    - [6.6 \[选读\]测试 hysteria 节点](#66-选读测试-hysteria-节点)
+    - [参考资料](#参考资料)
+  - [7. shadowrocket](#7-shadowrocket)
+  - [8. ~~hihy\_cmd~~](#8-hihy_cmd)
+
 ## 1. [Clash.Meta](https://github.com/emptysuns/Hi_Hysteria/releases/latest)
 
 ### 介绍
@@ -115,50 +138,19 @@ v2rayN已经在添加自定义配置时支持hysteria并能自动识别config的
 
 **目录**
 
-- [支持的客户端](#支持的客户端)
-  - [1. Clash.Meta](#1-clashmeta)
-    - [介绍](#介绍)
-    - [优点](#优点)
-    - [使用](#使用)
-  - [2. v2rayN【推荐】](#2-v2rayn推荐)
-  - [3. matsuri \[android\]](#3-matsuri-android)
-  - [4. openwrt passwall](#4-openwrt-passwall)
-  - [5. openclash](#5-openclash)
-  - [6. NekoRay \[@QIN2DIM\]](#6-nekoray-qin2dim)
-    - [6.0 项目简介](#60-项目简介)
-    - [6.1 下载 NekoRay](#61-下载-nekoray)
-    - [6.2 下载 hysteria-core-windows](#62-下载-hysteria-core-windows)
-    - [6.3 配置 NekoRay 代理核心](#63-配置-nekoray-代理核心)
-    - [6.4 导入 hysteria 节点](#64-导入-hysteria-节点)
-      - [6.4.1 从分享链接或剪切板添加](#641-从分享链接或剪切板添加)
-      - [6.4.2 手动编辑](#642-手动编辑)
-    - [6.5 启动 hysteria 节点](#65-启动-hysteria-节点)
-    - [6.6 \[选读\]测试 hysteria 节点](#66-选读测试-hysteria-节点)
-    - [参考资料](#参考资料)
-  - [7. shadowrocket](#7-shadowrocket)
-  - [8. ~~hihy\_cmd~~](#8-hihy_cmd)
-
-`<span id="nekoray-intro">`
-
 ### 6.0 项目简介
 
 [NekoRay](https://github.com/MatsuriDayo/nekoray) —— 基于 Qt/C++ 的跨平台代理配置管理器，是一个仍处于成长期的开源项目。NekoRay 先于 V2rayN 支持了 `hysteria://` 协议头的解析，玩家可通过节点分享链接批量导入 hysteria 节点。此外，NekoRay 巧妙地实现了「节点激活 + 节点测试」的 action 集成交互，可以基于组的形式管理和测试 hysteria 节点而无需手动配置 socks5 监听器。
 
 NekoRay 目前支持 Windows / Linux amd64。下文以 NekoRay v1.5 Windows 为例介绍客户端的快速入坑步骤。
 
-`<span id="nekoray-download-client">`
-
 ### 6.1 下载 NekoRay
 
 进入 [Releases · MatsuriDayo/nekoray](https://github.com/MatsuriDayo/nekoray/releases)，下载最新版的 NekoRay Windows 压缩包。免安装，开箱即用。此处假设解压目录为 `C:\\nekoray`，则主程序路径为 `C:\\nekoray\\nekoray.exe`。
 
-`<span id="nekoray-download-hysteria-core">`
-
 ### 6.2 下载 hysteria-core-windows
 
 进入 [Releases · HyNetwork/hysteria](https://github.com/HyNetwork/hysteria/releases)，下载最新版的 `hysteria-windows-amd64.exe`，将其放置在解压后的 NekoRay 配置目录下，例如：`C:\\nekoray\\config\\hysteria-windows-amd64.exe`（此处随意，但 **config** 为核心界面的默认启动路径，这样放置方面找文件）。
-
-`<span id="nekoray-set-kernel">`
 
 ### 6.3 配置 NekoRay 代理核心
 
@@ -170,11 +162,7 @@ NekoRay 目前支持 Windows / Linux amd64。下文以 NekoRay v1.5 Windows 为�
 <img width="75%" src="https://user-images.githubusercontent.com/62018067/187100719-47d2986b-6ef4-4996-8561-d7f17b491747.png"/>
 </p>
 
-`<span id="nekoray-import-nodes">`
-
 ### 6.4 导入 hysteria 节点
-
-`<span id="nekoray-import-nodes-by-sharelink">`
 
 #### 6.4.1 从分享链接或剪切板添加
 
@@ -183,8 +171,6 @@ NekoRay 支持 `hysteria://` 协议头的解析，可以直接将订阅链接粘
 <p align="center">
 <img width="75%" src="https://user-images.githubusercontent.com/62018067/187100758-65941f04-b87d-4cbd-80f5-800c157eb1bc.png"/>
 </p>
-
-`<span id="nekoray-import-nodes-by-myself">`
 
 #### 6.4.2 手动编辑
 
@@ -200,8 +186,6 @@ NekoRay 支持 `hysteria://` 协议头的解析，可以直接将订阅链接粘
 
 此处出现了被称为 `替换串` 的占位符，即 `%mapping_port%` 与 `%socks_port%`，不需要修改，保持默认即可。
 
-`<span id="nekoray-setup-hysteria-proxy">`
-
 ### 6.5 启动 hysteria 节点
 
 初次使用时，选中目标节点，并依次点击「程序 – 系统代理 – 启动系统代理」。当控制台开始持续输出来自 hysteria-core 的日志信息时，说明节点启动成功，你可以访问 Google 或 Youtube 等站点进行行为校验。
@@ -211,8 +195,6 @@ NekoRay 支持 `hysteria://` 协议头的解析，可以直接将订阅链接粘
 </p>
 
 值得一提的是，NekoRay 的<系统代理启动>及<代理核心运行>的业务是分离的，也即对着节点敲回车的作用是启动/重启代理核心，只有勾选「启动系统代理」后才能连接互联网，这点与 V2rayN 相似。
-
-`<span id="nekoray-test-hysteria-proxy">`
 
 ### 6.6 [选读]测试 hysteria 节点
 
@@ -267,8 +249,6 @@ NekoRay 集成了一些主流的测试工具，直接运行「完整测试」即
 我们在经典的 hysteria 代理拓扑中使用的是最简单的 QUIC 直连方案，也即入口地址 In 和出口地址 Out 是相同的，其值均为你的代理服务器的真实 IP。
 
 需要注意的是，hysteria 是基于 quic-go 实现的通信协议，TCPing 测试不可用。
-
-`<span id="nekoray-reference">`
 
 ### 参考资料
 

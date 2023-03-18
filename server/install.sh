@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="0.4.7"
+hihyV="0.4.7.a"
 function echoColor() {
 	case $1 in
 		# 红色
@@ -595,7 +595,6 @@ EOF
 "handshake_timeout": 15,
 "idle_timeout": 30,
 "fast_open": true,
-"lazy_start": true,
 "hop_interval": 120
 }
 EOF
@@ -639,7 +638,6 @@ EOF
 "handshake_timeout": 15,
 "idle_timeout": 30,
 "fast_open": true,
-"lazy_start": true,
 "hop_interval": 120
 }
 EOF
@@ -726,7 +724,6 @@ EOF
 "handshake_timeout": 15,
 "idle_timeout": 30,
 "fast_open": true,
-"lazy_start": true,
 "hop_interval": 120
 }
 EOF
