@@ -818,12 +818,12 @@ EOF
 }
 
 function downloadHysteriaCore(){
-	version=`curl --head -s  https://github.com/apernet/hysteria/releases/latest | grep location | sed -n 's/.*tag\/\([^\/]*\).*/\1/p'`
+	version=`curl --head -s https://github.com/apernet/hysteria/releases/latest | grep location | grep -o 'tag/[^[:space:]]*' | sed 's/tag\///;s/ //g'`
 	echo -e "The Latest hysteria version:"`echoColor red "${version}"`"\nDownload..."
 	if [ -z ${version} ];then
 		echoColor red "[Network error]: Failed to get the latest version of hysteria in Github!"
 		exit
-	fi
+	fi 
     get_arch=`arch`
     if [ $get_arch = "x86_64" ];then
         wget -q -O /etc/hihy/bin/appS --no-check-certificate https://github.com/apernet/hysteria/releases/download/${version}/hysteria-linux-amd64
@@ -850,7 +850,7 @@ function downloadHysteriaCore(){
 function updateHysteriaCore(){
 	if [ -f "/etc/hihy/bin/appS" ]; then
 		localV=`/etc/hihy/bin/appS -v | cut -d " " -f 3`
-		remoteV=`curl --head -s  https://github.com/apernet/hysteria/releases/latest | grep location | sed -n 's/.*tag\/\([^\/]*\).*/\1/p'`
+		remoteV=`curl --head -s https://github.com/apernet/hysteria/releases/latest | grep location | grep -o 'tag/[^[:space:]]*' | sed 's/tag\///;s/ //g'`
 		if [ -z $remoteV ];then
 			echoColor red "Network Error: Can't connect to Github!"
 			exit
@@ -948,12 +948,12 @@ function hihyNotify(){
 function hyCoreNotify(){
 	if [ -f "/etc/hihy/bin/appS" ]; then
   		localV=`/etc/hihy/bin/appS -v | cut -d " " -f 3`
-		remoteV=`curl --head -s  https://github.com/apernet/hysteria/releases/latest | grep location | sed -n 's/.*tag\/\([^\/]*\).*/\1/p'`
+		remoteV=`curl --head -s https://github.com/apernet/hysteria/releases/latest | grep location | grep -o 'tag/[^[:space:]]*' | sed 's/tag\///;s/ //g'`
 		if [ -z $remoteV ];then
 			echoColor red "Network Error: Can't connect to Github for checking the hysteria version!"
 		else
 			if [ "${localV}" != "${remoteV}" ];then
-				echoColor purple "[Update] hysteria有更新,version:${remoteV}. detail: https://github.com/apernet/hysteria/blob/master/CHANGELOG.md"
+				echoColor purple "[Update] hysteria有更新,version:${remoteV}. 日志: https://github.com/apernet/hysteria/blob/master/CHANGELOG.md"
 			fi
 		fi
 		
@@ -978,7 +978,7 @@ function install()
 	fi
 	mkdir -p /etc/hihy/bin /etc/hihy/conf /etc/hihy/cert  /etc/hihy/result
     echoColor purple "Ready to install.\n"
-    version=`curl --head -s  https://github.com/apernet/hysteria/releases/latest | grep location | sed -n 's/.*tag\/\([^\/]*\).*/\1/p'`
+    version=`curl --head -s https://github.com/apernet/hysteria/releases/latest | grep location | grep -o 'tag/[^[:space:]]*' | sed 's/tag\///;s/ //g'`
     checkSystemForUpdate
 	downloadHysteriaCore
 	setHysteriaConfig
