@@ -1,17 +1,20 @@
 # Hi Hysteria
 
-##### (2023/03/15) 0.4.7:
+##### (2023/06/12) 0.4.8:
 
 ```
-hysteria update to 1.3.4 : 修复了一些bug，更新依赖，客户端提供lazy_start选项，当传入数据时才连接服务端，客户端功能
+hysteria update to v1.3.5:
+v1.3.5修复了一个socks5对域名解析的bug,支持了windows cmd下的彩色字符,并没有重要功能更新
 
-1. 客户端增加配置lazy_start，目前仅支持v2rayN这种使用core直接运行的客户端，其他等待后续它的版本打包后再加
-2. 增大net.core.rmem_max
-3. 加长5s等待配置测试时间，由于ACME申请证书可能有延迟，防止配置检测失败
-4. 完善了一下client介绍文档
+Q:  hy 1.x版本不会再有重大的功能更新？
+A：Hysteria 1.x 将继续推出 bug 和安全修复，现在开发重心在hy2，目前hy1的功能已经很完善了，速度上hy1和hy2没区别，区别在于hy2更看重流量和http/3流量相同，能够实现类似xray的回落到web的功能，但并不能保证不会被封锁udp流量，所以目前正在测试阶段，实际效果还有待观察
 
-Tips: 观察到开启lazy_start后会频繁触发运营商UDP QoS规则，为了安全所以0.4.7.a之后暂时默认关闭
-如果需要测试请手动添加客户端选项`"lazy_start": true`,后续会跟进
+Q: 关于hihy什么时候支持hy2?
+A:  hy2目前处于测试状态，很多hy1有的功能hy2暂不支持，而且客户端只能用命令行使用，等hy2发布第一个完整的公开版，再考虑适配
+
+1. 修复由于服务器ip太黑无法获得正确hysteria版本号问题
+2. matsuri也不会再推出重大功能更新，建议安卓用户选择它的“升级版”nekobox
+https://github.com/MatsuriDayo/NekoBoxForAndroid
 ```
 
 [历史改进](md/log.md)

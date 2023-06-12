@@ -115,13 +115,19 @@ v2rayN已经在添加自定义配置时支持hysteria并能自动识别config的
 
   当然release里面的是已经打包好ACL的，不然会报错没有ACL文件导致无法正常启动
 
-## 3. [matsuri](https://github.com/MatsuriDayo/Matsuri/releases) [android]
+## 3. [matsuri](https://github.com/MatsuriDayo/Matsuri/releases) / [nekobox ](https://github.com/MatsuriDayo/NekoBoxForAndroid/releases)[android]
 
-  Sagernet已经很久不更新了，建议更换它的魔改分支Matsuri,由[https://matsuridayo.github.io/](https://matsuridayo.github.io/) 维护
+  Sagernet已经很久不更新了，~~建议更换它的魔改分支Matsuri~~,建议更换它的魔改分支nekobox，由[https://matsuridayo.github.io/](https://matsuridayo.github.io/) 维护
+
+  Matsuri也已经不会再推出重大更新，**建议更新基于sing-box的nekobox**
+
+  [https://github.com/MatsuriDayo/NekoBoxForAndroid/releases](https://github.com/MatsuriDayo/NekoBoxForAndroid/releases)
 
   可通过一键链接导入，但是无法导入缓冲区，需要手动输入 `recv_window_conn`  `recv_window` 参数
 
-  安装[hysteria-plugin](https://github.com/MatsuriDayo/plugins/releases)并**允许该插件被其他应用启动**，否则提示启动失败（tips: [matsuri](https://github.com/MatsuriDayo/Matsuri/releases)支持直接剪切板导入hysteria的json配置文本）
+  ~~安装[hysteria-plugin](https://github.com/MatsuriDayo/plugins/releases)并**允许该插件被其他应用启动**，否则提示启动失败~~
+
+  tips: nekobox支持直接剪切板导入hysteria的json配置文本可以自动配置
 
 ## 4. openwrt passwall
 

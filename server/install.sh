@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="0.4.7.a"
+hihyV="0.4.8"
 function echoColor() {
 	case $1 in
 		# 红色
@@ -123,14 +123,14 @@ function printMsg(){
 	cp -P /etc/hihy/result/metaHys.yaml ./Hys-${remarks}\(clashMeta\).yaml
 	echoColor yellow "--------------------------------------------"
 	echo ""
-	echo -e  "\033[1;;35m1* [\033[0m\033[31mv2rayN/nekoray\033[0m\033[1;;35m] 使用hysteria core直接运行: \033[0m"
+	echo -e  "\033[1;;35m1* [\033[0m\033[31mv2rayN/Matsuri/nekobox/nekoray\033[0m\033[1;;35m] 使用hysteria core直接运行: \033[0m"
 	echoColor green "客户端配置文件输出至: `pwd`/Hys-${remarks}(v2rayN).json ( 直接下载生成的配置文件[推荐] / 自行复制粘贴下方配置到本地 )"
-	echoColor green "Tips:客户端默认只开启http(8888)、socks5(8889)代理!其他方式请参照hysteria文档自行修改客户端config.json"
+	echoColor green "Tips:客户端默认只开启http(10809)、socks5(10808)代理!其他方式请参照hysteria文档自行修改客户端config.json"
 	echoColor skyBlue "↓***********************************↓↓↓copy↓↓↓*******************************↓"
 	cat ./Hys-${remarks}\(v2rayN\).json
 	echoColor skyBlue "↑***********************************↑↑↑copy↑↑↑*******************************↑\n"
 	url=`cat /etc/hihy/result/url.txt`
-	echo -e  "\033[1;;35m2* [\033[0m\033[31mShadowrocket/Matsuri/Passwall\033[0m\033[1;;35m] 一键链接: \033[0m"
+	echo -e  "\033[1;;35m2* [\033[0m\033[31mShadowrocket/Matsuri/nekobox/Passwall\033[0m\033[1;;35m] 一键链接: \033[0m"
 	echoColor green ${url}
 	echo -e "\n"
 	echo -e  "\033[1;;35m3* [\033[0m\033[31mClash.Meta\033[0m\033[1;;35m] 配置文件已在`pwd`/Hys-${remarks}(clashMeta).yaml输出,请下载至客户端使用(beta)\033[0m"
@@ -818,7 +818,7 @@ EOF
 }
 
 function downloadHysteriaCore(){
-	version=`wget -qO- -t1 -T2 --no-check-certificate "https://api.github.com/repos/apernet/hysteria/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'`
+	version=`curl --head -s  https://github.com/apernet/hysteria/releases/latest | grep location | sed -n 's/.*tag\/\([^\/]*\).*/\1/p'`
 	echo -e "The Latest hysteria version:"`echoColor red "${version}"`"\nDownload..."
 	if [ -z ${version} ];then
 		echoColor red "[Network error]: Failed to get the latest version of hysteria in Github!"
@@ -850,7 +850,7 @@ function downloadHysteriaCore(){
 function updateHysteriaCore(){
 	if [ -f "/etc/hihy/bin/appS" ]; then
 		localV=`/etc/hihy/bin/appS -v | cut -d " " -f 3`
-		remoteV=`wget -qO- -t1 -T2 --no-check-certificate "https://api.github.com/repos/apernet/hysteria/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'`
+		remoteV=`curl --head -s  https://github.com/apernet/hysteria/releases/latest | grep location | sed -n 's/.*tag\/\([^\/]*\).*/\1/p'`
 		if [ -z $remoteV ];then
 			echoColor red "Network Error: Can't connect to Github!"
 			exit
@@ -948,7 +948,7 @@ function hihyNotify(){
 function hyCoreNotify(){
 	if [ -f "/etc/hihy/bin/appS" ]; then
   		localV=`/etc/hihy/bin/appS -v | cut -d " " -f 3`
-		remoteV=`wget -qO- -t1 -T2 --no-check-certificate "https://api.github.com/repos/apernet/hysteria/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'`
+		remoteV=`curl --head -s  https://github.com/apernet/hysteria/releases/latest | grep location | sed -n 's/.*tag\/\([^\/]*\).*/\1/p'`
 		if [ -z $remoteV ];then
 			echoColor red "Network Error: Can't connect to Github for checking the hysteria version!"
 		else
@@ -978,7 +978,7 @@ function install()
 	fi
 	mkdir -p /etc/hihy/bin /etc/hihy/conf /etc/hihy/cert  /etc/hihy/result
     echoColor purple "Ready to install.\n"
-    version=`wget -qO- -t1 -T2 --no-check-certificate "https://api.github.com/repos/apernet/hysteria/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'`
+    version=`curl --head -s  https://github.com/apernet/hysteria/releases/latest | grep location | sed -n 's/.*tag\/\([^\/]*\).*/\1/p'`
     checkSystemForUpdate
 	downloadHysteriaCore
 	setHysteriaConfig
