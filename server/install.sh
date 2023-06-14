@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="0.4.8"
+hihyV="0.4.8.a"
 function echoColor() {
 	case $1 in
 		# 红色
@@ -818,7 +818,7 @@ EOF
 }
 
 function downloadHysteriaCore(){
-	version=`curl --head -s https://github.com/apernet/hysteria/releases/latest | grep location | grep -o 'tag/[^[:space:]]*' | sed 's/tag\///;s/ //g'`
+	version=`curl --head -s https://github.com/apernet/hysteria/releases/latest | grep -i location | grep -o 'tag/[^[:space:]]*' | sed 's/tag\///;s/ //g'`
 	echo -e "The Latest hysteria version:"`echoColor red "${version}"`"\nDownload..."
 	if [ -z ${version} ];then
 		echoColor red "[Network error]: Failed to get the latest version of hysteria in Github!"
@@ -850,7 +850,7 @@ function downloadHysteriaCore(){
 function updateHysteriaCore(){
 	if [ -f "/etc/hihy/bin/appS" ]; then
 		localV=`/etc/hihy/bin/appS -v | cut -d " " -f 3`
-		remoteV=`curl --head -s https://github.com/apernet/hysteria/releases/latest | grep location | grep -o 'tag/[^[:space:]]*' | sed 's/tag\///;s/ //g'`
+		remoteV=`curl --head -s https://github.com/apernet/hysteria/releases/latest | grep -i location | grep -o 'tag/[^[:space:]]*' | sed 's/tag\///;s/ //g'`
 		if [ -z $remoteV ];then
 			echoColor red "Network Error: Can't connect to Github!"
 			exit
@@ -948,7 +948,7 @@ function hihyNotify(){
 function hyCoreNotify(){
 	if [ -f "/etc/hihy/bin/appS" ]; then
   		localV=`/etc/hihy/bin/appS -v | cut -d " " -f 3`
-		remoteV=`curl --head -s https://github.com/apernet/hysteria/releases/latest | grep location | grep -o 'tag/[^[:space:]]*' | sed 's/tag\///;s/ //g'`
+		remoteV=`curl --head -s https://github.com/apernet/hysteria/releases/latest | grep -i location | grep -o 'tag/[^[:space:]]*' | sed 's/tag\///;s/ //g'`
 		if [ -z $remoteV ];then
 			echoColor red "Network Error: Can't connect to Github for checking the hysteria version!"
 		else
@@ -978,7 +978,7 @@ function install()
 	fi
 	mkdir -p /etc/hihy/bin /etc/hihy/conf /etc/hihy/cert  /etc/hihy/result
     echoColor purple "Ready to install.\n"
-    version=`curl --head -s https://github.com/apernet/hysteria/releases/latest | grep location | grep -o 'tag/[^[:space:]]*' | sed 's/tag\///;s/ //g'`
+    version=`curl --head -s https://github.com/apernet/hysteria/releases/latest | grep -i location | grep -o 'tag/[^[:space:]]*' | sed 's/tag\///;s/ //g'`
     checkSystemForUpdate
 	downloadHysteriaCore
 	setHysteriaConfig
