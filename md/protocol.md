@@ -1,25 +1,25 @@
-### 各协议介绍
+### Introduction to each agreement
 
-#### 1、udp
+#### 1. UDP
 
-可被识别为QUIC流量，直接使用最佳。
+It can be recognized as a Quic traffic and the best use.
 
-脚本0.2.5版本后不再默认加入`obfs`选项了，由于混淆的开销太大，会让cpu性能成为速度的瓶颈。
+After the script 0.2.5 version is no longer added by default, the `OBFS` option is added. Because the overhead of confusion is too large, the CPU performance will become a bottleneck of speed.
 
-而且运营商不会单单限速QUIC的传输，长时间测试过程中未被限速过，所以取消掉`obfs`支持。
+Moreover, the operator will not only speed the speed limit of the speed of speed. It has not been limited during the long test, so the support of `OBFS` is canceled.
 
-#### 2、faketcp
+#### 2, Faketcp
 
-hysteria v0.9.1 开始支持faketcp，将hysteria的UDP传输过程伪装成TCP，可以躲过运营商和“比较专业”的IDC服务商的QoS设备的对UDP的限速、阻断。
+Hysteria V0.9.1 began to support FAKETCP, and camouled Hysteria's UDP transmission process as TCP. You can avoid the speed limit and blocking of UDP devices of operators and "more professional" IDC service providers.
 
-目前faketcp模式客户端只支持在linux类系统root用户内使用包括安卓，**windows无法使用**（但是可配合udp2raw伪装tcp代替）。
+At present, the FakeTCP mode client only supports the use of Android in the Linux system ROOT users. ** Windows cannot use ** (but it can be replaced by UDP2RAW camouflage TCP instead).
 
-所以我的建议是：
+So my suggestion is:
 
-**追求代理性能时不要开启它**。当下行速度一直被限制在例如128kB/s这种非常非常低的速率情况时，你确认被限制UDP后再重新安装后开启，它并不能"增速"，反而会增加cpu的开销，给hysteria“减速”。
+** Do not turn on it when pursuing proxy performance **. When the current speed has been limited when the situation such as 128kb/s is very, very low, you confirm that it is restricted to the UDP before reinstalizing it. "slow down".
 
-**追求稳定性且能准备root权限使用环境时**。能开faketcp就开它。
+** Pursuing stability and can prepare for root permissions to use the environment **. You can open it to open FakeTCP.
 
-#### 3、wechat-video
+#### 3, wechat-video
 
-伪装成wechat的语音视频通话，可能会绕过少部分国内运营商对udp针对性限速？有待证实。
+Voice and video calls disguised as WeChat may bypass a small number of domestic operators for UDP targeted speed limit? To be confirmed.
