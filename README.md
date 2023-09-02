@@ -1,21 +1,16 @@
 # Hi Hysteria
 
-##### (2023/06/12) 0.4.8:
+##### (2023/09/02) 0.4.9
 
 ```
-hysteria update to v1.3.5:
-v1.3.5修复了一个socks5对域名解析的bug,支持了windows cmd下的彩色字符,并没有重要功能更新
+1. 修复发布v2后hysteria v1 版本号识别bug
 
-Q:  hy 1.x版本不会再有重大的功能更新？
-A：Hysteria 1.x 将继续推出 bug 和安全修复，现在开发重心在hy2，目前hy1的功能已经很完善了，速度上hy1和hy2没区别，区别在于hy2更看重流量和http/3流量相同，能够实现类似xray的回落到web的功能，但并不能保证不会被封锁udp流量，所以目前正在测试阶段，实际效果还有待观察
-
-Q: 关于hihy什么时候支持hy2?
-A:  hy2目前处于测试状态，很多hy1有的功能hy2暂不支持，而且客户端只能用命令行使用，等hy2发布第一个完整的公开版，再考虑适配
-
-1. 修复由于服务器ip太黑无法获得正确hysteria版本号问题
-2. matsuri也不会再推出重大功能更新，建议安卓用户选择它的“升级版”nekobox
-https://github.com/MatsuriDayo/NekoBoxForAndroid
+Q: 什么时候兼容hysteria v2?
+A: 因为hysteria v2刚发布正式版没有几个小时，只有sing-box beta版本支持它，且v1和v2互不兼容
+客户端没有很好的适配，0.4.9先不准备，等下个版本0.5.0会同时兼容v1和v2两个版本（尽快更新）
+v1和v2改动挺大的，如果想要尝鲜可以先手动配置
 ```
+[Hysteria V2 protocol support](https://github.com/emptysuns/Hi_Hysteria/issues/263)
 
 [历史改进](md/log.md)
 

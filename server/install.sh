@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="0.4.8.a"
+hihyV="0.4.9"
 function echoColor() {
 	case $1 in
 		# 红色
@@ -819,6 +819,8 @@ EOF
 
 function downloadHysteriaCore(){
 	version=`curl --head -s https://github.com/apernet/hysteria/releases/latest | grep -i location | grep -o 'tag/[^[:space:]]*' | sed 's/tag\///;s/ //g'`
+	#兼容v2发布后的v1版本更新（暂时性的，下个版本移除）
+	version="v1.3.5"
 	echo -e "The Latest hysteria version:"`echoColor red "${version}"`"\nDownload..."
 	if [ -z ${version} ];then
 		echoColor red "[Network error]: Failed to get the latest version of hysteria in Github!"
@@ -851,6 +853,8 @@ function updateHysteriaCore(){
 	if [ -f "/etc/hihy/bin/appS" ]; then
 		localV=`/etc/hihy/bin/appS -v | cut -d " " -f 3`
 		remoteV=`curl --head -s https://github.com/apernet/hysteria/releases/latest | grep -i location | grep -o 'tag/[^[:space:]]*' | sed 's/tag\///;s/ //g'`
+		#兼容v2发布后的v1版本更新（暂时性的，下个版本移除）
+		remoteV="v1.3.5"
 		if [ -z $remoteV ];then
 			echoColor red "Network Error: Can't connect to Github!"
 			exit
@@ -949,6 +953,8 @@ function hyCoreNotify(){
 	if [ -f "/etc/hihy/bin/appS" ]; then
   		localV=`/etc/hihy/bin/appS -v | cut -d " " -f 3`
 		remoteV=`curl --head -s https://github.com/apernet/hysteria/releases/latest | grep -i location | grep -o 'tag/[^[:space:]]*' | sed 's/tag\///;s/ //g'`
+		#兼容v2发布后的v1版本更新（暂时性的，下个版本移除）
+		remoteV="v1.3.5"
 		if [ -z $remoteV ];then
 			echoColor red "Network Error: Can't connect to Github for checking the hysteria version!"
 		else
@@ -979,7 +985,9 @@ function install()
 	mkdir -p /etc/hihy/bin /etc/hihy/conf /etc/hihy/cert  /etc/hihy/result
     echoColor purple "Ready to install.\n"
     version=`curl --head -s https://github.com/apernet/hysteria/releases/latest | grep -i location | grep -o 'tag/[^[:space:]]*' | sed 's/tag\///;s/ //g'`
-    checkSystemForUpdate
+    #兼容v2发布后的v1版本更新（暂时性的，下个版本移除）
+	version="v1.3.5"
+	checkSystemForUpdate
 	downloadHysteriaCore
 	setHysteriaConfig
     cat <<EOF >/etc/systemd/system/hihy.service
