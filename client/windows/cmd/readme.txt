@@ -1,39 +1,39 @@
-非常简单的cmd windwos“客户端”，欢迎其他开发者开发图形客户端。
+Very simple cmd windwos "client", other developers are welcome to develop graphical clients.
 
-提供两种运行方法：后台运行（无cmd窗口无感） 和 前台运行（必须有cmd窗口，可查看日志）
+Provides two running methods: running in the background (no sense of cmd window) and running in the foreground (must have a cmd window, you can view the log)
 
-启动之前请把config.json放到conf夹！
-
-
-方法一：后台运行（推荐）
-********************************************************************************************************
-运行:双击back_start.bat
-停止:双击back_stop.bat
-
-运行back_start.bat后，可以回车关闭此窗口，不需保留。
-
-批处理能力有限，请谅解.
-********************************************************************************************************
+Please put config.json into the conf folder before starting!
 
 
+Method 1: Run in the background (recommended)
+***************************************************** ***************************************************** ****
+Run: double-click back_start.bat
+Stop: double-click back_stop.bat
 
-方法二：前台运行
-********************************************************************************************************
-运行:双击run.bat
-停止:回车，或者键入其他非'n'的字符
+After running back_start.bat, you can press Enter to close this window, no need to keep it.
+
+Batch processing capacity is limited, please understand.
+***************************************************** ***************************************************** ****
 
 
-打开run.bat运行，运行时按回车键停止，防呆键入n继续运行
 
-不要直接关闭窗口！
-不要直接关闭窗口！
-不要直接关闭窗口！
+Method 2: Run in the foreground
+***************************************************** ***************************************************** ****
+Run: double-click run.bat
+Stop: Enter, or type other non-'n' characters
 
-直接关闭不能终止服务！.
-直接关闭不能终止服务！
-直接关闭不能终止服务！
 
-批处理能力有限，请谅解.
+Open run.bat to run, press the Enter key to stop when running, and type n to continue running
 
-Tips:前台运行模式下，不小心关掉窗口导致无法上网时，运行back_stop.bat可以清除代理和关闭hysteria
-********************************************************************************************************
+Do not just close the window!
+Do not just close the window!
+Do not just close the window!
+
+Closing directly cannot terminate the service! .
+Closing directly cannot terminate the service!
+Closing directly cannot terminate the service!
+
+Batch processing capacity is limited, please understand.
+
+Tips: In the foreground mode, if you accidentally close the window and cannot access the Internet, run back_stop.bat to clear the proxy and close hysteria
+***************************************************** ***************************************************** ****
