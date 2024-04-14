@@ -52,7 +52,7 @@ with open('routes.acl', 'w') as f:
         rproxy = str(proxy, 'UTF8').strip()
         m = re.search(a,rproxy).group()
         if m !='payload' :
-            count += 1
+            count = count + 1
             f.write('proxy domain-suffix %s\n' % m)
     print(f'Proxy rules: {count} done.')
     sumc += count
