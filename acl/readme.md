@@ -16,5 +16,6 @@ Proxy rules: 31924 done.
 
 All rules: 152050
 
+Hi
 Generate completed!
 ```
