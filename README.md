@@ -18,8 +18,9 @@
 12、修改自签证书默认域名，wechat.com -> apple.com(前者会被针对)
 13、美化结果输出。现在打印结果时会更加美观和整齐。
 ```
-
+[Hysteria V1 support](https://github.com/emptysuns/Hi_Hysteria/tree/v1)
 [历史改进](md/log.md)
+
 
 ## 一·简介
 
