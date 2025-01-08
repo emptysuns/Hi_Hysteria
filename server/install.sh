@@ -1,6 +1,6 @@
 #!/bin/bash
 echo -e "\033[32m请选择安装的hysteria版本:\n\n\033[0m\033[33m\033[01m1、hysteria2(推荐,LTS性能更好)\n2、hysteria1(NLTS,未来无功能更新,但支持faketcp.被UDP QoS可以选择)\033[0m\033[32m\n\n输入序号:\033[0m"
-read -p "" hysteria_version
+read hysteria_version
 if [ "$hysteria_version" = "1" ] || [ -z "$hysteria_version" ]; then
     hysteria_version="hysteria2"
 elif [ "$hysteria_version" = "2" ]; then
