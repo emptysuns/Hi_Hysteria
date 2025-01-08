@@ -759,14 +759,12 @@ setHysteriaConfig(){
     if [ -z "${download}" ];then
         download=50
     fi
-	server_upload=${download}
 	echo -e "\n->客户端下行速度："`echoColor red ${download}`"mbps\n"
     echo -e "\033[32m(6/11)请输入客户端期望的上行速度(默认10,单位:mbps):\033[0m" 
     read  upload
     if [ -z "${upload}" ];then
         upload=10
     fi
-	server_download=${upload}
 	echo -e "\n->客户端上行速度："`echoColor red ${upload}`"mbps\n"
 	echoColor green "(7/11)请输入认证口令(默认随机生成UUID作为密码,建议使用强密码):"
 	read auth_secret
@@ -850,6 +848,9 @@ setHysteriaConfig(){
     SRW=$(($CRW / 5 * 2))
     max_CRW=$(($CRW * 3 / 2))
     max_SRW=$(($SRW * 3 / 2))
+
+    server_upload=${download}
+    server_download=${upload}
     
 	addOrUpdateYaml "$yaml_file" "listen" ":${port}"
     addOrUpdateYaml "$yaml_file" "auth.type" "password"
@@ -865,8 +866,8 @@ setHysteriaConfig(){
 	addOrUpdateYaml "$yaml_file" "quic.maxIdleTimeout" "30s"
 	addOrUpdateYaml "$yaml_file" "quic.maxIncomingStreams" "1024"
 	addOrUpdateYaml "$yaml_file" "quic.disablePathMTUDiscovery" "false"
-	addOrUpdateYaml "$yaml_file" "bandwidth.up" "${download}mbps"
-	addOrUpdateYaml "$yaml_file" "bandwidth.down" "${upload}mbps"
+	addOrUpdateYaml "$yaml_file" "bandwidth.up" "${server_upload}mbps"
+	addOrUpdateYaml "$yaml_file" "bandwidth.down" "${server_download}mbps"
     addOrUpdateYaml "$yaml_file" "acl.file" "${acl_file}"
     case ${masquerade_type} in 
         "string")
