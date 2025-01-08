@@ -865,8 +865,8 @@ setHysteriaConfig(){
 	addOrUpdateYaml "$yaml_file" "quic.maxIdleTimeout" "30s"
 	addOrUpdateYaml "$yaml_file" "quic.maxIncomingStreams" "1024"
 	addOrUpdateYaml "$yaml_file" "quic.disablePathMTUDiscovery" "false"
-	addOrUpdateYaml "$yaml_file" "bandwidth.up" "${server_upload}mbps"
-	addOrUpdateYaml "$yaml_file" "bandwidth.down" "${server_download}mbps"
+	addOrUpdateYaml "$yaml_file" "bandwidth.up" "${download}mbps"
+	addOrUpdateYaml "$yaml_file" "bandwidth.down" "${upload}mbps"
     addOrUpdateYaml "$yaml_file" "acl.file" "${acl_file}"
     case ${masquerade_type} in 
         "string")
