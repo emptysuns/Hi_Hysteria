@@ -1228,7 +1228,7 @@ hihyUpdate(){
 
 }
 
-hyCoreNotify(){
+hyCore_update_notifycation(){
 	if [ -f "/etc/hihy/bin/appS" ]; then
   		local localV=$(echo app/$(/etc/hihy/bin/appS version | grep Version: | awk '{print $2}' | head -n 1))
         local remoteV=`curl --silent --head https://github.com/apernet/hysteria/releases/latest | grep -i location | grep -o 'tag/[^[:space:]]*' | sed 's/tag\///;s/ //g'`
@@ -2633,6 +2633,8 @@ aclControl(){
 }
 
 checkRoot
+hihy_update_notifycation
+hyCore_update_notifycation
 case "$1" in
     install|1) echoColor purple "-> 1) 安装 hysteria"; install ;;
     uninstall|2) echoColor purple "-> 2) 卸载 hysteria"; uninstall ;;
