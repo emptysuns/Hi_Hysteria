@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="0.4.9"
+hihyV="0.5.0"
 function echoColor() {
 	case $1 in
 		# 红色
@@ -109,11 +109,11 @@ function checkSystemForUpdate() {
 
 function uninstall(){
 	rm -r /usr/bin/hihy
-    bash <(curl -fsSL https://git.io/rmhysteria.sh)
+    bash <(curl -fsSL https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/refs/heads/v1/server/uninstall.sh)
 }
 
 function reinstall(){
-    bash <(curl -fsSL https://git.io/rehysteria.sh)
+    bash <(curl -fsSL https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/refs/heads/v1/server/reinstall.sh)
 }
 
 function printMsg(){
@@ -137,12 +137,6 @@ function printMsg(){
 	echoColor yellow "--------------------------------------------"
 }
 
-function hihy(){
-	if [ ! -f "/usr/bin/hihy" ]; then
-  		wget -q -O /usr/bin/hihy --no-check-certificate https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/main/server/install.sh
-		chmod +x /usr/bin/hihy
-	fi	
-}
 
 function changeIp64(){
     if [ ! -f "/etc/hihy/conf/hihyServer.json" ]; then
@@ -239,10 +233,10 @@ function setHysteriaConfig(){
 	if [ -z "${certNum}" ] || [ "${certNum}" == "3" ];then
 		echo -e  "\n注意:自签证书近一段时间来无obfs情况下,遭到大量随机阻断"
 		echoColor red "如果一定要使用自签证书,请在下方配置选择使用obfs混淆验证,保证安全"
-		echoColor green "请输入自签证书的域名(默认:wechat.com):"
+		echoColor green "请输入自签证书的域名(默认:apple.com):"
 		read domain
 		if [ -z "${domain}" ];then
-			domain="wechat.com"
+			domain="apple.com"
 		fi
 		echo -e "->自签证书域名为:"`echoColor red ${domain}`"\n"
 		ip=`curl -4 -s -m 8 ip.sb`
@@ -568,21 +562,14 @@ EOF
 "protocol": "${protocol}",
 "up_mbps": ${upload},
 "down_mbps": ${download},
-"http": {
-"listen": "127.0.0.1:10809",
-"timeout" : 300,
-"disable_udp": false
-},
 "socks5": {
-"listen": "127.0.0.1:10808",
+"listen": "127.0.0.1:20808",
 "timeout": 300,
 "disable_udp": false
 },
 "obfs": "${obfs_str}",
 "auth_str": "${auth_str}",
 "alpn": "h3",
-"acl": "acl/routes.acl",
-"mmdb": "acl/Country.mmdb",
 "server_name": "${domain}",
 "insecure": true,
 "recv_window_conn": ${r_conn},
@@ -611,20 +598,13 @@ EOF
 "protocol": "${protocol}",
 "up_mbps": ${upload},
 "down_mbps": ${download},
-"http": {
-"listen": "127.0.0.1:10809",
-"timeout" : 300,
-"disable_udp": false
-},
 "socks5": {
-"listen": "127.0.0.1:10808",
+"listen": "127.0.0.1:20808",
 "timeout": 300,
 "disable_udp": false
 },
 "obfs": "${obfs_str}",
 "alpn": "h3",
-"acl": "acl/routes.acl",
-"mmdb": "acl/Country.mmdb",
 "auth_str": "${auth_str}",
 "server_name": "${domain}",
 "insecure": false,
@@ -697,20 +677,13 @@ EOF
 "protocol": "${protocol}",
 "up_mbps": ${upload},
 "down_mbps": ${download},
-"http": {
-"listen": "127.0.0.1:10809",
-"timeout" : 300,
-"disable_udp": false
-},
 "socks5": {
-"listen": "127.0.0.1:10808",
+"listen": "127.0.0.1:20808",
 "timeout": 300,
 "disable_udp": false
 },
 "obfs": "${obfs_str}",
 "alpn": "h3",
-"acl": "acl/routes.acl",
-"mmdb": "acl/Country.mmdb",
 "auth_str": "${auth_str}",
 "server_name": "${domain}",
 "insecure": false,
@@ -919,7 +892,7 @@ function changeServerConfig(){
 
 function hihyUpdate(){
 	localV=${hihyV}
-	remoteV=`curl -fsSL https://git.io/hysteria.sh | sed  -n 2p | cut -d '"' -f 2`
+	remoteV=`curl -fsSL https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/refs/heads/v1/server/install.sh | sed  -n 2p | cut -d '"' -f 2`
 	if [ -z $remoteV ];then
 		echoColor red "Network Error: Can't connect to Github!"
 		exit
@@ -937,7 +910,7 @@ function hihyUpdate(){
 
 function hihyNotify(){
 	localV=${hihyV}
-	remoteV=`curl -fsSL https://git.io/hysteria.sh | sed  -n 2p | cut -d '"' -f 2`
+	remoteV=`curl -fsSL https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/refs/heads/v1/server/install.sh | sed  -n 2p | cut -d '"' -f 2`
 	if [ -z $remoteV ];then
 		echoColor red "Network Error: Can't connect to Github for checking hihy version!"
 	else
@@ -1355,98 +1328,98 @@ rule-providers:
   reject:
     type: http
     behavior: domain
-    url: "https://ghproxy.com/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/reject.txt"
+    url: "https://ghgo.xyz/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/reject.txt"
     path: ./ruleset/reject.yaml
     interval: 86400
 
   icloud:
     type: http
     behavior: domain
-    url: "https://ghproxy.com/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/icloud.txt"
+    url: "https://ghgo.xyz/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/icloud.txt"
     path: ./ruleset/icloud.yaml
     interval: 86400
 
   apple:
     type: http
     behavior: domain
-    url: "https://ghproxy.com/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/apple.txt"
+    url: "https://ghgo.xyz/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/apple.txt"
     path: ./ruleset/apple.yaml
     interval: 86400
 
   google:
     type: http
     behavior: domain
-    url: "https://ghproxy.com/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/google.txt"
+    url: "https://ghgo.xyz/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/google.txt"
     path: ./ruleset/google.yaml
     interval: 86400
 
   proxy:
     type: http
     behavior: domain
-    url: "https://ghproxy.com/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/proxy.txt"
+    url: "https://ghgo.xyz/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/proxy.txt"
     path: ./ruleset/proxy.yaml
     interval: 86400
 
   direct:
     type: http
     behavior: domain
-    url: "https://ghproxy.com/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/direct.txt"
+    url: "https://ghgo.xyz/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/direct.txt"
     path: ./ruleset/direct.yaml
     interval: 86400
 
   private:
     type: http
     behavior: domain
-    url: "https://ghproxy.com/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/private.txt"
+    url: "https://ghgo.xyz/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/private.txt"
     path: ./ruleset/private.yaml
     interval: 86400
 
   gfw:
     type: http
     behavior: domain
-    url: "https://ghproxy.com/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/gfw.txt"
+    url: "https://ghgo.xyz/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/gfw.txt"
     path: ./ruleset/gfw.yaml
     interval: 86400
 
   greatfire:
     type: http
     behavior: domain
-    url: "https://ghproxy.com/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/greatfire.txt"
+    url: "https://ghgo.xyz/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/greatfire.txt"
     path: ./ruleset/greatfire.yaml
     interval: 86400
 
   tld-not-cn:
     type: http
     behavior: domain
-    url: "https://ghproxy.com/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/tld-not-cn.txt"
+    url: "https://ghgo.xyz/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/tld-not-cn.txt"
     path: ./ruleset/tld-not-cn.yaml
     interval: 86400
 
   telegramcidr:
     type: http
     behavior: ipcidr
-    url: "https://ghproxy.com/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/telegramcidr.txt"
+    url: "https://ghgo.xyz/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/telegramcidr.txt"
     path: ./ruleset/telegramcidr.yaml
     interval: 86400
 
   cncidr:
     type: http
     behavior: ipcidr
-    url: "https://ghproxy.com/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/cncidr.txt"
+    url: "https://ghgo.xyz/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/cncidr.txt"
     path: ./ruleset/cncidr.yaml
     interval: 86400
 
   lancidr:
     type: http
     behavior: ipcidr
-    url: "https://ghproxy.com/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/lancidr.txt"
+    url: "https://ghgo.xyz/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/lancidr.txt"
     path: ./ruleset/lancidr.yaml
     interval: 86400
 
   applications:
     type: http
     behavior: classical
-    url: "https://ghproxy.com/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/applications.txt"
+    url: "https://ghgo.xyz/https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/applications.txt"
     path: ./ruleset/applications.yaml
     interval: 86400
 
@@ -1516,7 +1489,6 @@ function restart(){
 
 function menu()
 {
-hihy
 clear
 cat << EOF
  -------------------------------------------
