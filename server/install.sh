@@ -231,8 +231,6 @@ function setHysteriaConfig(){
 	useAcme=false
 	useLocalCert=false
 	if [ -z "${certNum}" ] || [ "${certNum}" == "3" ];then
-		echo -e  "\n注意:自签证书近一段时间来无obfs情况下,遭到大量随机阻断"
-		echoColor red "如果一定要使用自签证书,请在下方配置选择使用obfs混淆验证,保证安全"
 		echoColor green "请输入自签证书的域名(默认:apple.com):"
 		read domain
 		if [ -z "${domain}" ];then
