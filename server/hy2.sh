@@ -1816,6 +1816,10 @@ uninstall() {
     if [ -f "/etc/rc.local" ]; then
         sed -i '/\/etc\/rc.d\/hihy start/d' /etc/rc.local
     fi
+
+    if [ -f "/usr/bin/hihy" ]; then
+        rm /usr/bin/hihy
+    fi
     # 删除 Arch Linux 的 rc.local systemd 服务
     uninstall_rc_local_for_arch
     # 检查是否完全删除
