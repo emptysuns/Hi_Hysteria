@@ -5,7 +5,7 @@
 ### Tips
 
 * V2rayN-windows可以直接扫描屏幕上的二维码。
-* v2rayN可在自定义配置里添加hysteria2原生客户端配置文件，给予你原汁原味的体验。**如果使用自定义文件启动hysteria2，那么自定义socks端口请填写20808来使用v2rayN流量统计功能**
+* v2rayN可在自定义配置里添加hysteria2原生客户端配置文件，给予你原汁原味的体验。**如果使用自定义文件启动hysteria2，那么自定义socks端口请填写20808来使用v2rayN流量统计与分流功能**
 v2rayN -> 服务器 ->添加自定义配置
 
 ![img](../imgs/v2rayN-new.png)
