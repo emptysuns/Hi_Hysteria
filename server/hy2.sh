@@ -1916,7 +1916,7 @@ generate_client_config(){
 	if [ "${portHoppingStatus}" == "true" ];then
 		url_base="${url_base}${port}/?mport=${portHoppingStart}-${portHoppingEnd}&"
 	else
-		url_base="${url_base}:${port}/?"
+		url_base="${url_base}${port}/?"
 	fi
 	
 	if [ "${insecure}" == "true" ];then
