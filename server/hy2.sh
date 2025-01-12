@@ -868,7 +868,7 @@ setHysteriaConfig(){
     echoColor yellowBlack "执行配置..."
     download=$(($download + $download / 10))
     upload=$(($upload + $upload / 10))
-    CRW=$(($delay * $download * 1000000 / 1000 / 8))
+    CRW=$(($delay * $download * 1000000 / 1000 * 2))
     SRW=$(($CRW / 5 * 2))
     max_CRW=$(($CRW * 3 / 2))
     max_SRW=$(($SRW * 3 / 2))
@@ -1052,7 +1052,7 @@ setHysteriaConfig(){
     addOrUpdateYaml "$yaml_file" "trafficStats.listen" "127.0.0.1:${trafficPort}"
     addOrUpdateYaml "$yaml_file" "trafficStats.secret" "${auth_secret}"
     echo -e "reject(all, udp/443)" > ${acl_file}
-	sysctl -w net.core.rmem_max=${max_CRW}
+    sysctl -w net.core.rmem_max=${max_CRW}
     sysctl -w net.core.wmem_max=${max_CRW}
 	if echo "${portHoppingStatus}" | grep -q "true";then
 		sysctl -w net.ipv4.ip_forward=1
@@ -1924,8 +1924,8 @@ generate_client_config(){
 	fi
 	SRW=$(getYamlValue "/etc/hihy/conf/config.yaml" "quic.initStreamReceiveWindow")
 	CRW=$(getYamlValue "/etc/hihy/conf/config.yaml" "quic.initConnReceiveWindow")
-    max_CRW=$(getYamlValue "/etc/hihy/conf/config.yaml" "quic.maxConnReceiveWindow")
-    max_SRW=$(getYamlValue "/etc/hihy/conf/config.yaml" "quic.maxStreamReceiveWindow")
+     max_CRW=$(getYamlValue "/etc/hihy/conf/config.yaml" "quic.maxConnReceiveWindow")
+     max_SRW=$(getYamlValue "/etc/hihy/conf/config.yaml" "quic.maxStreamReceiveWindow")
 	download=$(getYamlValue "/etc/hihy/conf/config.yaml" "bandwidth.up")
 	upload=$(getYamlValue "/etc/hihy/conf/config.yaml" "bandwidth.down")
 	portHoppingStatus=$(getYamlValue "/etc/hihy/conf/backup.yaml" "portHoppingStatus")
@@ -1959,8 +1959,8 @@ generate_client_config(){
     addOrUpdateYaml "$client_configfile" "quic.maxConnReceiveWindow" "${max_CRW}"
     addOrUpdateYaml "$client_configfile" "quic.maxStreamReceiveWindow" "${max_SRW}"
 	addOrUpdateYaml "$client_configfile" "quic.keepAlivePeriod" "60s"
-	addOrUpdateYaml	"$client_configfile" "bandwidth.download " "${download}"
-	addOrUpdateYaml	"$client_configfile" "bandwidth.upload" "${upload}"
+	addOrUpdateYaml	"$client_configfile" "bandwidth.down " "${download}"
+	addOrUpdateYaml	"$client_configfile" "bandwidth.up" "${upload}"
 	addOrUpdateYaml "$client_configfile" "fastOpen" "true"
 	addOrUpdateYaml "$client_configfile" "socks5.listen" "127.0.0.1:20808"
 	url_base="hy2://${auth_secret}@${serverAddress}"
