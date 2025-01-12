@@ -2465,7 +2465,7 @@ delHihyFirewallPort() {
         fi
     elif command -v iptables > /dev/null; then
         iptables-save | sed -e "/hihysteria/d" | iptables-restore
-        ip6tables-save | sed -e "/hihysteria/d" | ip6tables-
+        ip6tables-save | sed -e "/hihysteria/d" | ip6tables-restore
         if command -v systemctl >/dev/null 2>&1; then
             # 检查 netfilter-persistent
             if systemctl is-active --quiet netfilter-persistent; then
