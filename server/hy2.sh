@@ -330,6 +330,30 @@ getYamlValue() {
     echo "$value"
 }
 
+countdown() {
+    local seconds=$1
+    echo -ne "\033[32m⏰ 倒计时:\033[0m "
+    
+    while [ $seconds -gt 0 ]; do
+        # 打印当前数字
+        echo -ne "\033[31m$seconds\033[0m"
+        sleep 1
+        
+        # 计算退格数量
+        local digits=${#seconds}
+        for ((i=0; i<digits; i++)); do
+            echo -ne "\b \b"
+        done
+        
+        ((seconds--))
+    done
+    
+    # 清除最后一个数字并显示完成消息
+    echo -ne " "  # 清除最后显示的数字
+    echo -e "\n\033[32m✨ 完成!\033[0m"
+}
+
+
 setHysteriaConfig(){
 	mkdir -p /etc/hihy/bin /etc/hihy/conf /etc/hihy/cert  /etc/hihy/result /etc/hihy/acl/
     acl_file="/etc/hihy/acl/acl.txt"
@@ -1040,11 +1064,17 @@ setHysteriaConfig(){
     sysctl -p
 	echo -e "\033[1;;35m\nTest config...\n\033[0m"
 	/etc/hihy/bin/appS -c ${yaml_file} server > ./hihy_debug.info 2>&1 &
-	sleep 30
+
+    if [ "${useAcme}" == "true" ];then
+        countdown 20
+    else
+        countdown 5
+    fi
+	
 	
 	msg=`cat ./hihy_debug.info`
     case ${msg} in 
-        *"Failed to get a certificate with ACME"*)
+        *"failed to get a certificate with ACME"*)
             echoColor red "域名:${u_host},申请证书失败!请重新安装使用自签证书."
             rm /etc/hihy/conf/config.yaml
             rm /etc/hihy/result/backup.yaml
@@ -1580,9 +1610,32 @@ allowPort() {
         if command -v iptables >/dev/null 2>&1; then
             if ! iptables -L | grep -q "allow ${1}/${2}(hihysteria)"; then
                 iptables -I INPUT -p ${1} --dport ${2} -m comment --comment "allow ${1}/${2}(hihysteria)" -j ACCEPT
-                echoColor purple "IPTABLES OPEN: ${1}/${2}"
+                mkdir -p /etc/rc.d
+                # 在没有netfilter的情况下持久化规则
+                if [ ! -f "/etc/rc.d/allow-port" ]; then
+                    cat > /etc/rc.d/allow-port << EOF
+#!/bin/sh
+iptables -I INPUT -p ${1} --dport ${2} -m comment --comment "allow ${1}/${2}(hihysteria)" -j ACCEPT
+EOF
+                    chmod +x /etc/rc.d/allow-port
+                else
+                    if ! grep -q "allow ${1}/${2}(hihysteria)" /etc/rc.d/allow-port; then
+                        echo "iptables -I INPUT -p ${1} --dport ${2} -m comment --comment \"allow ${1}/${2}(hihysteria)\" -j ACCEPT" >> /etc/rc.d/allow-port
+                    fi
+                fi
+
+                if [ ! -f "/etc/rc.local" ]; then
+                    touch /etc/rc.local
+                    echo "#!/bin/bash" > /etc/rc.local
+                    chmod +x /etc/rc.local
+                fi
+                if ! grep -q "/etc/rc.d/allow-port" /etc/rc.local; then
+                    echo "/etc/rc.d/allow-port start" >> /etc/rc.local
+                fi
             fi
-            return 0
+
+                echoColor purple "IPTABLES OPEN: ${1}/${2}"
+                return 0
         fi
         
         # 检查 nftables
@@ -1689,8 +1742,6 @@ ip6tables -t nat -A PREROUTING -p udp --dport $1:$2 -m comment --comment "NAT $1
 EOF
         chmod +x /etc/rc.d/port-hopping
      
-        # 启动服务
-        /etc/rc.d/port-hopping start
 
         if [ ! -f "/etc/rc.local" ]; then
             touch /etc/rc.local
@@ -1815,6 +1866,9 @@ uninstall() {
 
     if [ -f "/etc/rc.local" ]; then
         sed -i '/\/etc\/rc.d\/hihy start/d' /etc/rc.local
+        if grep -q "/etc/rc.d/allow-port" /etc/rc.local; then
+            sed -i '/\/etc\/rc.d\/allow-port start/d' /etc/rc.local
+        fi
     fi
 
     if [ -f "/usr/bin/hihy" ]; then
@@ -2413,7 +2467,17 @@ delHihyFirewallPort() {
         fi
     elif command -v iptables > /dev/null; then
         iptables-save | sed -e "/hihysteria/d" | iptables-restore
-        ip6tables-save | sed -e "/hihysteria/d" | ip6tables-restore
+        ip6tables-save | sed -e "/hihysteria/d" | ip6tables-
+        if command -v systemctl >/dev/null 2>&1; then
+            # 检查 netfilter-persistent
+            if systemctl is-active --quiet netfilter-persistent; then
+                netfilter-persistent save
+            fi
+        fi
+        if [ -f "/etc/rc.d/allow-port" ]; then
+            sed -i "/${protocol}\/${port}(hihysteria)/d" /etc/rc.d/allow-port
+        fi
+
         echoColor purple "IPTABLES DELETE: ${port}/${protocol}"
     fi
 }
