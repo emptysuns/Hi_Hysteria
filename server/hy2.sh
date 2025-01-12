@@ -1913,7 +1913,7 @@ generate_client_config(){
     fi
 	remarks=$(getYamlValue "/etc/hihy/conf/backup.yaml" "remarks")
 	serverAddress=$(getYamlValue "/etc/hihy/conf/backup.yaml" "serverAddress")
-	port=$(getYamlValue "/etc/hihy/conf/config.yaml" "listen")
+	port=$(getYamlValue "/etc/hihy/conf/config.yaml" "listen" | awk '{gsub(/^:/, ""); print}')
 	auth_secret=$(getYamlValue "/etc/hihy/conf/config.yaml" "auth.password")
 	tls_sni=$(getYamlValue "/etc/hihy/conf/backup.yaml" "domain")
 	insecure=$(getYamlValue "/etc/hihy/conf/backup.yaml" "insecure")
@@ -1928,7 +1928,6 @@ generate_client_config(){
     max_SRW=$(getYamlValue "/etc/hihy/conf/config.yaml" "quic.maxStreamReceiveWindow")
 	download=$(getYamlValue "/etc/hihy/conf/config.yaml" "bandwidth.up")
 	upload=$(getYamlValue "/etc/hihy/conf/config.yaml" "bandwidth.down")
-	port=$(getYamlValue "/etc/hihy/conf/config.yaml" "listen")
 	portHoppingStatus=$(getYamlValue "/etc/hihy/conf/backup.yaml" "portHoppingStatus")
 	if [ "${portHoppingStatus}" == "true" ];then
 		portHoppingStart=$(getYamlValue "/etc/hihy/conf/backup.yaml" "portHoppingStart")
@@ -1940,7 +1939,7 @@ generate_client_config(){
 	fi
 	touch ${client_configfile}
 	if [ "${portHoppingStatus}" == "true" ];then
-		addOrUpdateYaml "$client_configfile" "server" "hysteria2://${auth_secret}@${serverAddress}${port},${portHoppingStart}-${portHoppingEnd}/"
+		addOrUpdateYaml "$client_configfile" "server" "hysteria2://${auth_secret}@${serverAddress}:${port},${portHoppingStart}-${portHoppingEnd}/"
 	fi
 	
 	addOrUpdateYaml "$client_configfile" "tls.sni" "${tls_sni}"
@@ -1968,9 +1967,9 @@ generate_client_config(){
     
 	
 	if [ "${portHoppingStatus}" == "true" ];then
-		url_base="${url_base}${port}/?mport=${portHoppingStart}-${portHoppingEnd}&"
+		url_base="${url_base}:${port}/?mport=${portHoppingStart}-${portHoppingEnd}&"
 	else
-		url_base="${url_base}${port}/?"
+		url_base="${url_base}:${port}/?"
 	fi
 	
 	if [ "${insecure}" == "true" ];then
@@ -2005,7 +2004,7 @@ generate_client_config(){
         echo -e "   2. 设置hosts使IP指向该域名"
 
     fi
-    echoColor purple "\n🌐 1、伪装地址: `echoColor red https://${tls_sni}${port}`"
+    echoColor purple "\n🌐 1、伪装地址: `echoColor red https://${tls_sni}:${port}`"
 
     echoColor purple "\n🔗 2、[v2rayN-Windows/v2rayN-Andriod/nekobox/passwall/Shadowrocket]分享链接:\n"
     echoColor green "${url}"
@@ -2169,7 +2168,7 @@ rules:
   - MATCH,PROXY
 EOF
 	serverAddress=$(getYamlValue "/etc/hihy/conf/backup.yaml" "serverAddress")
-	port=$(getYamlValue "/etc/hihy/conf/config.yaml" "listen")
+    port=$(getYamlValue "/etc/hihy/conf/config.yaml" "listen" | awk '{gsub(/^:/, ""); print}')
 	auth_secret=$(getYamlValue "/etc/hihy/conf/config.yaml" "auth.password")
 	tls_sni=$(getYamlValue "/etc/hihy/conf/backup.yaml" "domain")
 	insecure=$(getYamlValue "/etc/hihy/conf/backup.yaml" "insecure")
@@ -2186,7 +2185,6 @@ EOF
     download=$(echo ${download} | sed 's/[^0-9]//g')
 	upload=$(getYamlValue "/etc/hihy/conf/config.yaml" "bandwidth.down")
     upload=$(echo ${upload} | sed 's/[^0-9]//g')
-	port=$(getYamlValue "/etc/hihy/conf/config.yaml" "listen")
 	portHoppingStatus=$(getYamlValue "/etc/hihy/conf/backup.yaml" "portHoppingStatus")
     addOrUpdateYaml "${metaFile}" "proxies[0].name" "${remarks}"
     addOrUpdateYaml "${metaFile}" "proxies[0].type" "hysteria2"
