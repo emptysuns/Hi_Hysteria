@@ -40,23 +40,33 @@ Hysteria2是一款由go编写的非常优秀的“轻量”代理程序，它很
 可能会有一些bug，如果遇到请发issue，欢迎star，您的⭐是我维护的动力。
 
 
-## 二、本脚本的优点
+## 二、优点
 
 <details>
-<summary><b>点我展开</b></summary>
-- 支持hysteria2提供的三种masquerade伪装模式，并提供高度自定义伪装内容
-- 提供四种证书导入方式。ACME HTTP挑战、ACME DNS、自签任意域名证书、本地证书
-- 支持在ssh终端查看hysteria2 server统计信息。包括用户流量统计、在线设备数量、当前活跃的连接等等信息
-- 提供仅通过ACL实现的分流域名规则，以及屏蔽相应域名的请求
-- 支持当前市面上所有主流的操作系统与架构。包括Arch、Alpine、RHEL、Centos、AlamaLinux、Debian、Ubuntu、Rocky Linux等等操作系统，x86_64、 i386|i686、aarch64|arm64、armv7、s390x、ppc64le架构
-- 支持对hy2分享链接生成二维码输出到终端，减少繁琐的复制粘贴过程，扫一扫更方便
-- 支持生成hysteria2 original client配置文件，保留最全的客户端参数提供最佳的使用体验
-- 使用高优先级启动hysteria2进程，尽可能的保持速度优先
-- 端口跳跃与hysteria2的守护进程使用自启脚本管理，更强的拓展性以及兼容性
-- 保留提供hysteria v1的安装脚本，供用户选择
-- 计算BDP（带宽延迟积）来调整quic参数，适应多种多样的需求场景
-- 支持添加socks5出站，其中包括自动添加socks5出站
-- 更新及时，当hysteria2更新相应新功能时会在24h之内完成适配
+<summary><b>点我展开查看完整功能列表</b></summary>
+
+* 支持hysteria2提供的三种masquerade伪装模式，并提供高度自定义伪装内容
+* 提供四种证书导入方式：
+  * ACME HTTP挑战
+  * ACME DNS
+  * 自签任意域名证书
+  * 本地证书
+* 支持在ssh终端查看hysteria2 server统计信息：
+  * 用户流量统计
+  * 在线设备数量
+  * 当前活跃的连接等信息
+* 提供仅通过ACL实现的分流域名规则，以及屏蔽相应域名的请求
+* 支持当前市面上所有主流的操作系统与架构：
+  * 操作系统：Arch、Alpine、RHEL、Centos、AlamaLinux、Debian、Ubuntu、Rocky Linux等
+  * 架构：x86_64、i386|i686、aarch64|arm64、armv7、s390x、ppc64le
+* 支持对hy2分享链接生成二维码输出到终端，减少繁琐的复制粘贴过程
+* 支持生成hysteria2 original client配置文件，保留最全的客户端参数
+* 使用高优先级启动hysteria2进程，保持速度优先
+* 端口跳跃与hysteria2的守护进程使用自启脚本管理，提供更强的拓展性与兼容性
+* 保留提供hysteria v1的安装脚本，供用户选择
+* 计算BDP（带宽延迟积）来调整quic参数，适应多种多样的需求场景
+* 支持添加socks5出站，包括自动添加socks5出站功能
+* 更新及时，hysteria2更新后24h内完成适配
 
 </details>
 
