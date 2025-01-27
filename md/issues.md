@@ -92,4 +92,12 @@ obfs是用来混淆流量成未知流量的选项，开启它将会最大程度�
 
 目前自签证书使用的CA是固定的，是Tencent Root CA，这肯定是不合法的，请不要使用敏感域名，比如wechat.com
 
+
+#### 10、PC端没问题，移动端nekobox和v2rayn无法访问cloudflare等等网站，提示http/3错误
+
+打开 **路由 -> 屏蔽QUIC**功能即可
+nekobox/v2rayNForAndriod在路由里面打开屏蔽QUIC功能，否则无法访问使用了http/3的网站。
+此问题由于服务器屏蔽了udp/443流量，hysteria对udp无增强的拥塞控制效果，所以在服务端上这个功能是必须的
+
+
 ### 10. 待补充...

@@ -14,3 +14,4 @@ v2rayN -> 服务器 ->添加自定义配置
 * v2rayN For Andriod需要填写端口跳跃时间才能启动，不然会出错，默认是30s，推荐120s
 * 如果没有使用obfs直接留空就行
 * clash.meta目前最佳的方案就是生成一个配置文件，交由用户自行导入。或者你可以找订阅转化将url转成clash.meta可用的订阅
+* nekobox/v2rayNForAndriod请在路由里面打开屏蔽QUIC功能，否则无法访问使用了http/3的网站。此问题由于服务器屏蔽了udp/443流量，hysteria对udp无增强的拥塞控制效果

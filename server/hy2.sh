@@ -1,11 +1,9 @@
 #!/bin/bash
-hihyV="1.0.0"
+hihyV="1.0.1"
 
 cronTask(){
-
     if [ -f "/etc/hihy/logs/hihy.log" ];then
-        rm /etc/hihy/logs/hihy.log
-        touch /etc/hihy/logs/hihy.log
+        echo "" > /etc/hihy/logs/hihy.log
     fi
 }
 echoColor() {
@@ -138,6 +136,12 @@ checkSystemForUpdate() {
         updateNeeded=true
     fi
 
+    # 检查 qrencode 包
+    if ! command -v crontab >/dev/null; then
+        echoColor green "*crontab"
+        updateNeeded=true
+    fi
+
     # 检查 yq 命令
     # 安装 yq
     if ! command -v yq >/dev/null; then
@@ -205,7 +209,7 @@ checkSystemForUpdate() {
         fi
 
          # 确保有 crontab 命令
-        if ! command -v pkill >/dev/null 2>&1; then
+        if ! command -v crontab >/dev/null 2>&1; then
             case $packageManager in
                 "apt") ${installType} "cron" ;;
                 "yum"|"dnf") ${installType} "cron" ;;
@@ -375,10 +379,10 @@ setHysteriaConfig(){
 	
 
 	if [ -z "${certNum}" ] || [ "${certNum}" == "3" ];then
-		echoColor green "请输入自签证书的域名(默认:apple.com):"
+		echoColor green "请输入自签证书的域名(默认:helloworld.com):"
 		read domain
 		if [ -z "${domain}" ];then
-			domain="apple.com"
+			domain="helloworld.com"
 		fi
 		echo -e "->自签证书域名为:"`echoColor red ${domain}`"\n"
 		ip=`curl -4 -s -m 8 ip.sb`
@@ -862,7 +866,7 @@ setHysteriaConfig(){
         echo -e "\n->您选择不监听tcp/${port}端口\n"
     fi
 
-    echoColor green "(11/11)请输入客户端名称备注(默认使用域名或IP区分,例如输入test,则名称为Hys-test):"
+    echoColor green "(11/11)请输入客户端名称备注(默认使用域名或IP区分,例如输入test,则名称为Hy2-test):"
 	read remarks
     echoColor green "\n配置录入完成!\n"
     echoColor yellowBlack "执行配置..."
@@ -1098,15 +1102,20 @@ setHysteriaConfig(){
             ;;
         *"server up and running"*)
             echoColor green "Test success!"
+            # 使用 pkill 终止进程
+            echoColor purple "Stop test program..."
+            pkill -f "/etc/hihy/bin/appS"
+            rm ./hihy_debug.info
+            # 配置防火墙
+            allowPort udp ${port}
+            if [ "${masquerade_tcp}" == "true" ];then
+                getPortBindMsg TCP ${port}
+                allowPort tcp ${port}
+            fi
             if echo ${portHoppingStatus} | grep -q "true";then
                 addPortHoppingNat ${portHoppingStart} ${portHoppingEnd} ${port}
             fi
-            allowPort udp ${port}
-            allowPort tcp ${port}
             echoColor purple "Generating config..."
-            # 使用 pkill 终止进程
-            pkill -f "/etc/hihy/bin/appS"
-            rm ./hihy_debug.info
             ;;
         *) 	
             # 确保有 pkill 命令
@@ -1135,6 +1144,7 @@ setHysteriaConfig(){
 	addOrUpdateYaml ${backup_file} "portHoppingEnd" "${portHoppingEnd}"
 	addOrUpdateYaml ${backup_file} "domain" "${domain}"
     addOrUpdateYaml ${backup_file} "trafficPort" "${trafficPort}"
+    addOrUpdateYaml ${backup_file} "socks5_status" "false"
     if [ "$masquerade_tcp" == "true" ];then
         addOrUpdateYaml ${backup_file} "masquerade_tcp" "true"
     else
@@ -1394,6 +1404,10 @@ stop() {
 restart() {
     stop
     sleep 2
+    if [ -f "$pidfile" ]; then
+        eerror "Failed to stop hihy"
+        return 1
+    fi
     start
 }
 
@@ -1448,6 +1462,10 @@ stop() {
 restart() {
     stop
     sleep 2
+    if [ -f "$PID_FILE" ]; then
+        echo "Failed to stop hihy"
+        return 1
+    fi
     start
 }
 
@@ -1491,14 +1509,7 @@ EOF
         fi
     fi
 
-    # 配置防火墙
-    port=$(getYamlValue "/etc/hihy/conf/backup.yaml" "serverPort")
-    masquerade_tcp=$(getYamlValue "/etc/hihy/conf/backup.yaml" "masquerade_tcp")
-    allowPort udp ${port}
-    if [ "${masquerade_tcp}" == "true" ];then
-        getPortBindMsg TCP ${port}
-        allowPort tcp ${port}
-    fi
+    
     
     # 启动服务
     /etc/rc.d/hihy start
@@ -1962,6 +1973,7 @@ generate_client_config(){
 	addOrUpdateYaml	"$client_configfile" "bandwidth.down " "${download}"
 	addOrUpdateYaml	"$client_configfile" "bandwidth.up" "${upload}"
 	addOrUpdateYaml "$client_configfile" "fastOpen" "true"
+    addOrUpdateYaml "$client_configfile" "lazy" "true"
 	addOrUpdateYaml "$client_configfile" "socks5.listen" "127.0.0.1:20808"
 	url_base="hy2://${auth_secret}@${serverAddress}"
     
@@ -2481,7 +2493,13 @@ delHihyFirewallPort() {
 }
 
 changeIp64(){
+    socks5_status=$(getYamlValue "/etc/hihy/conf/backup.yaml" "socks5_status")
+    if [ "${socks5_status}" == "true" ];then
+        echoColor red "当前已经开启socks5转发,不支持修改优先级"
+        exit 1
+    fi
     mode_now=$(getYamlValue "config.yaml" "outbounds[0].direct.mode")
+
     echoColor purple "当前模式: `echoColor red ${mode_now}`"
     echoColor yellow "1) ipv4优先"
     echoColor yellow "2) ipv6优先"
@@ -2644,6 +2662,94 @@ aclControl(){
    
 }
 
+addSocks5Outbound(){
+    if [ ! -f "/etc/hihy/conf/config.yaml" ]; then
+        echoColor red "未找到配置文件"
+        exit 1
+    fi
+    local server_config="/etc/hihy/conf/config.yaml"
+    local backup_config="/etc/hihy/conf/backup.yaml"
+    echo -e "Tip: WireProxy借助cloudflare warp提供免费好用的socks5代理,比起warp全局开销更小,建议性能不好的机器使用."
+    echo -e "\033[32m请选择:\n\n\033[0m\033[33m\033[01m1、自动添加一个warp socks5接口作为hysteria2出站(默认,使用fscarmen WireProxy方案)\n2、自定义socks5地址\n3、卸载已经配置的outbound\033[0m\033[32m\n\n输入序号:\033[0m"
+    read num
+    if [ -z "${num}" ] || [ ${num} == "1" ];then
+        socks5_status=$(getYamlValue "/etc/hihy/conf/backup.yaml" "socks5_status")
+        if [ "${socks5_status}" == "true" ];then
+            echoColor red "当前已经开启socks5 outbound,请删除后再添加"
+            exit 1
+        fi
+        local conf_file="/etc/wireguard/proxy.conf"
+        if [ -f "$conf_file" ]; then
+            echoColor green "找到WireProxy配置文件,使用当前配置"
+        else
+            wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh && bash menu.sh w
+        fi
+        
+        if [ ! -f "$conf_file" ]; then
+            echoColor red "未找到WireProxy配置文件,请保证正确安装WireProxy"
+            exit 1
+        fi
+        local port=$(grep "BindAddress" "$conf_file" | grep -v "^#" | awk -F':' '{print $2}')
+        echoColor purple "->本机WireProxy socks5端口: `echoColor red ${port}`"
+        
+        # 在数组开头插入新的outbound配置
+        yq eval '.outbounds = [{"name": "warp", "type": "socks5", "socks5": {"addr": "127.0.0.1:'$port'"}}] + .outbounds' -i "${server_config}"
+
+        restart
+        addOrUpdateYaml ${backup_config} "socks5_status" "true"
+        echoColor green "添加warp outbound成功"
+
+    elif [ ${num} == "2" ];then
+        socks5_status=$(getYamlValue "/etc/hihy/conf/backup.yaml" "socks5_status")
+        if [ "${socks5_status}" == "true" ];then
+            echoColor red "当前已经开启socks5 outbound,请删除后再添加"
+            exit 1
+        fi
+        read -p "请输入socks5地址(ip:端口): " socks5_addr
+        if [ -z "${socks5_addr}" ]; then
+            echoColor red "地址不能为空"
+            exit 1
+        fi
+        read -p "请输入socks5用户名,如果没有鉴权直接留空: " socks5_user
+        if [ -n "${socks5_user}" ]; then
+            read -p "请输入socks5密码: " socks5_pass
+            if [ -z "${socks5_pass}" ]; then
+                echoColor red "密码不能为空"
+                exit 1
+            fi
+        fi
+        local server_config="/etc/hihy/conf/config.yaml"
+        if [ -n "${socks5_user}" ]; then
+            yq eval '.outbounds = [{"name": "warp", "type": "socks5", "socks5": {"addr": "127.0.0.1:'$port'", "username": "'$socks5_user'", "password": "'$socks5_pass'"}}] + .outbounds' -i "${server_config}"
+        else
+            yq eval '.outbounds = [{"name": "warp", "type": "socks5", "socks5": {"addr": "127.0.0.1:'$port'"}}] + .outbounds' -i "${server_config}"
+
+        fi
+        restart
+        addOrUpdateYaml ${backup_config} "socks5_status" "true"
+        echoColor green "添加socks5 outbound成功"
+    elif [ ${num} == "3" ];then
+        # 删除outbounds相关配置
+        outbound_name=$(getYamlValue ${server_config} "outbounds[0].name")
+        if [ "${outbound_name}" == "warp" ] || [ "${outbound_name}" == "custom" ];then
+            yq eval 'del(.outbounds[0])' -i "${server_config}"
+            if [ "${outbound_name}" == "warp" ];then
+                warp u
+            fi
+            restart
+            addOrUpdateYaml ${backup_config} "socks5_status" "false"
+            echoColor green "卸载成功"  
+        else
+            echoColor red "未找到socks5 outbound"
+        fi
+        
+    else
+        echoColor red "输入错误"
+        exit 1
+    fi
+    
+}
+
  menu() {
     clear
     echo -e " -------------------------------------------"
@@ -2672,6 +2778,7 @@ aclControl(){
     echo -e "$(echoColor lightMagenta "12) 域名分流/ACL管理")"
     echo -e "$(echoColor skyBlue "13) 查看hysteria2统计信息")"
     echo -e "$(echoColor yellow "14) 查看实时日志")"
+    echo -e "$(echoColor lightCyan "15) 添加socks5 outbound[支持自动配置warp]")"
 
     echo -e "$(echoColor purple "###############################")"
 
@@ -2694,6 +2801,7 @@ aclControl(){
         12) aclControl ;;
         13) getHysteriaTrafic ;;
         14) checkLogs ;;
+        15) addSocks5Outbound ;;
         0) exit 0 ;;
         *) echoColor red "Input Error !!!"; exit 1 ;;
     esac
@@ -2717,6 +2825,7 @@ case "$1" in
     aclControl|12) echoColor purple "-> 12) ACL管理"; aclControl ;;
     getHysteriaTrafic|13) echoColor purple "-> 13) 查看hysteria统计信息"; getHysteriaTrafic ;;
     checkLogs|14) echoColor purple "-> 14) 查看实时日志"; checkLogs ;;
+    addSocks5Outbound|15) echoColor purple "-> 15) 添加socks5出站"; addSocks5Outbound ;;
     cronTask) cronTask ;;
     *) menu ;;
 esac

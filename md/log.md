@@ -1,3 +1,24 @@
+##### (2025/01/07) 1.0.0
+
+```
+脚本1.0.0之后从默认hysteria v1迁移到v2，v1的hihy不会再进行功能更新，仅作安全维护
+
+1、新增查看hysteria2统计信息。包括当前在线用户、活动设备数量、用户所使用的流量统计、以及当前活跃链接等等信息
+2、结果URL将会自动在终端输出一个QR CODE（二维码）方便用户保存使用，减少繁琐的复制粘贴过程
+3、hysteria v2新增伪装功能，hihy提供三种模式（proxy、file、string），每种模式都有默认值，供用户选择与定制
+4、和旧版相比支持alpine、Arch、Rockylinux、Alamalinux等所有主流的操作系统；x86_64、 i386|i686、aarch64|arm64、armv7、s390x、ppc64le架构，拥有更高的兼容性
+5、修改port hopping规则持久化方式，放弃传统防火墙软件使用rc.d/init.d脚本控制，更广泛的兼容各类系统
+6、支持域名ACL管理，能主动添加删除ipv4/ipv6分流域名，和屏蔽某一个域名，比如google.com
+7、默认开启服务器端速度测试功能，可用客户端直接对server进行速度测试
+8、新增ACME DNS支持。支持: Cloudflare、Duck DNS、Gandi.net、Godaddy、Name.com、Vultr
+9、优化QUIC参数的计算方法，采用hysteria官方推荐流和连接接收窗口的2:5取代之前的1:4
+10、使用自启脚本取代systemd守护进程，增加兼容性以及可拓展性
+11、使用chrt调整高优先级启动hysteria2，最大程度的保证转发速度
+12、修改自签证书默认域名，wechat.com -> apple.com(前者会被针对)
+13、美化结果输出。现在打印结果时会更加美观和整齐。
+```
+
+
 ##### (2023/06/12) 0.4.8:
 
 ```

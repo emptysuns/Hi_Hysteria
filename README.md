@@ -1,22 +1,15 @@
 # Hi Hysteria
-##### (2025/01/07) 1.0.0
+##### (2025/01/27) 1.0.1
 
 ```
-脚本1.0.0之后从默认hysteria v1迁移到v2，v1的hihy不会再进行功能更新，仅作安全维护
+1、修复定时任务删除上一周的日志时导致服务端出错，客户端无法连接的bug
+2、增加配置socks5 outbound出站，其中支持自动添加warp出站
+3、nekobox/v2rayNForAndriod请在路由里面打开屏蔽QUIC功能，否则无法访问使用了http/3的网站。此问题由于服务器屏蔽了udp/443流量，hysteria对udp无增强的拥塞控制效果
+4、修复crontab检测命令的拼写错误，导致无法主动安装的bug
+5、修改默认自签域名变更为helloworld.com(apple.com 也观测到被针对的现象)
+6、修改了quic参数算法，现在更能打满带宽
 
-1、新增查看hysteria2统计信息。包括当前在线用户、活动设备数量、用户所使用的流量统计、以及当前活跃链接等等信息
-2、结果URL将会自动在终端输出一个QR CODE（二维码）方便用户保存使用，减少繁琐的复制粘贴过程
-3、hysteria v2新增伪装功能，hihy提供三种模式（proxy、file、string），每种模式都有默认值，供用户选择与定制
-4、和旧版相比支持alpine、Arch、Rockylinux、Alamalinux等所有主流的操作系统；x86_64、 i386|i686、aarch64|arm64、armv7、s390x、ppc64le架构，拥有更高的兼容性
-5、修改port hopping规则持久化方式，放弃传统防火墙软件使用rc.d/init.d脚本控制，更广泛的兼容各类系统
-6、支持域名ACL管理，能主动添加删除ipv4/ipv6分流域名，和屏蔽某一个域名，比如google.com
-7、默认开启服务器端速度测试功能，可用客户端直接对server进行速度测试
-8、新增ACME DNS支持。支持: Cloudflare、Duck DNS、Gandi.net、Godaddy、Name.com、Vultr
-9、优化QUIC参数的计算方法，采用hysteria官方推荐流和连接接收窗口的2:5取代之前的1:4
-10、使用自启脚本取代systemd守护进程，增加兼容性以及可拓展性
-11、使用chrt调整高优先级启动hysteria2，最大程度的保证转发速度
-12、修改自签证书默认域名，wechat.com -> apple.com(前者会被针对)
-13、美化结果输出。现在打印结果时会更加美观和整齐。
+新春快乐!!!!!!!
 ```
 
 [历史改进](md/log.md)
@@ -48,6 +41,9 @@ Hysteria2是一款由go编写的非常优秀的“轻量”代理程序，它很
 
 
 ## 二、本脚本的优点
+
+<details>
+<summary><b>点我展开</b></summary>
 - 支持hysteria2提供的三种masquerade伪装模式，并提供高度自定义伪装内容
 - 提供四种证书导入方式。ACME HTTP挑战、ACME DNS、自签任意域名证书、本地证书
 - 支持在ssh终端查看hysteria2 server统计信息。包括用户流量统计、在线设备数量、当前活跃的连接等等信息
@@ -59,7 +55,10 @@ Hysteria2是一款由go编写的非常优秀的“轻量”代理程序，它很
 - 端口跳跃与hysteria2的守护进程使用自启脚本管理，更强的拓展性以及兼容性
 - 保留提供hysteria v1的安装脚本，供用户选择
 - 计算BDP（带宽延迟积）来调整quic参数，适应多种多样的需求场景
+- 支持添加socks5出站，其中包括自动添加socks5出站
 - 更新及时，当hysteria2更新相应新功能时会在24h之内完成适配
+
+</details>
 
 ## 三·使用
 
@@ -73,11 +72,11 @@ Hysteria2是一款由go编写的非常优秀的“轻量”代理程序，它很
 
 #### 4. [如何设置我的延迟、上、下行速度？](md/speed.md)
 
-#### 6. [支持的客户端](md/client.md)
+#### 5. [支持的客户端](md/client.md)
 
-#### 7. [常见问题](md/issues.md)
+#### 6. [常见问题](md/issues.md)
 
-#### 8. [启动一个伪装网站](md/masquerade.md)
+#### 7. [启动一个伪装网站](md/masquerade.md)
 
 ### 拉取安装
 
@@ -90,11 +89,13 @@ bash <(curl -fsSL https://git.io/hysteria.sh)
 
 首次安装后: `hihy`命令调出菜单,如更新了hihy脚本，请执行选项 `9`获得最新的配置
 
+支持通过数字序号直接调取相应功能，例如`hihy 5` 将会重启hysteria2
+
 ```
  -------------------------------------------
 |**********      Hi Hysteria       **********|
 |**********    Author: emptysuns   **********|
-|**********     Version: 1.0.0     **********|
+|**********     Version: 1.0.1     **********|
  -------------------------------------------
 Tips: hihy  命令再次运行本脚本.
 ............................................. 
@@ -116,9 +117,11 @@ Tips: hihy  命令再次运行本脚本.
 12) 域名分流/ACL管理 
 13) 查看hysteria2统计信息 
 14) 查看实时日志 
+15) 添加socks5 outbound[支持自动配置warp] 
 ############################### 
 0) 退出 
-.............................................
+............................................. 
+请选择:
 ```
 
 **脚本每次更新都可能会发生改变，请一定要展开并仔细参考演示过程，避免发生不必要的错误！**
@@ -369,13 +372,13 @@ root@localhost:/opt/test# hihy 13
 【活动连接】 
 当前没有活动连接
 
-</blockcode></pre>`
+</blockcode></pre>
 
 </details>
 
 ## 四·Todo
 
-**如果您有好的功能建议，请不要忘记开个issue提出来欧～～～欢迎PR来完成Todo或者给我纠正我的渣代码**
+**如果您有好的功能建议，请不要忘记开个issue提出来～～～欢迎PR来添加Todo或纠正我的渣代码**
 
 **我的爱好是写bug （￣▽￣）~**
 
@@ -399,3 +402,5 @@ Hysteria2在高延迟，高丢包网络环境下表现良好，得益于它自�
 [@2dust/v2rayN](https://github.com/2dust/v2rayN)
 
 [@MetaCubeX/Clash.Meta](https://github.com/MetaCubeX/Clash.Meta)
+
+[@fscarmen/warp](https://gitlab.com/fscarmen/warp)
