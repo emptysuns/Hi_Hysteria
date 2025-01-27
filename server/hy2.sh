@@ -2784,6 +2784,9 @@ addSocks5Outbound(){
 
     echo -e "$(echoColor magenta "0) 退出")"
     echo -e "$(echoColor skyBlue ".............................................")"
+    echo -e ""
+    hihy_update_notifycation
+    hyCore_update_notifycation
 
     read -p "请选择: " input
     case $input in
@@ -2808,8 +2811,6 @@ addSocks5Outbound(){
 }
 
 checkRoot
-hihy_update_notifycation
-hyCore_update_notifycation
 case "$1" in
     install|1) echoColor purple "-> 1) 安装 hysteria"; install ;;
     uninstall|2) echoColor purple "-> 2) 卸载 hysteria"; uninstall ;;
