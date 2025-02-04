@@ -1047,15 +1047,15 @@ setHysteriaConfig(){
     addOrUpdateYaml "$yaml_file" "outbounds[0].name" "hihy" "string"
     addOrUpdateYaml "$yaml_file" "outbounds[0].type" "direct" "string"
     addOrUpdateYaml "$yaml_file" "outbounds[0].direct.mode" "auto" "string"
-    addOrUpdateYaml "$yaml_file" "outbounds[0].direct.fastOpen" "true" "string"
+    addOrUpdateYaml "$yaml_file" "outbounds[0].direct.fastOpen" "true" "bool"
     addOrUpdateYaml "$yaml_file" "outbounds[1].name" "v4_only" "string"
     addOrUpdateYaml "$yaml_file" "outbounds[1].type" "direct" "string"
     addOrUpdateYaml "$yaml_file" "outbounds[1].direct.mode" "4" "number"
-    addOrUpdateYaml "$yaml_file" "outbounds[2].direct.fastOpen" "true" "string"
+    addOrUpdateYaml "$yaml_file" "outbounds[1].direct.fastOpen" "true" "bool"
     addOrUpdateYaml "$yaml_file" "outbounds[2].name" "v6_only" "string"
     addOrUpdateYaml "$yaml_file" "outbounds[2].type" "direct" "string"
     addOrUpdateYaml "$yaml_file" "outbounds[2].direct.mode" "6" "number"
-    addOrUpdateYaml "$yaml_file" "outbounds[2].direct.fastOpen" "true" "string"
+    addOrUpdateYaml "$yaml_file" "outbounds[2].direct.fastOpen" "true" "bool"
     trafficPort=$(($(od -An -N2 -i /dev/random) % (65534 - 10001) + 10001))
     if [ "$trafficPort" == "${port}" ];then
         trafficPort=$(${port} + 1)
@@ -2503,12 +2503,13 @@ delHihyFirewallPort() {
 }
 
 changeIp64(){
-    socks5_status=$(getYamlValue "/etc/hihy/conf/backup.yaml" "socks5_status")
+    local socks5_status=$(getYamlValue "/etc/hihy/conf/backup.yaml" "socks5_status")
+    local config_file="/etc/hihy/conf/config.yaml"
     if [ "${socks5_status}" == "true" ];then
-        echoColor red "当前已经开启socks5转发,不支持修改优先级"
+        echoColor red "当前已经开启socks5转发,不支持修改优先级,如需分流请使用ACL管理"
         exit 1
     fi
-    mode_now=$(getYamlValue "config.yaml" "outbounds[0].direct.mode")
+    mode_now=$(getYamlValue "$config_file" "outbounds[0].direct.mode")
 
     echoColor purple "当前模式: `echoColor red ${mode_now}`"
     echoColor yellow "1) ipv4优先"
@@ -2521,7 +2522,7 @@ changeIp64(){
             if [ "${mode_now}" == "46" ];then
                 echoColor yellow "当前已经是ipv4优先模式"
             else
-                addOrUpdateYaml "/etc/hihy/conf/config.yaml" "outbounds[0].direct.mode" "46"
+                addOrUpdateYaml "$config_file" "outbounds[0].direct.mode" "46"
                 restart
                 echoColor green "切换成功"
             fi
@@ -2531,7 +2532,7 @@ changeIp64(){
             if [ "${mode_now}" == "64" ];then
                 echoColor yellow "当前已经是ipv6优先模式"
             else
-                addOrUpdateYaml "/etc/hihy/conf/config.yaml" "outbounds[0].direct.mode" "64"
+                addOrUpdateYaml "$config_file" "outbounds[0].direct.mode" "64"
                 restart
                 echoColor green "切换成功"
             fi
@@ -2542,7 +2543,7 @@ changeIp64(){
             if [ "${mode_now}" == "auto" ];then
                 echoColor yellow "当前已经是自动选择模式"
             else
-                addOrUpdateYaml "/etc/hihy/conf/config.yaml" "outbounds[0].direct.mode" "auto"
+                addOrUpdateYaml "$config_file" "outbounds[0].direct.mode" "auto"
                 restart
                 echoColor  "切换成功"
             fi
