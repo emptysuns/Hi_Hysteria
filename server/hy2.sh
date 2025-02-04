@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="1.0.1"
+hihyV="1.0.2"
 
 cronTask(){
     if [ -f "/etc/hihy/logs/hihy.log" ];then
@@ -73,6 +73,9 @@ getArchitecture() {
             ;;
         ppc64le)
             echo "ppc64le"
+            ;;
+        loongarch64)
+            echo "loong64"
             ;;
         *)
             echo "unknown"
@@ -367,7 +370,7 @@ setHysteriaConfig(){
     fi
     touch $acl_file
 	echoColor yellowBlack "开始配置:"
-	echo -e "\033[32m(1/11)请选择证书申请方式:\n\n\033[0m\033[33m\033[01m1、使用ACME申请(推荐,需打开tcp 80/443)\n2、使用本地证书文件\n3、自签证书\n4、dns验证\033[0m\033[32m\n\n输入序号:\033[0m"
+	echo -e "\033[32m(1/11)请选择证书申请方式:\n\n\033[0m\033[33m\033[01m1、使用ACME申请(推荐,需打开tcp/80端口)\n2、使用本地证书文件\n3、自签证书\n4、dns验证\033[0m\033[32m\n\n输入序号:\033[0m"
     read certNum
 	useAcme=false
 	useLocalCert=false
@@ -909,6 +912,7 @@ setHysteriaConfig(){
             addOrUpdateYaml "$yaml_file" "masquerade.type" "proxy"
             addOrUpdateYaml "$yaml_file" "masquerade.proxy.url" "${masquerade_proxy}"
             addOrUpdateYaml "$yaml_file" "masquerade.proxy.rewriteHost" "true"
+            addOrUpdateYaml "$yaml_file" "masquerade.proxy.insecure" "true"
 
         ;;
         "file")
@@ -1043,12 +1047,15 @@ setHysteriaConfig(){
     addOrUpdateYaml "$yaml_file" "outbounds[0].name" "hihy" "string"
     addOrUpdateYaml "$yaml_file" "outbounds[0].type" "direct" "string"
     addOrUpdateYaml "$yaml_file" "outbounds[0].direct.mode" "auto" "string"
+    addOrUpdateYaml "$yaml_file" "outbounds[0].direct.fastOpen" "true" "string"
     addOrUpdateYaml "$yaml_file" "outbounds[1].name" "v4_only" "string"
     addOrUpdateYaml "$yaml_file" "outbounds[1].type" "direct" "string"
     addOrUpdateYaml "$yaml_file" "outbounds[1].direct.mode" "4" "number"
+    addOrUpdateYaml "$yaml_file" "outbounds[2].direct.fastOpen" "true" "string"
     addOrUpdateYaml "$yaml_file" "outbounds[2].name" "v6_only" "string"
     addOrUpdateYaml "$yaml_file" "outbounds[2].type" "direct" "string"
     addOrUpdateYaml "$yaml_file" "outbounds[2].direct.mode" "6" "number"
+    addOrUpdateYaml "$yaml_file" "outbounds[2].direct.fastOpen" "true" "string"
     trafficPort=$(($(od -An -N2 -i /dev/random) % (65534 - 10001) + 10001))
     if [ "$trafficPort" == "${port}" ];then
         trafficPort=$(${port} + 1)
@@ -1188,6 +1195,9 @@ downloadHysteriaCore(){
         "i686" | "i386")
             download_url="${url_base}386"
             ;;
+        "loongarch64")
+            download_url="${url_base}loong64"
+            ;;
         *)
             echoColor yellowBlack "Error[OS Message]:${arch}\nPlease open an issue at https://github.com/emptysuns/Hi_Hysteria/issues !"
             exit 1
@@ -1277,7 +1287,7 @@ hyCore_update_notifycation(){
 			echoColor red "Network Error: Can't connect to Github for checking the hysteria version!"
 		else
 			if [ "${localV}" != "${remoteV}" ];then
-				echoColor purple "[☻] hysteria2更新,version:app/${remoteV}. 日志: https://v2.hysteria.network/docs/Changelog/"
+				echoColor purple "[!] hysteria2 core有更新,version:${remoteV}  日志: https://v2.hysteria.network/docs/Changelog/"
 			fi
 		fi
 		
@@ -2772,13 +2782,13 @@ addSocks5Outbound(){
     echo -e "$(echoColor skyBlue ".....................")"
     echo -e "$(echoColor yellow "7)  更新Core")"
     echo -e "$(echoColor yellow "8)  查看当前配置")"
-    echo -e "$(echoColor skyBlue "9)  重新配置")"
+    echo -e "$(echoColor red "9)  重新配置")"
     echo -e "$(echoColor yellow "10) 切换ipv4/ipv6优先级")"
     echo -e "$(echoColor yellow "11) 更新hihy")"
-    echo -e "$(echoColor lightMagenta "12) 域名分流/ACL管理")"
+    echo -e "$(echoColor lightMagenta "12) ACL域名分流")"
     echo -e "$(echoColor skyBlue "13) 查看hysteria2统计信息")"
     echo -e "$(echoColor yellow "14) 查看实时日志")"
-    echo -e "$(echoColor lightCyan "15) 添加socks5 outbound[支持自动配置warp]")"
+    echo -e "$(echoColor yellow "15) 添加socks5出站[支持自动配置warp]")"
 
     echo -e "$(echoColor purple "###############################")"
 
@@ -2787,7 +2797,7 @@ addSocks5Outbound(){
     echo -e ""
     hihy_update_notifycation
     hyCore_update_notifycation
-
+    echo -e "\n"
     read -p "请选择: " input
     case $input in
         1) install ;;
