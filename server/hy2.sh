@@ -1047,15 +1047,15 @@ setHysteriaConfig(){
     addOrUpdateYaml "$yaml_file" "outbounds[0].name" "hihy" "string"
     addOrUpdateYaml "$yaml_file" "outbounds[0].type" "direct" "string"
     addOrUpdateYaml "$yaml_file" "outbounds[0].direct.mode" "auto" "string"
-    addOrUpdateYaml "$yaml_file" "outbounds[0].direct.fastOpen" "true" "bool"
+    addOrUpdateYaml "$yaml_file" "outbounds[0].direct.fastOpen" "false" "bool"
     addOrUpdateYaml "$yaml_file" "outbounds[1].name" "v4_only" "string"
     addOrUpdateYaml "$yaml_file" "outbounds[1].type" "direct" "string"
     addOrUpdateYaml "$yaml_file" "outbounds[1].direct.mode" "4" "number"
-    addOrUpdateYaml "$yaml_file" "outbounds[1].direct.fastOpen" "true" "bool"
+    addOrUpdateYaml "$yaml_file" "outbounds[1].direct.fastOpen" "false" "bool"
     addOrUpdateYaml "$yaml_file" "outbounds[2].name" "v6_only" "string"
     addOrUpdateYaml "$yaml_file" "outbounds[2].type" "direct" "string"
     addOrUpdateYaml "$yaml_file" "outbounds[2].direct.mode" "6" "number"
-    addOrUpdateYaml "$yaml_file" "outbounds[2].direct.fastOpen" "true" "bool"
+    addOrUpdateYaml "$yaml_file" "outbounds[2].direct.fastOpen" "false" "bool"
     trafficPort=$(($(od -An -N2 -i /dev/random) % (65534 - 10001) + 10001))
     if [ "$trafficPort" == "${port}" ];then
         trafficPort=$(${port} + 1)
