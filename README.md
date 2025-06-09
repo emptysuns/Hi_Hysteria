@@ -1,10 +1,14 @@
 # Hi Hysteria
-##### (2025/02/04) 1.0.2
+##### (2025/06/09) 1.0.3
 
 ```
-1、outbound type:direct添加fastopen
-2、增加龙芯loongarch64架构适配。未测试，找不到相应的测试服务器...
-3、伪装proxy模式下，回源默认禁用 TLS 验证
+兼容hysteria 2.6.2更新，新版本特性对tls ClientHello进行分片，抗封锁，不会再根据域名被UDP QoS
+
+1、兼容支持lxc与openvz虚拟化的服务器使用hihy安装hy2
+2、修复本地证书路径错误
+3、修复使用arch时hy2状态检测错误
+4、使用sniff嗅探域名来防止acl分流失败
+5、mode auto出站时禁用fastOpen, 会导致ipv4 only无法解析到v4的ip
 ```
 
 [历史改进](md/log.md)
@@ -64,6 +68,7 @@
 * 保留提供hysteria v1的安装脚本，供用户选择
 * 计算BDP（带宽延迟积）来调整quic参数，适应多种多样的需求场景
 * 支持添加socks5出站，包括自动添加warp出站功能
+* 支持lxc、openvz、kvm等现在的所有主流的虚拟化方式
 * 更新及时，hysteria2更新后24h内完成适配
 
 </details>
@@ -103,7 +108,7 @@ bash <(curl -fsSL https://git.io/hysteria.sh)
  -------------------------------------------
 |**********      Hi Hysteria       **********|
 |**********    Author: emptysuns   **********|
-|**********     Version: 1.0.1     **********|
+|**********     Version: 1.0.3     **********|
  -------------------------------------------
 Tips: hihy  命令再次运行本脚本.
 ............................................. 

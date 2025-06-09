@@ -1,5 +1,71 @@
 #!/bin/bash
-hihyV="1.0.2"
+hihyV="1.0.3"
+
+# 检测虚拟化类型的函数
+detectVirtualization() {
+    local virt_type=""
+    
+    # 检查是否为 OpenVZ
+    if [ -f "/proc/user_beancounters" ]; then
+        virt_type="openvz"
+    # 检查是否为 LXC
+    elif [ -f "/proc/1/environ" ] && grep -q "container=lxc" /proc/1/environ 2>/dev/null; then
+        virt_type="lxc"
+    # 检查 systemd-detect-virt（如果可用）
+    elif command -v systemd-detect-virt >/dev/null 2>&1; then
+        local detected=$(systemd-detect-virt 2>/dev/null)
+        case "$detected" in
+            "openvz") virt_type="openvz" ;;
+            "lxc") virt_type="lxc" ;;
+            "lxc-libvirt") virt_type="lxc" ;;
+            *) virt_type="other" ;;
+        esac
+    # 检查 /proc/cpuinfo 中的虚拟化标识
+    elif grep -q "flags.*hypervisor" /proc/cpuinfo 2>/dev/null; then
+        virt_type="other"
+    # 检查 cgroup 中的容器标识
+    elif [ -f "/proc/1/cgroup" ]; then
+        if grep -q ":/lxc/" /proc/1/cgroup 2>/dev/null; then
+            virt_type="lxc"
+        elif grep -q ":/docker/" /proc/1/cgroup 2>/dev/null; then
+            virt_type="docker"
+        else
+            virt_type="unknown"
+        fi
+    else
+        virt_type="unknown"
+    fi
+    
+    echo "$virt_type"
+}
+
+# 获取启动命令前缀（是否使用 chrt）
+getStartCommand() {
+    local virt_type=$(detectVirtualization)
+    local command_prefix=""
+    
+    case "$virt_type" in
+        "openvz"|"lxc"|"docker")
+            # OpenVZ、LXC 和 Docker 容器中不使用 chrt
+            command_prefix=""
+            ;;
+        *)
+            # 其他环境检查是否支持 chrt
+            if command -v chrt >/dev/null 2>&1; then
+                # 测试 chrt 是否可用
+                if chrt -r 1 echo "test" >/dev/null 2>&1; then
+                    command_prefix="chrt -r 99"
+                else
+                    command_prefix=""
+                fi
+            else
+                command_prefix=""
+            fi
+            ;;
+    esac
+    
+    echo "$command_prefix"
+}
 
 cronTask(){
     if [ -f "/etc/hihy/logs/hihy.log" ];then
@@ -157,6 +223,7 @@ checkSystemForUpdate() {
         fi
         chmod +x /usr/bin/yq
     fi
+
 
     # 检查 chrt 命令
     if ! command -v chrt >/dev/null; then
@@ -419,31 +486,31 @@ setHysteriaConfig(){
 
     elif [ "${certNum}" == "2" ];then
 		echoColor green "请输入证书cert文件路径(需fullchain cert,提供完整证书链):"
-		read cert
+		read local_cert
 		while :
 		do
-			if [ ! -f "${cert}" ];then
+			if [ ! -f "${local_cert}" ];then
 				echoColor red "\n\n->路径不存在,请重新输入!"
 				echoColor green "请输入证书cert文件路径:"
-				read  cert
+				read  local_cert
 			else
 				break
 			fi
 		done
-		echo -e "\n\n->cert文件路径: "`echoColor red ${cert}`"\n"
+		echo -e "\n\n->cert文件路径: "`echoColor red ${local_cert}`"\n"
 		echoColor green "请输入证书key文件路径:"
-		read key
+		read local_key
 		while :
 		do
-			if [ ! -f "${key}" ];then
+			if [ ! -f "${local_key}" ];then
 				echoColor red "\n\n->路径不存在,请重新输入!"
 				echoColor green "请输入证书key文件路径:"
-				read  key
+				read  local_key
 			else
 				break
 			fi
 		done
-		echo -e "\n\n->key文件路径: "`echoColor red ${key}`"\n"
+		echo -e "\n\n->key文件路径: "`echoColor red ${local_key}`"\n"
 		echoColor green "请输入所选证书域名:"
 		read domain
 		while :
@@ -869,7 +936,22 @@ setHysteriaConfig(){
         echo -e "\n->您选择不监听tcp/${port}端口\n"
     fi
 
-    echoColor green "(11/11)请输入客户端名称备注(默认使用域名或IP区分,例如输入test,则名称为Hy2-test):"
+    echoColor green "\n(11/11)是否在服务器屏蔽http3流量(hysteria对udp流量拥塞控制无增强效果，导致访问youtube等使用QUIC连接的网站效果不佳):"
+    echoColor lightYellow "如果开启此选项，hysteria2将不会代理udp/443，无法使用QUIC连接访问网站，并且需要在客户端配置中禁用QUIC连接，否则会导致连接失败。\n"
+    echo -e "也可以仅在客户端屏蔽QUIC/HTTP3/UDP 443连接，服务器不做屏蔽，效果一样\n"    
+    echo -e "\033[32m请选择:\n\n\033[0m\033[33m\033[01m1、启用(推荐)\n2、跳过(默认)\033[0m\033[32m\n\n输入序号:\033[0m"
+    read block_http3
+    if [ -z "${block_http3}" ] || [ ${block_http3} == "2" ];then
+        block_http3="false"
+        echo -e "\n->您选择不屏蔽http3流量，这会导致访问使用QUIC连接的网站无hy2增强效果\n"
+        echoColor lightYellow "Tip: 建议在客户端开启屏蔽QUIC/HTTP3/UDP 443此选项以获得更好的访问体验。\n"
+    else
+        block_http3="true"
+        echoColor red "\n->您选择屏蔽http3流量，请根据自己使用的客户端，屏蔽QUIC/HTTP3流量，否则会导致对使用QUIC的网站连接失败\n"
+    fi
+
+
+    echoColor green "请输入客户端名称备注(默认使用域名或IP区分,例如输入test,则名称为Hy2-test):"
 	read remarks
     echoColor green "\n配置录入完成!\n"
     echoColor yellowBlack "执行配置..."
@@ -986,8 +1068,8 @@ setHysteriaConfig(){
 				remarks="${domain}"
 			fi
 			insecure="0"
-			addOrUpdateYaml "$yaml_file" "tls.cert" "/etc/hihy/cert/${domain}.crt"
-			addOrUpdateYaml "$yaml_file" "tls.key" "/etc/hihy/cert/${domain}.key"
+			addOrUpdateYaml "$yaml_file" "tls.cert" "${local_cert}"
+			addOrUpdateYaml "$yaml_file" "tls.key" "${local_key}"
             addOrUpdateYaml "$yaml_file" "tls.sniGuard" "strict"
 		fi		
 
@@ -1044,6 +1126,11 @@ setHysteriaConfig(){
         fi
 		
     fi
+    addOrUpdateYaml "$yaml_file" "sniff.enabled" "true"
+    addOrUpdateYaml "$yaml_file" "sniff.timeout" "2s"
+    addOrUpdateYaml "$yaml_file" "sniff.rewriteDomain" "false"
+    addOrUpdateYaml "$yaml_file" "sniff.tcpPorts" "80,443"
+    addOrUpdateYaml "$yaml_file" "sniff.udpPorts" "80,443"
     addOrUpdateYaml "$yaml_file" "outbounds[0].name" "hihy" "string"
     addOrUpdateYaml "$yaml_file" "outbounds[0].type" "direct" "string"
     addOrUpdateYaml "$yaml_file" "outbounds[0].direct.mode" "auto" "string"
@@ -1062,7 +1149,11 @@ setHysteriaConfig(){
     fi
     addOrUpdateYaml "$yaml_file" "trafficStats.listen" "127.0.0.1:${trafficPort}"
     addOrUpdateYaml "$yaml_file" "trafficStats.secret" "${auth_secret}"
-    echo -e "reject(all, udp/443)" > ${acl_file}
+
+    if [ $block_http3 == "true" ];then
+        echo -e "reject(all, udp/443)" > ${acl_file}
+    fi
+    
     sysctl -w net.core.rmem_max=${max_CRW}
     sysctl -w net.core.wmem_max=${max_CRW}
 	if echo "${portHoppingStatus}" | grep -q "true";then
@@ -1359,16 +1450,18 @@ install() {
     downloadHysteriaCore
     setHysteriaConfig
 
+    # 获取启动命令前缀
+    local start_cmd_prefix=$(getStartCommand)
     
     if [ -f "/etc/alpine-release" ]; then
         # 使用 OpenRC
-        cat > /etc/init.d/hihy << 'EOF'
+        cat > /etc/init.d/hihy << EOF
 #!/sbin/openrc-run
 
 name="hihy"
 description="Hysteria Proxy Service"
 supervisor="supervise-daemon"
-command="chrt -r 99 /etc/hihy/bin/appS"
+command="${start_cmd_prefix} /etc/hihy/bin/appS"
 command_args="--log-level info -c /etc/hihy/conf/config.yaml server"
 command_background="yes"
 pidfile="/var/run/hihy.pid"
@@ -1387,34 +1480,34 @@ start_pre() {
 }
 
 start() {
-    if [ -f "$pidfile" ] && kill -0 $(cat "$pidfile") 2>/dev/null; then
+    if [ -f "\$pidfile" ] && kill -0 \$(cat "\$pidfile") 2>/dev/null; then
         eerror "hihy is already running"
         return 1
     fi
     
     ebegin "Starting hihy"
-    mkdir -p $(dirname "$output_log")
-    nohup $command $command_args > "$output_log" 2>&1 &
-    echo $! > "$pidfile"
-    eend $?
+    mkdir -p \$(dirname "\$output_log")
+    nohup \$command \$command_args > "\$output_log" 2>&1 &
+    echo \$! > "\$pidfile"
+    eend \$?
 }
 
 stop() {
-    if [ ! -f "$pidfile" ]; then
+    if [ ! -f "\$pidfile" ]; then
         eerror "hihy is not running"
         return 1
     fi
     
     ebegin "Stopping hihy"
-    kill $(cat "$pidfile")
-    rm -f "$pidfile"
-    eend $?
+    kill \$(cat "\$pidfile")
+    rm -f "\$pidfile"
+    eend \$?
 }
 
 restart() {
     stop
     sleep 2
-    if [ -f "$pidfile" ]; then
+    if [ -f "\$pidfile" ]; then
         eerror "Failed to stop hihy"
         return 1
     fi
@@ -1422,7 +1515,7 @@ restart() {
 }
 
 status() {
-    if [ -f "$pidfile" ] && kill -0 $(cat "$pidfile") 2>/dev/null; then
+    if [ -f "\$pidfile" ] && kill -0 \$(cat "\$pidfile") 2>/dev/null; then
         einfo "hihy is running"
     else
         einfo "hihy is not running"
@@ -1430,7 +1523,7 @@ status() {
 }
 
 log() {
-    tail -f "$output_log"
+    tail -f "\$output_log"
 }
 EOF
         chmod +x /etc/init.d/hihy
@@ -1440,39 +1533,44 @@ EOF
     else
         # 使用传统启动脚本
         mkdir -p /etc/rc.d
-        cat > /etc/rc.d/hihy << 'EOF'
+        cat > /etc/rc.d/hihy << EOF
 #!/bin/sh
 
 HIHY_PATH="/etc/hihy"
 PID_FILE="/var/run/hihy.pid"
-LOG_FILE="$HIHY_PATH/logs/hihy.log"
+LOG_FILE="\$HIHY_PATH/logs/hihy.log"
+START_CMD_PREFIX="${start_cmd_prefix}"
 
 start() {
-    if [ -f "$PID_FILE" ] && kill -0 $(cat "$PID_FILE") 2>/dev/null; then
+    if [ -f "\$PID_FILE" ] && kill -0 \$(cat "\$PID_FILE") 2>/dev/null; then
         echo "hihy is already running"
         return 1
     fi
     
     echo "Starting hihy..."
-    nohup chrt -r 99 $HIHY_PATH/bin/appS --log-level info -c $HIHY_PATH/conf/config.yaml server > "$LOG_FILE" 2>&1 &
-    echo $! > "$PID_FILE"
+    if [ -n "\$START_CMD_PREFIX" ]; then
+        nohup \$START_CMD_PREFIX \$HIHY_PATH/bin/appS --log-level info -c \$HIHY_PATH/conf/config.yaml server > "\$LOG_FILE" 2>&1 &
+    else
+        nohup \$HIHY_PATH/bin/appS --log-level info -c \$HIHY_PATH/conf/config.yaml server > "\$LOG_FILE" 2>&1 &
+    fi
+    echo \$! > "\$PID_FILE"
 }
 
 stop() {
-    if [ ! -f "$PID_FILE" ]; then
+    if [ ! -f "\$PID_FILE" ]; then
         echo "hihy is not running"
         return 1
     fi
     
     echo "Stopping hihy..."
-    kill $(cat "$PID_FILE")
-    rm -f "$PID_FILE"
+    kill \$(cat "\$PID_FILE")
+    rm -f "\$PID_FILE"
 }
 
 restart() {
     stop
     sleep 2
-    if [ -f "$PID_FILE" ]; then
+    if [ -f "\$PID_FILE" ]; then
         echo "Failed to stop hihy"
         return 1
     fi
@@ -1480,7 +1578,7 @@ restart() {
 }
 
 status() {
-    if [ -f "$PID_FILE" ] && kill -0 $(cat "$PID_FILE") 2>/dev/null; then
+    if [ -f "\$PID_FILE" ] && kill -0 \$(cat "\$PID_FILE") 2>/dev/null; then
         echo "hihy is running"
     else
         echo "hihy is not running"
@@ -1488,15 +1586,15 @@ status() {
 }
 
 log() {
-    tail -f "$LOG_FILE"
+    tail -f "\$LOG_FILE"
 }
 
-case "$1" in
+case "\$1" in
     start|stop|restart|status|log)
-        $1
+        \$1
         ;;
     *)
-        echo "Usage: $0 {start|stop|restart|status|log}"
+        echo "Usage: \$0 {start|stop|restart|status|log}"
         exit 1
         ;;
 esac
@@ -1517,12 +1615,13 @@ EOF
         if ! grep -q "/etc/rc.d/hihy start" /etc/rc.local; then
             echo "/etc/rc.d/hihy start" >> /etc/rc.local
         fi
+        # 启动服务
+        /etc/rc.d/hihy start
     fi
 
     
     
-    # 启动服务
-    /etc/rc.d/hihy start
+    
 
     # 添加定时任务
     crontab -l > ./crontab.tmp 2>/dev/null || touch ./crontab.tmp
@@ -1895,6 +1994,8 @@ uninstall() {
     if [ -f "/usr/bin/hihy" ]; then
         rm /usr/bin/hihy
     fi
+
+
     # 删除 Arch Linux 的 rc.local systemd 服务
     uninstall_rc_local_for_arch
     # 检查是否完全删除
@@ -2295,14 +2396,18 @@ checkStatus () {
         else
             msg=$(/etc/init.d/hihy status)
         fi
-        if [ "${msg}" == "hihy is running" ]; then
+        if [ $? -ne 0 ]; then
+            echoColor red "检查状态失败!"
+            exit 1
+        fi
+
+        if echo "$msg" | grep -q "hihy is running"; then
             echoColor green "hysteria正在运行"
             version=$(/etc/hihy/bin/appS version | grep "^Version" | awk '{print $2}')
             echoColor purple "当前版本: `echoColor red ${version}`"
         else
             echoColor red "hysteria未运行"
-        fi
-        
+        fi  
     else
         echoColor red "未找到启动脚本!"
     fi
