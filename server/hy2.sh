@@ -2866,7 +2866,7 @@ addSocks5Outbound(){
     
 }
 
- menu() {
+show_menu() {
     clear
     echo -e " -------------------------------------------"
     echo -e "|**********      Hi Hysteria       **********|"
@@ -2904,26 +2904,37 @@ addSocks5Outbound(){
     hihy_update_notifycation
     hyCore_update_notifycation
     echo -e "\n"
-    read -p "请选择: " input
-    case $input in
-        1) install ;;
-        2) uninstall ;;
-        3) start ;;
-        4) stop ;;
-        5) restart ;;
-        6) checkStatus ;;
-        7) updateHysteriaCore ;;
-        8) generate_client_config ;;
-        9) changeServerConfig ;;
-        10) changeIp64 ;;
-        11) hihyUpdate ;;
-        12) aclControl ;;
-        13) getHysteriaTrafic ;;
-        14) checkLogs ;;
-        15) addSocks5Outbound ;;
-        0) exit 0 ;;
-        *) echoColor red "Input Error !!!"; exit 1 ;;
-    esac
+}
+
+wait_for_continue() {
+    echo -e "\n$(echoColor green "按任意键返回主菜单...")"
+    read -n 1 -s
+}
+
+menu() {
+    while true; do
+        show_menu
+        read -p "请选择: " input
+        case $input in
+            1) install; exit 0 ;;
+            2) uninstall; exit 0 ;;
+            3) start; wait_for_continue ;;
+            4) stop; wait_for_continue ;;
+            5) restart; wait_for_continue ;;
+            6) checkStatus; wait_for_continue ;;
+            7) updateHysteriaCore; exit 0 ;;
+            8) generate_client_config; wait_for_continue ;;
+            9) changeServerConfig; exit 0 ;;
+            10) changeIp64; exit 0 ;;
+            11) hihyUpdate; exit 0 ;;
+            12) aclControl; exit 0 ;;
+            13) getHysteriaTrafic; wait_for_continue ;;
+            14) checkLogs; exit 0 ;;
+            15) addSocks5Outbound; exit 0 ;;
+            0) exit 0 ;;
+            *) echoColor red "Input Error !!!"; wait_for_continue ;;
+        esac
+    done
 }
 
 checkRoot
