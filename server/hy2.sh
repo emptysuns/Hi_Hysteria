@@ -2288,12 +2288,7 @@ generate_client_config(){
     
 	
 	if [ "${portHoppingStatus}" == "true" ];then
-		url_base="${url_base}:${port},${serverPortRange}/?"
-		if [ "${portHoppingIntervalMode}" == "random" ];then
-			url_base="${url_base}mport-min-hop=${portHoppingMinHopInterval}&mport-max-hop=${portHoppingMaxHopInterval}&"
-		else
-			url_base="${url_base}hopInterval=${portHoppingHopInterval}&"
-		fi
+		url_base="${url_base}:${port}/?mport=${serverPortRange}&"
 	else
 		url_base="${url_base}:${port}/?"
 	fi
