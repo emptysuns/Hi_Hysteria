@@ -1,17 +1,22 @@
 # Hi Hysteria
-##### (2025/06/09) 1.0.3
+##### (2026/03/30) 1.0.4
 
 ```
-兼容hysteria 2.6.2更新，新版本特性对tls ClientHello进行分片，抗封锁，不会再根据域名被UDP QoS
+兼容 hysteria2 新版 advanced 配置与 URI 生成逻辑，重点更新拥塞控制、端口跳跃和客户端导出。
 
-1、兼容支持lxc与openvz虚拟化的服务器使用hihy安装hy2
-2、修复本地证书路径错误
-3、修复使用arch时hy2状态检测错误
-4、使用sniff嗅探域名来防止acl分流失败
-5、mode auto出站时禁用fastOpen, 会导致ipv4 only无法解析到v4的ip
+1、服务端新增 Brutal / Reno / BBR 三种拥塞控制模式选择，默认使用 Brutal
+2、BBR 增加初级 / 中级 / 高级三档预设说明，对应 conservative / standard / aggressive
+3、Brutal 标注为 Hysteria 2 独享特色，更推荐在恶劣网络环境下优先尝试
+4、非 Brutal 模式跳过延时与上下行带宽输入，避免无意义参数干扰
+5、端口跳跃支持主端口 + 跳跃范围组合监听，服务端 listen 使用 :主端口,范围 格式
+6、端口跳跃时间支持固定 / 随机两种模式，默认固定跳跃时间
+7、分享链接与原生客户端配置统一修复为 主端口,跳跃范围 格式
+8、proxy 伪装新增 X-Forwarded-For / Host / Proto 配置项
+9、防火墙逻辑改为直接放行端口跳跃范围 UDP 端口，不再依赖旧 NAT 持久化思路
+10、兼容组合 listen 格式下的重配、卸载、客户端导出与端口解析流程
 ```
 
-[历史改进](md/log.md)
+[历史改进](md/logs.md)
 
 [Hysteria V1版本](https://github.com/emptysuns/Hi_Hysteria/tree/v1)
 
@@ -108,7 +113,7 @@ bash <(curl -fsSL https://git.io/hysteria.sh)
  -------------------------------------------
 |**********      Hi Hysteria       **********|
 |**********    Author: emptysuns   **********|
-|**********     Version: 1.0.3     **********|
+|**********     Version: 1.0.4     **********|
  -------------------------------------------
 Tips: hihy  命令再次运行本脚本.
 ............................................. 
