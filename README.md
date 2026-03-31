@@ -16,9 +16,8 @@
 10、兼容组合 listen 格式下的重配、卸载、客户端导出与端口解析流程
 ```
 
+有问题，或者想交流使用经验，欢迎加入 TG 群：
 [![Telegram](https://img.shields.io/badge/Telegram-HiHysteria-26A5E4?style=for-the-badge&logo=telegram&logoColor=white)](https://hihysteria.t.me)
-
-有问题，或者想交流使用经验，欢迎加入 TG 群：`https://hihysteria.t.me`
 
 [历史改进](md/logs.md)
 
