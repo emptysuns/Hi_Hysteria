@@ -1,5 +1,10 @@
 #!/bin/bash
-hihyV="1.0.4"
+hihyV="ver1.04-a"
+
+HIHY_ROOT_DIR="${HIHY_ROOT_DIR:-/etc/hihy}"
+HIHY_BIN_LINK="${HIHY_BIN_LINK:-/usr/bin/hihy}"
+HIHY_PID_FILE="${HIHY_PID_FILE:-/var/run/hihy.pid}"
+HIHY_RC_LOCAL="${HIHY_RC_LOCAL:-/etc/rc.local}"
 
 # 检测虚拟化类型的函数
 detectVirtualization() {
@@ -403,6 +408,108 @@ cleanupLegacyPortHoppingNatIfPresent() {
     if command -v ip6tables-save >/dev/null 2>&1 && ip6tables-save 2>/dev/null | grep -q "PortHopping-hihysteria"; then
         delPortHoppingNat >/dev/null 2>&1 || true
     fi
+}
+
+getInstallFailureMarker() {
+    local root_dir="${1:-$HIHY_ROOT_DIR}"
+    echo "${root_dir}/result/install.failed"
+}
+
+getHihyServiceScriptPrimary() {
+    echo "${1:-/etc/init.d/hihy}"
+}
+
+getHihyServiceScriptFallback() {
+    echo "${1:-/etc/rc.d/hihy}"
+}
+
+classifyInstallState() {
+    local root_dir="${1:-$HIHY_ROOT_DIR}"
+    local bin_link="${2:-$HIHY_BIN_LINK}"
+    local service_primary="${3:-$(getHihyServiceScriptPrimary)}"
+    local service_fallback="${4:-$(getHihyServiceScriptFallback)}"
+    local failure_marker="${5:-$(getInstallFailureMarker "$root_dir")}"
+    local owned_paths=(
+        "$root_dir/bin/appS"
+        "$root_dir/conf/config.yaml"
+        "$root_dir/conf/backup.yaml"
+        "$service_primary"
+        "$service_fallback"
+        "$bin_link"
+    )
+    local has_any_artifact="false"
+    local has_core_assets="false"
+    local has_service_assets="false"
+    local path
+
+    for path in "${owned_paths[@]}"; do
+        if [ -e "$path" ]; then
+            has_any_artifact="true"
+            case "$path" in
+                "$root_dir/bin/appS"|"$root_dir/conf/config.yaml"|"$root_dir/conf/backup.yaml")
+                    has_core_assets="true"
+                    ;;
+                "$service_primary"|"$service_fallback")
+                    has_service_assets="true"
+                    ;;
+            esac
+        fi
+    done
+
+    if [ -f "$failure_marker" ]; then
+        echo "partially-installed"
+        return
+    fi
+
+    if [ "$has_core_assets" = "true" ] && [ "$has_service_assets" = "true" ]; then
+        echo "installed"
+        return
+    fi
+
+    if [ "$has_any_artifact" = "true" ]; then
+        echo "partially-installed"
+        return
+    fi
+
+    echo "not-installed"
+}
+
+markInstallFailed() {
+    local phase="$1"
+    local details="$2"
+    local failure_marker
+
+    failure_marker="$(getInstallFailureMarker)"
+    mkdir -p "$(dirname "$failure_marker")"
+    printf 'phase=%s\ndetails=%s\n' "$phase" "$details" > "$failure_marker"
+}
+
+clearInstallFailureMarker() {
+    local failure_marker
+    failure_marker="$(getInstallFailureMarker)"
+    rm -f "$failure_marker"
+}
+
+recoverPartialInstallState() {
+    local root_dir="${1:-$HIHY_ROOT_DIR}"
+    local bin_link="${2:-$HIHY_BIN_LINK}"
+    local service_primary="${3:-$(getHihyServiceScriptPrimary)}"
+    local service_fallback="${4:-$(getHihyServiceScriptFallback)}"
+    local failure_marker="${5:-$(getInstallFailureMarker "$root_dir")}"
+    local rc_local="${6:-$HIHY_RC_LOCAL}"
+    local pid_file="${7:-$HIHY_PID_FILE}"
+
+    rm -f "$service_primary" "$service_fallback" "$pid_file"
+    rm -f "$root_dir/conf/config.yaml" "$root_dir/conf/backup.yaml"
+    rm -f "$failure_marker"
+
+    if [ -f "$rc_local" ]; then
+        sed -i '/\/etc\/rc\.d\/hihy start/d' "$rc_local"
+        sed -i '/\/etc\/rc\.d\/allow-port start/d' "$rc_local"
+        sed -i '/\/etc\/rc\.d\/port-hopping start/d' "$rc_local"
+    fi
+
+    rm -f "$bin_link"
 }
 
 
@@ -1324,19 +1431,23 @@ setHysteriaConfig(){
 	msg=`cat ./hihy_debug.info`
     case ${msg} in
         *"failed to get a certificate with ACME"*)
+            markInstallFailed "certificate" "failed to get a certificate with ACME"
             echoColor red "域名:${u_host},申请证书失败!请重新安装使用自签证书."
             rm /etc/hihy/conf/config.yaml
             rm /etc/hihy/result/backup.yaml
             delHihyFirewallPort
             rm ./hihy_debug.info
+            echoColor yellow "当前安装处于未完成状态，可修正问题后重新执行安装，或执行卸载进行清理。"
             exit
             ;;
         *"bind: address already in use"*)
+            markInstallFailed "port-bind" "bind: address already in use"
             rm /etc/hihy/conf/config.yaml
             rm /etc/hihy/result/backup.yaml
             delHihyFirewallPort
             echoColor red "端口被占用,请更换端口!"
             rm ./hihy_debug.info
+            echoColor yellow "当前安装处于未完成状态，可更换端口后重新执行安装，或执行卸载进行清理。"
             exit
             ;;
         *"server up and running"*)
@@ -1355,14 +1466,15 @@ setHysteriaConfig(){
             echoColor purple "Generating config..."
             ;;
         *)
+            markInstallFailed "config-test" "unknown error while validating generated config"
             if ! command -v pkill >/dev/null 2>&1; then
                 apk add --no-cache procps
             fi
             pkill -f "/etc/hihy/bin/appS"
             echoColor red "未知错误: 请查看下方错误信息,并提交issue到github"
+            echoColor yellow "已保留未完成安装状态，修正问题后可重新执行安装，或执行卸载进行清理。"
             cat ./hihy_debug.info
             rm ./hihy_debug.info
-            rm -r /etc/hihy/
             exit
             ;;
     esac
@@ -1401,6 +1513,7 @@ setHysteriaConfig(){
 	else
 		addOrUpdateYaml ${backup_file} "insecure" "false"
 	fi
+	clearInstallFailureMarker
 	echoColor greenWhite "安装成功,请查看下方配置详细信息"
 }
 
@@ -1583,13 +1696,26 @@ uninstall_rc_local_for_arch() {
 
 
 install() {
-    if [ -f "/etc/init.d/hihy" ] || [ -f "/etc/rc.d/hihy" ]; then
+    local install_state
+    install_state=$(classifyInstallState)
+
+    if [ "$install_state" = "installed" ]; then
         echoColor green "你已经成功安装hysteria,如需修改配置请使用选项9/12"
         exit 0
     fi
 
+    if [ "$install_state" = "partially-installed" ]; then
+        echoColor yellow "检测到未完成的安装残留，正在清理脚本管理的文件后继续安装..."
+        cleanupLegacyPortHoppingNatIfPresent >/dev/null 2>&1 || true
+        delHihyFirewallPort udp >/dev/null 2>&1 || true
+        delHihyFirewallPort tcp >/dev/null 2>&1 || true
+        recoverPartialInstallState
+        echoColor purple "已完成部分安装状态恢复，继续执行安装。"
+    fi
+
     # 创建必要目录
     mkdir -p /etc/hihy/{bin,conf,cert,result,logs}
+    markInstallFailed "install-start" "installation started but not completed"
     echoColor purple "Ready to install.\n"
 
     # 获取版本并下载核心
@@ -1615,6 +1741,7 @@ command_background="yes"
 pidfile="/var/run/hihy.pid"
 output_log="/etc/hihy/logs/hihy.log"
 error_log="/etc/hihy/logs/hihy.log"
+export HYSTERIA_FIREWALL_BACKEND="iptables"
 
 extra_started_commands="log status"
 
@@ -1688,6 +1815,7 @@ HIHY_PATH="/etc/hihy"
 PID_FILE="/var/run/hihy.pid"
 LOG_FILE="\$HIHY_PATH/logs/hihy.log"
 START_CMD_PREFIX="${start_cmd_prefix}"
+export HYSTERIA_FIREWALL_BACKEND="iptables"
 
 start() {
     if [ -f "\$PID_FILE" ] && kill -0 \$(cat "\$PID_FILE") 2>/dev/null; then
@@ -1697,9 +1825,9 @@ start() {
     
     echo "Starting hihy..."
     if [ -n "\$START_CMD_PREFIX" ]; then
-        nohup \$START_CMD_PREFIX \$HIHY_PATH/bin/appS --log-level info -c \$HIHY_PATH/conf/config.yaml server > "\$LOG_FILE" 2>&1 &
+        nohup env HYSTERIA_FIREWALL_BACKEND="\$HYSTERIA_FIREWALL_BACKEND" \$START_CMD_PREFIX \$HIHY_PATH/bin/appS --log-level info -c \$HIHY_PATH/conf/config.yaml server > "\$LOG_FILE" 2>&1 &
     else
-        nohup \$HIHY_PATH/bin/appS --log-level info -c \$HIHY_PATH/conf/config.yaml server > "\$LOG_FILE" 2>&1 &
+        nohup env HYSTERIA_FIREWALL_BACKEND="\$HYSTERIA_FIREWALL_BACKEND" \$HIHY_PATH/bin/appS --log-level info -c \$HIHY_PATH/conf/config.yaml server > "\$LOG_FILE" 2>&1 &
     fi
     echo \$! > "\$PID_FILE"
 }
@@ -2089,34 +2217,48 @@ checkRoot() {
 }
 
 uninstall() {
-    portHoppingStatus=$(getYamlValue "/etc/hihy/conf/backup.yaml" "portHoppingStatus")
-    if [ ! -f "/etc/hihy/bin/appS" ]; then
+    local install_state
+    install_state=$(classifyInstallState)
+    portHoppingStatus=$(getBackupValueOrDefault "/etc/hihy/conf/backup.yaml" "portHoppingStatus" "false")
+    if [ "$install_state" = "not-installed" ]; then
         echoColor red "Hysteria 未安装!"
         exit 1
+    fi
+
+    if [ "$install_state" = "partially-installed" ]; then
+        echoColor yellow "检测到未完成的安装残留，正在按部分安装状态执行卸载清理..."
     fi
 
     # 停止服务
     if [ -f "/etc/alpine-release" ]; then
         if [ -f "/etc/init.d/hihy" ]; then
-            rc-service hihy stop
-            rc-update del hihy default
+            rc-service hihy stop >/dev/null 2>&1 || true
+            rc-update del hihy default >/dev/null 2>&1 || true
             rm -f /etc/init.d/hihy
         fi
     else
         if [ -f "/etc/rc.d/hihy" ]; then
-            /etc/rc.d/hihy stop
+            /etc/rc.d/hihy stop >/dev/null 2>&1 || true
             rm -f /etc/rc.d/hihy
         fi
     fi
 
     # 删除 iptables 规则
-    iptables-save | grep -v "hihysteria" | iptables-restore
-    ip6tables-save | grep -v "hihysteria" | ip6tables-restore
+    if command -v iptables-save >/dev/null 2>&1 && command -v iptables-restore >/dev/null 2>&1; then
+        iptables-save 2>/dev/null | grep -v "hihysteria" | iptables-restore >/dev/null 2>&1 || true
+    fi
+    if command -v ip6tables-save >/dev/null 2>&1 && command -v ip6tables-restore >/dev/null 2>&1; then
+        ip6tables-save 2>/dev/null | grep -v "hihysteria" | ip6tables-restore >/dev/null 2>&1 || true
+    fi
 
     # 保存 iptables 规则
     if [ -d "/etc/iptables" ]; then
-        iptables-save > /etc/iptables/rules.v4
-        ip6tables-save > /etc/iptables/rules.v6
+        if command -v iptables-save >/dev/null 2>&1; then
+            iptables-save > /etc/iptables/rules.v4
+        fi
+        if command -v ip6tables-save >/dev/null 2>&1; then
+            ip6tables-save > /etc/iptables/rules.v6
+        fi
     fi
 
     # 删除定时任务
@@ -2140,6 +2282,8 @@ uninstall() {
     if [ -f "/usr/bin/hihy" ]; then
         rm /usr/bin/hihy
     fi
+
+    clearInstallFailureMarker
 
 
     # 删除 Arch Linux 的 rc.local systemd 服务
@@ -3156,23 +3300,25 @@ menu() {
     done
 }
 
-checkRoot
-case "$1" in
-    install|1) echoColor purple "-> 1) 安装 hysteria"; install ;;
-    uninstall|2) echoColor purple "-> 2) 卸载 hysteria"; uninstall ;;
-    start|3) echoColor purple "-> 3) 启动 hysteria"; start ;;
-    stop|4) echoColor purple "-> 4) 暂停 hysteria"; stop ;;
-    restart|5) echoColor purple "-> 5) 重新启动 hysteria"; restart ;;
-    checkStatus|6) echoColor purple "-> 6) 运行状态"; checkStatus ;;
-    updateHysteriaCore|7) echoColor purple "-> 7) 更新Core"; updateHysteriaCore ;;
-    generate_client_config|8) echoColor purple "-> 8) 查看当前配置"; generate_client_config ;;
-    changeServerConfig|9) echoColor purple "-> 9) 重新配置"; changeServerConfig ;;
-    changeIp64|10) echoColor purple "-> 10) 切换ipv4/ipv6优先级"; changeIp64 ;;
-    hihyUpdate|11) echoColor purple "-> 11) 更新hihy"; hihyUpdate ;;
-    aclControl|12) echoColor purple "-> 12) ACL管理"; aclControl ;;
-    getHysteriaTrafic|13) echoColor purple "-> 13) 查看hysteria统计信息"; getHysteriaTrafic ;;
-    checkLogs|14) echoColor purple "-> 14) 查看实时日志"; checkLogs ;;
-    addSocks5Outbound|15) echoColor purple "-> 15) 添加socks5出站"; addSocks5Outbound ;;
-    cronTask) cronTask ;;
-    *) menu ;;
-esac
+if [ "${BASH_SOURCE[0]}" = "$0" ]; then
+    checkRoot
+    case "$1" in
+        install|1) echoColor purple "-> 1) 安装 hysteria"; install ;;
+        uninstall|2) echoColor purple "-> 2) 卸载 hysteria"; uninstall ;;
+        start|3) echoColor purple "-> 3) 启动 hysteria"; start ;;
+        stop|4) echoColor purple "-> 4) 暂停 hysteria"; stop ;;
+        restart|5) echoColor purple "-> 5) 重新启动 hysteria"; restart ;;
+        checkStatus|6) echoColor purple "-> 6) 运行状态"; checkStatus ;;
+        updateHysteriaCore|7) echoColor purple "-> 7) 更新Core"; updateHysteriaCore ;;
+        generate_client_config|8) echoColor purple "-> 8) 查看当前配置"; generate_client_config ;;
+        changeServerConfig|9) echoColor purple "-> 9) 重新配置"; changeServerConfig ;;
+        changeIp64|10) echoColor purple "-> 10) 切换ipv4/ipv6优先级"; changeIp64 ;;
+        hihyUpdate|11) echoColor purple "-> 11) 更新hihy"; hihyUpdate ;;
+        aclControl|12) echoColor purple "-> 12) ACL管理"; aclControl ;;
+        getHysteriaTrafic|13) echoColor purple "-> 13) 查看hysteria统计信息"; getHysteriaTrafic ;;
+        checkLogs|14) echoColor purple "-> 14) 查看实时日志"; checkLogs ;;
+        addSocks5Outbound|15) echoColor purple "-> 15) 添加socks5出站"; addSocks5Outbound ;;
+        cronTask) cronTask ;;
+        *) menu ;;
+    esac
+fi
