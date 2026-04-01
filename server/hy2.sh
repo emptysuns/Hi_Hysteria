@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="ver1.04-a"
+hihyV="ver1.04-b"
 
 HIHY_ROOT_DIR="${HIHY_ROOT_DIR:-/etc/hihy}"
 HIHY_BIN_LINK="${HIHY_BIN_LINK:-/usr/bin/hihy}"
