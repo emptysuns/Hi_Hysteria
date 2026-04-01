@@ -5,6 +5,258 @@ HIHY_ROOT_DIR="${HIHY_ROOT_DIR:-/etc/hihy}"
 HIHY_BIN_LINK="${HIHY_BIN_LINK:-/usr/bin/hihy}"
 HIHY_PID_FILE="${HIHY_PID_FILE:-/var/run/hihy.pid}"
 HIHY_RC_LOCAL="${HIHY_RC_LOCAL:-/etc/rc.local}"
+HIHY_REMOTE_SCRIPT_URL="${HIHY_REMOTE_SCRIPT_URL:-https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/refs/heads/main/server/hy2.sh}"
+HIHY_REMOTE_SCRIPT_MIRROR_URL="${HIHY_REMOTE_SCRIPT_MIRROR_URL:-https://cdn.jsdelivr.net/gh/emptysuns/Hi_Hysteria@main/server/hy2.sh}"
+HIHY_VERSION_STATUS_FILE="${HIHY_VERSION_STATUS_FILE:-$HIHY_ROOT_DIR/result/version-check.state}"
+HIHY_VERSION_CHECK_LOCK_FILE="${HIHY_VERSION_CHECK_LOCK_FILE:-$HIHY_ROOT_DIR/result/version-check.lock}"
+HIHY_VERSION_CHECK_TTL="${HIHY_VERSION_CHECK_TTL:-21600}"
+HIHY_REMOTE_CONNECT_TIMEOUT="${HIHY_REMOTE_CONNECT_TIMEOUT:-2}"
+HIHY_REMOTE_MAX_TIME="${HIHY_REMOTE_MAX_TIME:-5}"
+
+installHihyLauncher() {
+    local source_path="${1:-${BASH_SOURCE[0]}}"
+    local bin_link="${2:-$HIHY_BIN_LINK}"
+    local bin_dir
+
+    bin_dir="$(dirname "$bin_link")"
+    mkdir -p "$bin_dir"
+
+    if [ -f "$source_path" ] && [ "$source_path" != "$bin_link" ]; then
+        cp "$source_path" "$bin_link"
+    elif [ ! -f "$bin_link" ]; then
+        wget -q -O "$bin_link" --no-check-certificate "$HIHY_REMOTE_SCRIPT_URL" 2>/dev/null
+    fi
+
+    if [ -f "$bin_link" ]; then
+        chmod +x "$bin_link"
+        return 0
+    fi
+
+    return 1
+}
+
+startInstallValidationProcess() {
+    local yaml_file="$1"
+    local debug_file="${2:-./hihy_debug.info}"
+
+    env HYSTERIA_FIREWALL_BACKEND="iptables" /etc/hihy/bin/appS -c "$yaml_file" server > "$debug_file" 2>&1 &
+}
+
+fetchRemoteBodyFromSources() {
+    local url
+    local response
+
+    for url in "$@"; do
+        if response=$(curl -fsSL --connect-timeout "$HIHY_REMOTE_CONNECT_TIMEOUT" --max-time "$HIHY_REMOTE_MAX_TIME" "$url" 2>/dev/null); then
+            printf '%s' "$response"
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+fetchRemoteHeadersFromSources() {
+    local url
+    local response
+
+    for url in "$@"; do
+        if response=$(curl -fsSI --connect-timeout "$HIHY_REMOTE_CONNECT_TIMEOUT" --max-time "$HIHY_REMOTE_MAX_TIME" "$url" 2>/dev/null); then
+            printf '%s' "$response"
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+getLatestHihyVersion() {
+    local content
+
+    content=$(fetchRemoteBodyFromSources "$HIHY_REMOTE_SCRIPT_URL" "$HIHY_REMOTE_SCRIPT_MIRROR_URL") || return 1
+    printf '%s\n' "$content" | sed -n '2p' | cut -d '"' -f 2 | head -n 1
+}
+
+getLatestHysteriaVersion() {
+    local headers
+
+    headers=$(fetchRemoteHeadersFromSources "https://github.com/apernet/hysteria/releases/latest") || return 1
+    printf '%s\n' "$headers" | grep -i '^location:' | grep -o 'tag/[^[:space:]]*' | sed 's/tag\///;s/\r//;s/ //g' | head -n 1
+}
+
+getLocalHysteriaVersion() {
+    local core_bin="${1:-$HIHY_ROOT_DIR/bin/appS}"
+
+    if [ ! -x "$core_bin" ]; then
+        return 1
+    fi
+
+    local version
+    version=$(echo app/$("$core_bin" version 2>/dev/null | grep Version: | awk '{print $2}' | head -n 1))
+    if [ -z "$version" ] || [ "$version" = "app/" ]; then
+        return 1
+    fi
+
+    printf '%s\n' "$version"
+}
+
+ensureVersionCheckStateDir() {
+    mkdir -p "$(dirname "$HIHY_VERSION_STATUS_FILE")" "$(dirname "$HIHY_VERSION_CHECK_LOCK_FILE")"
+}
+
+readVersionCheckValue() {
+    local file_path="$1"
+    local key="$2"
+
+    if [ ! -f "$file_path" ]; then
+        return 1
+    fi
+
+    grep -E "^${key}=" "$file_path" 2>/dev/null | head -n 1 | cut -d '=' -f 2-
+}
+
+writeVersionCheckState() {
+    local checked_at="$1"
+    local hihy_status="$2"
+    local hihy_remote="$3"
+    local core_status="$4"
+    local core_remote="$5"
+    local state_file="$HIHY_VERSION_STATUS_FILE"
+    local temp_file="${state_file}.tmp.$$"
+
+    ensureVersionCheckStateDir
+    cat > "$temp_file" <<EOF
+checked_at=${checked_at}
+hihy_status=${hihy_status}
+hihy_remote=${hihy_remote}
+core_status=${core_status}
+core_remote=${core_remote}
+EOF
+    mv "$temp_file" "$state_file"
+}
+
+acquireVersionCheckLock() {
+    local lock_file="$HIHY_VERSION_CHECK_LOCK_FILE"
+    local lock_pid=""
+
+    ensureVersionCheckStateDir
+
+    if [ -f "$lock_file" ]; then
+        lock_pid=$(readVersionCheckValue "$lock_file" "pid")
+        if [ -n "$lock_pid" ] && kill -0 "$lock_pid" 2>/dev/null; then
+            return 1
+        fi
+        rm -f "$lock_file"
+    fi
+
+    cat > "$lock_file" <<EOF
+pid=${BASHPID:-$$}
+started_at=$(date +%s)
+EOF
+}
+
+releaseVersionCheckLock() {
+    rm -f "$HIHY_VERSION_CHECK_LOCK_FILE"
+}
+
+shouldStartVersionCheck() {
+    local now
+    local checked_at
+    local lock_pid
+
+    now=$(date +%s)
+
+    if [ -f "$HIHY_VERSION_CHECK_LOCK_FILE" ]; then
+        lock_pid=$(readVersionCheckValue "$HIHY_VERSION_CHECK_LOCK_FILE" "pid")
+        if [ -n "$lock_pid" ] && kill -0 "$lock_pid" 2>/dev/null; then
+            return 1
+        fi
+        rm -f "$HIHY_VERSION_CHECK_LOCK_FILE"
+    fi
+
+    checked_at=$(readVersionCheckValue "$HIHY_VERSION_STATUS_FILE" "checked_at")
+    if [ -n "$checked_at" ] && [ $((now - checked_at)) -lt "$HIHY_VERSION_CHECK_TTL" ]; then
+        return 1
+    fi
+
+    return 0
+}
+
+refreshVersionCheckState() {
+    local checked_at
+    local local_hihy_version="$hihyV"
+    local remote_hihy_version=""
+    local hihy_status="unknown"
+    local local_core_version=""
+    local remote_core_version=""
+    local core_status="missing"
+
+    if ! acquireVersionCheckLock; then
+        return 0
+    fi
+
+    checked_at=$(date +%s)
+
+    remote_hihy_version=$(getLatestHihyVersion || true)
+    if [ -n "$remote_hihy_version" ]; then
+        if [ "$local_hihy_version" != "$remote_hihy_version" ]; then
+            hihy_status="update"
+        else
+            hihy_status="current"
+        fi
+    else
+        hihy_status="error"
+    fi
+
+    local_core_version=$(getLocalHysteriaVersion || true)
+    if [ -n "$local_core_version" ]; then
+        remote_core_version=$(getLatestHysteriaVersion || true)
+        if [ -n "$remote_core_version" ]; then
+            if [ "$local_core_version" != "$remote_core_version" ]; then
+                core_status="update"
+            else
+                core_status="current"
+            fi
+        else
+            core_status="error"
+        fi
+    fi
+
+    writeVersionCheckState "$checked_at" "$hihy_status" "$remote_hihy_version" "$core_status" "$remote_core_version"
+    releaseVersionCheckLock
+}
+
+startBackgroundVersionCheck() {
+    if ! shouldStartVersionCheck; then
+        return 0
+    fi
+
+    (refreshVersionCheckState) >/dev/null 2>&1 &
+}
+
+displayCachedVersionNotifications() {
+    local hihy_status
+    local hihy_remote
+    local core_status
+    local core_remote
+
+    if [ ! -f "$HIHY_VERSION_STATUS_FILE" ]; then
+        return 0
+    fi
+
+    hihy_status=$(readVersionCheckValue "$HIHY_VERSION_STATUS_FILE" "hihy_status")
+    hihy_remote=$(readVersionCheckValue "$HIHY_VERSION_STATUS_FILE" "hihy_remote")
+    core_status=$(readVersionCheckValue "$HIHY_VERSION_STATUS_FILE" "core_status")
+    core_remote=$(readVersionCheckValue "$HIHY_VERSION_STATUS_FILE" "core_remote")
+
+    if [ "$hihy_status" = "update" ] && [ -n "$hihy_remote" ]; then
+        echoColor purple "[☺] hihy需更新,version:v${hihy_remote},建议更新并查看日志: https://github.com/emptysuns/Hi_Hysteria/"
+    fi
+
+    if [ "$core_status" = "update" ] && [ -n "$core_remote" ]; then
+        echoColor purple "[!] hysteria2 core有更新,version:${core_remote}  日志: https://v2.hysteria.network/docs/Changelog/"
+    fi
+}
 
 # 检测虚拟化类型的函数
 detectVirtualization() {
@@ -78,6 +330,7 @@ cronTask(){
     fi
 }
 echoColor() {
+    local printN="${printN:-}"
     case $1 in
         # 红色
         "red") echo -e "\033[31m${printN}$2 \033[0m" ;;
@@ -461,7 +714,7 @@ classifyInstallState() {
         return
     fi
 
-    if [ "$has_core_assets" = "true" ] && [ "$has_service_assets" = "true" ]; then
+    if [ "$has_core_assets" = "true" ] && [ "$has_service_assets" = "true" ] && [ -f "$bin_link" ]; then
         echo "installed"
         return
     fi
@@ -1422,7 +1675,7 @@ setHysteriaConfig(){
     fi
     sysctl -p
 	echo -e "\033[1;;35m\nTest config...\n\033[0m"
-	/etc/hihy/bin/appS -c ${yaml_file} server > ./hihy_debug.info 2>&1 &
+	startInstallValidationProcess "${yaml_file}" "./hihy_debug.info"
     if [ "${useAcme}" == "true" ];then
         countdown 20
     else
@@ -1513,12 +1766,18 @@ setHysteriaConfig(){
 	else
 		addOrUpdateYaml ${backup_file} "insecure" "false"
 	fi
+	if ! installHihyLauncher; then
+		markInstallFailed "launcher" "failed to install hihy launcher"
+		echoColor red "hihy 命令安装失败,请检查网络或写入权限后重试."
+		exit 1
+	fi
 	clearInstallFailureMarker
 	echoColor greenWhite "安装成功,请查看下方配置详细信息"
 }
 
 downloadHysteriaCore(){
-    local version=`curl --silent --head https://github.com/apernet/hysteria/releases/latest | grep -i location | grep -o 'tag/[^[:space:]]*' | sed 's/tag\///;s/ //g'`
+    local version
+    version=$(getLatestHysteriaVersion)
     
     echo -e "The Latest hysteria version: $(echoColor red "${version}")\nDownload..."
     
@@ -1570,7 +1829,8 @@ downloadHysteriaCore(){
 updateHysteriaCore(){
     if [ -f "/etc/hihy/bin/appS" ]; then
         local localV=$(echo app/$(/etc/hihy/bin/appS version | grep Version: | awk '{print $2}' | head -n 1))
-        local remoteV=`curl --silent --head https://github.com/apernet/hysteria/releases/latest | grep -i location | grep -o 'tag/[^[:space:]]*' | sed 's/tag\///;s/ //g'`
+	        local remoteV
+	        remoteV=$(getLatestHysteriaVersion || true)
         echo -e "Local core version: $(echoColor red "${localV}")"
         echo -e "Remote core version: $(echoColor red "${remoteV}")"
         if [ "${localV}" = "${remoteV}" ]; then
@@ -1602,20 +1862,12 @@ updateHysteriaCore(){
 }
 
 hihy_update_notifycation(){
-	localV=${hihyV}
-	remoteV=`curl -fsSL https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/refs/heads/main/server/hy2.sh | sed  -n 2p | cut -d '"' -f 2`
-	if [ -z $remoteV ];then
-		echoColor red "Network Error: Can't connect to Github for checking hihy version!"
-	else
-		if [ "${localV}" != "${remoteV}" ];then
-			echoColor purple "[☺] hihy需更新,version:v${remoteV},建议更新并查看日志: https://github.com/emptysuns/Hi_Hysteria/"
-		fi
-	fi
+	displayCachedVersionNotifications
 }
 
 hihyUpdate(){
 	localV=${hihyV}
-	remoteV=`curl -fsSL https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/refs/heads/main/server/hy2.sh | sed  -n 2p | cut -d '"' -f 2`
+	remoteV=$(getLatestHihyVersion || true)
 	if [ -z $remoteV ];then
 		echoColor red "Network Error: Can't connect to Github!"
 		exit
@@ -1623,27 +1875,18 @@ hihyUpdate(){
 	if [ "${localV}" = "${remoteV}" ];then
 		echoColor green "Already the latest version.Ignore."
 	else
-		rm /usr/bin/hihy
-		wget -q -O /usr/bin/hihy --no-check-certificate https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/refs/heads/main/server/hy2.sh 2>/dev/null
-		chmod +x /usr/bin/hihy
+		rm -f "$HIHY_BIN_LINK"
+		if ! installHihyLauncher /dev/null "$HIHY_BIN_LINK"; then
+			echoColor red "hihy更新失败,请检查网络或写入权限."
+			exit 1
+		fi
 		echoColor green "hihy更新完成."
 	fi
 
 }
 
 hyCore_update_notifycation(){
-	if [ -f "/etc/hihy/bin/appS" ]; then
-  		local localV=$(echo app/$(/etc/hihy/bin/appS version | grep Version: | awk '{print $2}' | head -n 1))
-        local remoteV=`curl --silent --head https://github.com/apernet/hysteria/releases/latest | grep -i location | grep -o 'tag/[^[:space:]]*' | sed 's/tag\///;s/ //g'`
-		if [ -z $remoteV ];then
-			echoColor red "Network Error: Can't connect to Github for checking the hysteria version!"
-		else
-			if [ "${localV}" != "${remoteV}" ];then
-				echoColor purple "[!] hysteria2 core有更新,version:${remoteV}  日志: https://v2.hysteria.network/docs/Changelog/"
-			fi
-		fi
-		
-	fi
+	displayCachedVersionNotifications
 }
 
 setup_rc_local_for_arch() {
@@ -1719,7 +1962,7 @@ install() {
     echoColor purple "Ready to install.\n"
 
     # 获取版本并下载核心
-    version=$(curl --silent --head https://github.com/apernet/hysteria/releases/latest | grep -i location | grep -o 'tag/[^[:space:]]*' | sed 's/tag\///;s/ //g')
+    version=$(getLatestHysteriaVersion || true)
     checkSystemForUpdate
     downloadHysteriaCore
     setHysteriaConfig
@@ -2279,8 +2522,8 @@ uninstall() {
         fi
     fi
 
-    if [ -f "/usr/bin/hihy" ]; then
-        rm /usr/bin/hihy
+    if [ -f "$HIHY_BIN_LINK" ]; then
+        rm "$HIHY_BIN_LINK"
     fi
 
     clearInstallFailureMarker
@@ -3265,8 +3508,8 @@ show_menu() {
     echo -e "$(echoColor skyBlue ".............................................")"
     echo -e ""
     hihy_update_notifycation
-    hyCore_update_notifycation
     echo -e "\n"
+    startBackgroundVersionCheck
 }
 
 wait_for_continue() {
