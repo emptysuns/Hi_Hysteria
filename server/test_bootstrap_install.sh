@@ -73,7 +73,7 @@ linkRequiredCommand() {
 setupMinimalCommandPath() {
     local command_name
 
-    for command_name in dirname mkdir chmod cat mv rm; do
+    for command_name in dirname mkdir chmod cat mv rm mktemp; do
         linkRequiredCommand "$command_name"
     done
 }

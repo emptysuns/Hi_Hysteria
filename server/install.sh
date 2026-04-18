@@ -11,8 +11,7 @@ downloadHihyScript() {
 
     output_dir="$(dirname "$output_path")"
     mkdir -p "$output_dir" || return 1
-    temp_output_path="${output_path}.tmp.$$"
-    rm -f "$temp_output_path"
+    temp_output_path="$(mktemp "${output_path}.tmp.XXXXXX")" || return 1
 
     if command -v wget >/dev/null 2>&1; then
         wget -q --no-check-certificate -O "$temp_output_path" "$url" || {
