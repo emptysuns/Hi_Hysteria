@@ -20,6 +20,7 @@ touch "$TEST_RC_LOCAL"
 
 export HIHY_ROOT_DIR="$TEST_ETC/hihy"
 export HIHY_BIN_LINK="$TEST_BIN/hihy"
+export HIHY_YQ_BIN="$TEST_BIN/yq"
 export HIHY_RC_LOCAL="$TEST_RC_LOCAL"
 export HIHY_PID_FILE="$TEST_PID_FILE"
 export printN=""
@@ -80,8 +81,22 @@ assert_file_not_contains() {
     fi
 }
 
+link_required_command() {
+    local command_name="$1"
+    local command_path
+
+    command_path="$(command -v "$command_name")"
+    if [ -z "$command_path" ]; then
+        printf 'ASSERT FAILED: required command not found: %s\n' "$command_name" >&2
+        exit 1
+    fi
+
+    ln -s "$command_path" "$MOCK_BIN/$command_name"
+}
+
 reset_state() {
     rm -rf "$HIHY_ROOT_DIR" "$HIHY_BIN_LINK" "$TEST_PID_FILE"
+    rm -f "$HIHY_YQ_BIN"
     rm -f "$TEST_ETC/init.d/hihy" "$TEST_ETC/rc.d/hihy"
     : > "$TEST_RC_LOCAL"
 }
@@ -262,6 +277,77 @@ EOF
     export PATH="$ORIGINAL_PATH"
 }
 
+test_yq_download_uses_curl_when_wget_is_missing() {
+    reset_state
+
+    local apt_log="$TEST_ROOT/apt.log"
+    local chmod_log="$TEST_ROOT/chmod.log"
+    local curl_log="$TEST_ROOT/curl.log"
+    local uname_log="$TEST_ROOT/uname.log"
+
+    cat > "$MOCK_BIN/apt" <<'EOF'
+#!/bin/sh
+printf '%s\n' "$*" >> "${APT_LOG:?}"
+EOF
+
+    cat > "$MOCK_BIN/chmod" <<'EOF'
+#!/bin/sh
+printf '%s\n' "$*" >> "${CHMOD_LOG:?}"
+/bin/chmod "$@"
+EOF
+
+    cat > "$MOCK_BIN/uname" <<'EOF'
+#!/bin/sh
+printf 'args=%s\n' "$*" >> "${UNAME_LOG:?}"
+printf 'x86_64\n'
+EOF
+
+    cat > "$MOCK_BIN/curl" <<'EOF'
+#!/bin/sh
+output_path=""
+url=""
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        -o)
+            output_path="$2"
+            shift 2
+            ;;
+        -fsSL)
+            shift
+            ;;
+        *)
+            url="$1"
+            shift
+            ;;
+    esac
+done
+printf '%s\n' "$url" >> "${MOCK_CURL_LOG:?}"
+printf '#!/bin/sh\necho mocked-yq\n' > "$output_path"
+EOF
+
+    chmod +x "$MOCK_BIN/apt" "$MOCK_BIN/chmod" "$MOCK_BIN/curl" "$MOCK_BIN/uname"
+
+    export APT_LOG="$apt_log"
+    export CHMOD_LOG="$chmod_log"
+    export MOCK_CURL_LOG="$curl_log"
+    export UNAME_LOG="$uname_log"
+    export PATH="$MOCK_BIN"
+
+    if [ -e "$MOCK_BIN/wget" ]; then
+        printf 'ASSERT FAILED: test setup should not provide wget\n' >&2
+        exit 1
+    fi
+
+    checkSystemForUpdate
+    export PATH="$ORIGINAL_PATH"
+
+    assert_file_contains "$apt_log" "update" "missing dependencies should still trigger package manager refresh"
+    assert_file_contains "$uname_log" "args=-m" "architecture detection should consult uname"
+    assert_file_contains "$curl_log" "https://github.com/mikefarah/yq/releases/latest/download/yq_linux_" "curl fallback should download yq when wget is unavailable"
+    assert_file_contains "$chmod_log" "+x $HIHY_YQ_BIN" "downloaded yq binary should be marked executable"
+    assert_file_contains "$HIHY_YQ_BIN" "mocked-yq" "downloaded yq binary should be written to the configured path"
+}
+
 test_not_installed_state
 test_partial_state_detection_and_recovery
 test_installed_state_detection
@@ -272,5 +358,6 @@ test_version_check_ttl_and_lock_guard
 test_show_menu_starts_background_check_after_render
 test_failure_marker_round_trip
 test_firewall_port_range_cleanup
+test_yq_download_uses_curl_when_wget_is_missing
 
 printf 'All install recovery tests passed.\n'
