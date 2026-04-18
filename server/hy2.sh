@@ -3,6 +3,7 @@ hihyV="ver1.04-c"
 
 HIHY_ROOT_DIR="${HIHY_ROOT_DIR:-/etc/hihy}"
 HIHY_BIN_LINK="${HIHY_BIN_LINK:-/usr/bin/hihy}"
+HIHY_YQ_BIN="${HIHY_YQ_BIN:-/usr/bin/yq}"
 HIHY_PID_FILE="${HIHY_PID_FILE:-/var/run/hihy.pid}"
 HIHY_RC_LOCAL="${HIHY_RC_LOCAL:-/etc/rc.local}"
 HIHY_REMOTE_SCRIPT_URL="${HIHY_REMOTE_SCRIPT_URL:-https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/refs/heads/main/server/hy2.sh}"
@@ -33,6 +34,19 @@ installHihyLauncher() {
     fi
 
     return 1
+}
+
+downloadToFile() {
+    local url="$1"
+    local output_path="$2"
+
+    if command -v wget >/dev/null 2>&1; then
+        wget -q --no-check-certificate -O "$output_path" "$url"
+    elif command -v curl >/dev/null 2>&1; then
+        curl -fsSL -o "$output_path" "$url"
+    else
+        return 1
+    fi
 }
 
 startInstallValidationProcess() {
@@ -469,20 +483,6 @@ checkSystemForUpdate() {
         updateNeeded=true
     fi
 
-    # 检查 yq 命令
-    # 安装 yq
-    if ! command -v yq >/dev/null; then
-        arch=$(getArchitecture)
-        echoColor purple "正在下载 yq (${arch})..."
-        wget "https://github.com/mikefarah/yq/releases/latest/download/yq_linux_${arch}" -O /usr/bin/yq
-        if [ $? -ne 0 ]; then
-            echoColor red "下载 yq 失败"
-            exit 1
-        fi
-        chmod +x /usr/bin/yq
-    fi
-
-
     # 检查 chrt 命令
     if ! command -v chrt >/dev/null; then
         echoColor green "*util-linux"
@@ -547,6 +547,18 @@ checkSystemForUpdate() {
         fi
 
         echoColor purple "\n软件包安装完成."
+    fi
+
+    # 检查 yq 命令
+    # 安装 yq
+    if ! command -v yq >/dev/null; then
+        arch=$(getArchitecture)
+        echoColor purple "正在下载 yq (${arch})..."
+        if ! downloadToFile "https://github.com/mikefarah/yq/releases/latest/download/yq_linux_${arch}" "$HIHY_YQ_BIN"; then
+            echoColor red "下载 yq 失败"
+            exit 1
+        fi
+        chmod +x "$HIHY_YQ_BIN"
     fi
 }
 
