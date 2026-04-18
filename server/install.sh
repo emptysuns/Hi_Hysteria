@@ -13,7 +13,7 @@ downloadHihyScript() {
     output_dir="$(dirname "$output_path")"
     output_name="$(basename "$output_path")"
     mkdir -p "$output_dir" || return 1
-    temp_output_path="$(mktemp -p "$output_dir" "${output_name}.tmp.XXXXXX")" || return 1
+    temp_output_path="$(mktemp "$output_dir/${output_name}.tmp.XXXXXX")" || return 1
 
     if command -v wget >/dev/null 2>&1; then
         wget -q --no-check-certificate -O "$temp_output_path" "$url" || {
@@ -69,7 +69,10 @@ main() {
         exit 1
     fi
 
-    "$HIHY_BIN_LINK"
+    if ! "$HIHY_BIN_LINK"; then
+        echo -e "\033[31mhihy 启动失败，请检查下载结果或稍后重试\033[0m" >&2
+        exit 1
+    fi
 }
 
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then
