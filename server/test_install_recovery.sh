@@ -5,15 +5,17 @@ SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 TEST_ROOT=$(mktemp -d)
 TEST_ETC="$TEST_ROOT/etc"
 TEST_BIN="$TEST_ROOT/bin"
+MOCK_BIN="$TEST_ROOT/mock-bin"
 TEST_RC_LOCAL="$TEST_ROOT/rc.local"
 TEST_PID_FILE="$TEST_ROOT/hihy.pid"
+ORIGINAL_PATH="$PATH"
 
 cleanup() {
     rm -rf "$TEST_ROOT"
 }
 trap cleanup EXIT
 
-mkdir -p "$TEST_ETC" "$TEST_BIN"
+mkdir -p "$TEST_ETC" "$TEST_BIN" "$MOCK_BIN"
 touch "$TEST_RC_LOCAL"
 
 export HIHY_ROOT_DIR="$TEST_ETC/hihy"
@@ -63,6 +65,17 @@ assert_output_contains() {
 
     if [[ "$output" != *"$expected"* ]]; then
         printf 'ASSERT FAILED: %s\nMissing text: %s\nOutput was:\n%s\n' "$message" "$expected" "$output" >&2
+        exit 1
+    fi
+}
+
+assert_file_not_contains() {
+    local path="$1"
+    local unexpected="$2"
+    local message="$3"
+
+    if [ -f "$path" ] && grep -Fq "$unexpected" "$path"; then
+        printf 'ASSERT FAILED: %s\nUnexpected text: %s\nFile: %s\n' "$message" "$unexpected" "$path" >&2
         exit 1
     fi
 }
@@ -179,6 +192,76 @@ test_failure_marker_round_trip() {
     assert_equals "not-installed" "$(classifyInstallState "$HIHY_ROOT_DIR" "$HIHY_BIN_LINK" "$TEST_ETC/init.d/hihy" "$TEST_ETC/rc.d/hihy" "$(getInstallFailureMarker "$HIHY_ROOT_DIR")")" "clearing marker should restore clean classification"
 }
 
+test_firewall_port_range_cleanup() {
+    reset_state
+
+    local mock_listen_value=":443,47000-48000"
+    local ufw_state="$TEST_ROOT/ufw.state"
+    local firewall_log="$TEST_ROOT/firewall.log"
+
+    : > "$ufw_state"
+    : > "$firewall_log"
+
+    cat > "$MOCK_BIN/systemctl" <<'EOF'
+#!/bin/sh
+exit 1
+EOF
+
+    cat > "$MOCK_BIN/ufw" <<'EOF'
+#!/bin/sh
+state="${UFW_STATE:?}"
+log="${FIREWALL_LOG:?}"
+
+case "$1" in
+    status)
+        echo "Status: active"
+        [ -f "$state" ] && cat "$state"
+        ;;
+    allow)
+        echo "ufw allow $2" >> "$log"
+        printf '%s ALLOW Anywhere\n' "$2" >> "$state"
+        ;;
+    delete)
+        echo "ufw delete $2 $3" >> "$log"
+        tmp="${state}.tmp"
+        grep -Fv "$3 ALLOW Anywhere" "$state" > "$tmp" 2>/dev/null || true
+        mv "$tmp" "$state"
+        ;;
+    *)
+        exit 1
+        ;;
+esac
+EOF
+
+    chmod +x "$MOCK_BIN/systemctl" "$MOCK_BIN/ufw"
+
+    export PATH="$MOCK_BIN:/usr/bin:/bin"
+    export UFW_STATE="$ufw_state"
+    export FIREWALL_LOG="$firewall_log"
+
+    # 该测试只覆盖防火墙清理流程，只需要模拟 listen 字段即可。
+    getYamlValue() {
+        if [ "$2" = "listen" ]; then
+            echo "$mock_listen_value"
+        fi
+    }
+
+    allowPort udp 47000:48000
+    assert_file_contains "$firewall_log" "ufw allow 47000:48000/udp" "ufw allow should include protocol for port ranges"
+
+    cat > "$ufw_state" <<'EOF'
+443/udp ALLOW Anywhere
+47000:48000/udp ALLOW Anywhere
+EOF
+
+    delHihyFirewallPort udp
+    assert_file_contains "$firewall_log" "ufw delete allow 443/udp" "single-port ufw cleanup should use protocol-qualified rule"
+    assert_file_contains "$firewall_log" "ufw delete allow 47000:48000/udp" "range cleanup should convert listen range back to ufw colon syntax"
+    assert_file_not_contains "$ufw_state" "47000:48000/udp ALLOW Anywhere" "range rule should be removed from ufw state"
+
+    export PATH="$ORIGINAL_PATH"
+}
+
 test_not_installed_state
 test_partial_state_detection_and_recovery
 test_installed_state_detection
@@ -188,5 +271,6 @@ test_cached_version_notifications_are_displayed
 test_version_check_ttl_and_lock_guard
 test_show_menu_starts_background_check_after_render
 test_failure_marker_round_trip
+test_firewall_port_range_cleanup
 
 printf 'All install recovery tests passed.\n'

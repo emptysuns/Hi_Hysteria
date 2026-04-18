@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="ver1.04-b"
+hihyV="ver1.04-c"
 
 HIHY_ROOT_DIR="${HIHY_ROOT_DIR:-/etc/hihy}"
 HIHY_BIN_LINK="${HIHY_BIN_LINK:-/usr/bin/hihy}"
@@ -2153,10 +2153,22 @@ EOF
     echoColor yellowBlack "安装完毕"
 }
 
+# 将 listen 中的范围端口格式 47000-48000 转换为防火墙规则使用的 47000:48000
+formatFirewallPortSpec() {
+    local port_spec="$1"
+    echo "${port_spec//-/:}"
+}
+
+# 将防火墙命令输出按空白拆分成独立 token，再进行精确匹配
+hasFirewallToken() {
+    local token="$1"
+    tr -s '[:space:]' '\n' | grep -Fxq "$token"
+}
+
 # 输出ufw端口开放状态
 checkUFWAllowPort() {
     local port=$1
-    if ufw status | grep -qw "$port"; then
+    if ufw status | hasFirewallToken "$port"; then
         echoColor purple "UFW OPEN: ${port}"
     else
         echoColor red "UFW OPEN FAIL: ${port}"
@@ -2168,7 +2180,7 @@ checkUFWAllowPort() {
 checkFirewalldAllowPort() {
     local port=$1
     local protocol=$2
-    if firewall-cmd --list-ports --permanent | grep -qw "${port}/${protocol}"; then
+    if firewall-cmd --list-ports --permanent | hasFirewallToken "${port}/${protocol}"; then
         echoColor purple "FIREWALLD OPEN: ${port}/${protocol}"
     else
         echoColor red "FIREWALLD OPEN FAIL: ${port}/${protocol}"
@@ -2225,7 +2237,7 @@ allowPort() {
             
             # 检查 firewalld
             if systemctl is-active --quiet firewalld; then
-                if ! firewall-cmd --list-ports --permanent | grep -qw "${2}/${1}"; then
+                if ! firewall-cmd --list-ports --permanent | hasFirewallToken "${2}/${1}"; then
                     firewall-cmd --zone=public --add-port=${2}/${1} --permanent
                     echoColor purple "FIREWALLD OPEN: ${1}/${2}"
                     firewall-cmd --reload
@@ -2236,10 +2248,10 @@ allowPort() {
         
         # 检查 UFW
         if command -v ufw >/dev/null 2>&1; then
-            if ufw status | grep -qw "active"; then
-                if ! ufw status | grep -qw "${2}"; then
-                    ufw allow ${2}
-                    checkUFWAllowPort ${2}
+            if ufw status | hasFirewallToken "active"; then
+                if ! ufw status | hasFirewallToken "${2}/${1}"; then
+                    ufw allow ${2}/${1}
+                    checkUFWAllowPort ${2}/${1}
                 fi
                 return 0
             fi
@@ -3168,28 +3180,33 @@ delHihyFirewallPort() {
     local listen_value=$(getYamlValue "/etc/hihy/conf/config.yaml" "listen")
     local port=$(getListenPrimaryPort "${listen_value}")
     local port_range=$(getListenRangePart "${listen_value}")
+    local firewall_port_range=$(formatFirewallPortSpec "${port_range}")
     local protocol=$1
 
     # 检查并处理不同的防火墙管理工具
-    if command -v ufw > /dev/null && ufw status | grep -qw "active"; then
-        if ufw status | grep -qw "${port}"; then
+    if command -v ufw > /dev/null && ufw status | hasFirewallToken "active"; then
+        if ufw status | hasFirewallToken "${port}/${protocol}"; then
+            ufw delete allow "${port}/${protocol}" 2> /dev/null
+            echoColor purple "UFW DELETE: ${port}/${protocol}"
+        # 兼容旧版本未带协议的 ufw 规则
+        elif ufw status | hasFirewallToken "${port}"; then
             ufw delete allow "${port}" 2> /dev/null
             echoColor purple "UFW DELETE: ${port}"
         fi
-        if [ -n "${port_range}" ] && ufw status | grep -qw "${port_range}/${protocol}"; then
-            ufw delete allow "${port_range}/${protocol}" 2> /dev/null
-            echoColor purple "UFW DELETE: ${port_range}/${protocol}"
+        if [ -n "${firewall_port_range}" ] && ufw status | hasFirewallToken "${firewall_port_range}/${protocol}"; then
+            ufw delete allow "${firewall_port_range}/${protocol}" 2> /dev/null
+            echoColor purple "UFW DELETE: ${firewall_port_range}/${protocol}"
         fi
     elif command -v firewall-cmd > /dev/null && systemctl is-active --quiet firewalld; then
-        if firewall-cmd --list-ports --permanent | grep -qw "${port}/${protocol}"; then
+        if firewall-cmd --list-ports --permanent | hasFirewallToken "${port}/${protocol}"; then
             firewall-cmd --zone=public --remove-port="${port}/${protocol}" --permanent 2> /dev/null
             firewall-cmd --reload 2> /dev/null
             echoColor purple "FIREWALLD DELETE: ${port}/${protocol}"
         fi
-        if [ -n "${port_range}" ] && firewall-cmd --list-ports --permanent | grep -qw "${port_range}/${protocol}"; then
-            firewall-cmd --zone=public --remove-port="${port_range}/${protocol}" --permanent 2> /dev/null
+        if [ -n "${firewall_port_range}" ] && firewall-cmd --list-ports --permanent | hasFirewallToken "${firewall_port_range}/${protocol}"; then
+            firewall-cmd --zone=public --remove-port="${firewall_port_range}/${protocol}" --permanent 2> /dev/null
             firewall-cmd --reload 2> /dev/null
-            echoColor purple "FIREWALLD DELETE: ${port_range}/${protocol}"
+            echoColor purple "FIREWALLD DELETE: ${firewall_port_range}/${protocol}"
         fi
     elif command -v iptables > /dev/null; then
         iptables-save | sed -e "/hihysteria/d" | iptables-restore
@@ -3202,15 +3219,15 @@ delHihyFirewallPort() {
         fi
         if [ -f "/etc/rc.d/allow-port" ]; then
             sed -i "/${protocol}\/${port}(hihysteria)/d" /etc/rc.d/allow-port
-            if [ -n "${port_range}" ];then
-                local port_range_comment=$(echo "${port_range}" | sed 's/:/\\:/g')
+            if [ -n "${firewall_port_range}" ];then
+                local port_range_comment=$(echo "${firewall_port_range}" | sed 's/:/\\:/g')
                 sed -i "/${protocol}\/${port_range_comment}(hihysteria)/d" /etc/rc.d/allow-port
             fi
         fi
 
         echoColor purple "IPTABLES DELETE: ${port}/${protocol}"
-        if [ -n "${port_range}" ];then
-            echoColor purple "IPTABLES DELETE: ${port_range}/${protocol}"
+        if [ -n "${firewall_port_range}" ];then
+            echoColor purple "IPTABLES DELETE: ${firewall_port_range}/${protocol}"
         fi
     fi
 }
