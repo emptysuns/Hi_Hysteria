@@ -57,16 +57,32 @@ reset_state() {
     export PATH="$MOCK_BIN:$ORIGINAL_PATH"
 }
 
+linkRequiredCommand() {
+    local command_name="$1"
+    local command_path
+
+    command_path="$(command -v "$command_name")"
+    if [ -z "$command_path" ]; then
+        printf 'ASSERT FAILED: required command not found: %s\n' "$command_name" >&2
+        exit 1
+    fi
+
+    ln -s "$command_path" "$MOCK_BIN/$command_name"
+}
+
+setupMinimalCommandPath() {
+    local command_name
+
+    for command_name in dirname mkdir chmod cat mv rm; do
+        linkRequiredCommand "$command_name"
+    done
+}
+
 test_download_uses_curl_when_wget_is_missing() {
     reset_state
 
     local curl_log="$TEST_ROOT/curl.log"
-    ln -s /usr/bin/dirname "$MOCK_BIN/dirname"
-    ln -s /bin/mkdir "$MOCK_BIN/mkdir"
-    ln -s /bin/chmod "$MOCK_BIN/chmod"
-    ln -s /bin/cat "$MOCK_BIN/cat"
-    ln -s /bin/mv "$MOCK_BIN/mv"
-    ln -s /bin/rm "$MOCK_BIN/rm"
+    setupMinimalCommandPath
     cat > "$MOCK_BIN/curl" <<'EOF'
 #!/bin/sh
 log_file="${MOCK_CURL_LOG:?}"
@@ -109,11 +125,7 @@ EOF
 test_download_fails_cleanly_without_download_client() {
     reset_state
 
-    ln -s /usr/bin/dirname "$MOCK_BIN/dirname"
-    ln -s /bin/mkdir "$MOCK_BIN/mkdir"
-    ln -s /bin/chmod "$MOCK_BIN/chmod"
-    ln -s /bin/mv "$MOCK_BIN/mv"
-    ln -s /bin/rm "$MOCK_BIN/rm"
+    setupMinimalCommandPath
     if (
         export PATH="$MOCK_BIN"
         downloadHihyScript "https://example.com/hy2.sh" "$HIHY_BIN_LINK" >/dev/null 2>&1
