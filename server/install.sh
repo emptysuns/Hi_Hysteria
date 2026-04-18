@@ -13,7 +13,7 @@ downloadHihyScript() {
     output_dir="$(dirname "$output_path")"
     output_name="$(basename "$output_path")"
     mkdir -p "$output_dir" || return 1
-    temp_output_path="$(mktemp "$output_dir/${output_name}.tmp.XXXXXX")" || return 1
+    temp_output_path="$(mktemp "$output_dir/.${output_name}.tmp.XXXXXX")" || return 1
 
     if command -v wget >/dev/null 2>&1; then
         wget -q --no-check-certificate -O "$temp_output_path" "$url" || {
@@ -30,7 +30,10 @@ downloadHihyScript() {
         return 1
     fi
 
-    chmod +x "$temp_output_path" && mv "$temp_output_path" "$output_path"
+    chmod +x "$temp_output_path" && mv "$temp_output_path" "$output_path" || {
+        rm -f "$temp_output_path"
+        return 1
+    }
 }
 
 resolveHysteriaVersion() {
