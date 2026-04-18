@@ -57,7 +57,7 @@ reset_state() {
     export PATH="$MOCK_BIN:$ORIGINAL_PATH"
 }
 
-linkRequiredCommand() {
+link_required_command() {
     local command_name="$1"
     local command_path
 
@@ -70,11 +70,11 @@ linkRequiredCommand() {
     ln -s "$command_path" "$MOCK_BIN/$command_name"
 }
 
-setupMinimalCommandPath() {
+setup_minimal_command_path() {
     local command_name
 
-    for command_name in dirname mkdir chmod cat mv rm mktemp; do
-        linkRequiredCommand "$command_name"
+    for command_name in dirname basename mkdir chmod cat mv rm mktemp; do
+        link_required_command "$command_name"
     done
 }
 
@@ -82,7 +82,7 @@ test_download_uses_curl_when_wget_is_missing() {
     reset_state
 
     local curl_log="$TEST_ROOT/curl.log"
-    setupMinimalCommandPath
+    setup_minimal_command_path
     cat > "$MOCK_BIN/curl" <<'EOF'
 #!/bin/sh
 log_file="${MOCK_CURL_LOG:?}"
@@ -125,7 +125,7 @@ EOF
 test_download_fails_cleanly_without_download_client() {
     reset_state
 
-    setupMinimalCommandPath
+    setup_minimal_command_path
     if (
         export PATH="$MOCK_BIN"
         downloadHihyScript "https://example.com/hy2.sh" "$HIHY_BIN_LINK" >/dev/null 2>&1

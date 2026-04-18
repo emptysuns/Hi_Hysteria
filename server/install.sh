@@ -8,10 +8,12 @@ downloadHihyScript() {
     local output_path="${2:-$HIHY_BIN_LINK}"
     local output_dir
     local temp_output_path
+    local output_name
 
     output_dir="$(dirname "$output_path")"
+    output_name="$(basename "$output_path")"
     mkdir -p "$output_dir" || return 1
-    temp_output_path="$(mktemp "${output_path}.tmp.XXXXXX")" || return 1
+    temp_output_path="$(mktemp -p "$output_dir" "${output_name}.tmp.XXXXXX")" || return 1
 
     if command -v wget >/dev/null 2>&1; then
         wget -q --no-check-certificate -O "$temp_output_path" "$url" || {
