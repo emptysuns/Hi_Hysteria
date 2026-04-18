@@ -2237,9 +2237,9 @@ allowPort() {
         # 检查 UFW
         if command -v ufw >/dev/null 2>&1; then
             if ufw status | grep -qw "active"; then
-                if ! ufw status | grep -qw "${2}"; then
-                    ufw allow ${2}
-                    checkUFWAllowPort ${2}
+                if ! ufw status | grep -qw "${2}/${1}"; then
+                    ufw allow ${2}/${1}
+                    checkUFWAllowPort ${2}/${1}
                 fi
                 return 0
             fi
@@ -3172,7 +3172,10 @@ delHihyFirewallPort() {
 
     # 检查并处理不同的防火墙管理工具
     if command -v ufw > /dev/null && ufw status | grep -qw "active"; then
-        if ufw status | grep -qw "${port}"; then
+        if ufw status | grep -qw "${port}/${protocol}"; then
+            ufw delete allow "${port}/${protocol}" 2> /dev/null
+            echoColor purple "UFW DELETE: ${port}/${protocol}"
+        elif ufw status | grep -qw "${port}"; then
             ufw delete allow "${port}" 2> /dev/null
             echoColor purple "UFW DELETE: ${port}"
         fi
