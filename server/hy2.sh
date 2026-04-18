@@ -555,7 +555,11 @@ checkSystemForUpdate() {
         arch=$(getArchitecture)
         echoColor purple "正在下载 yq (${arch})..."
         if ! downloadToFile "https://github.com/mikefarah/yq/releases/latest/download/yq_linux_${arch}" "$HIHY_YQ_BIN"; then
-            echoColor red "下载 yq 失败"
+            if ! command -v wget >/dev/null 2>&1 && ! command -v curl >/dev/null 2>&1; then
+                echoColor red "下载 yq 失败：未找到 wget 或 curl"
+            else
+                echoColor red "下载 yq 失败：wget/curl 下载异常"
+            fi
             exit 1
         fi
         chmod +x "$HIHY_YQ_BIN"

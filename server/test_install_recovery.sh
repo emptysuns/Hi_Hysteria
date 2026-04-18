@@ -305,6 +305,7 @@ EOF
     cat > "$MOCK_BIN/curl" <<'EOF'
 #!/bin/sh
 output_path=""
+url=""
 while [ "$#" -gt 0 ]; do
     case "$1" in
         -o)
