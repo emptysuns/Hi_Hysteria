@@ -304,7 +304,6 @@ EOF
 
     cat > "$MOCK_BIN/curl" <<'EOF'
 #!/bin/sh
-log_file="${MOCK_CURL_LOG:?}"
 output_path=""
 while [ "$#" -gt 0 ]; do
     case "$1" in
@@ -321,7 +320,7 @@ while [ "$#" -gt 0 ]; do
             ;;
     esac
 done
-printf '%s\n' "$url" >> "$log_file"
+printf '%s\n' "$url" >> "${MOCK_CURL_LOG:?}"
 printf '#!/bin/sh\necho mocked-yq\n' > "$output_path"
 EOF
 
@@ -333,7 +332,10 @@ EOF
     export UNAME_LOG="$uname_log"
     export PATH="$MOCK_BIN"
 
-    assert_equals "absent" "$([ -e "$MOCK_BIN/wget" ] && echo present || echo absent)" "test setup should not provide wget"
+    if [ -e "$MOCK_BIN/wget" ]; then
+        printf 'ASSERT FAILED: test setup should not provide wget\n' >&2
+        exit 1
+    fi
 
     checkSystemForUpdate
     export PATH="$ORIGINAL_PATH"

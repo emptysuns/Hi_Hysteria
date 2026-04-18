@@ -41,7 +41,7 @@ downloadToFile() {
     local output_path="$2"
 
     if command -v wget >/dev/null 2>&1; then
-        wget -q --no-check-certificate -O "$output_path" "$url"
+        wget -q -O "$output_path" "$url"
     elif command -v curl >/dev/null 2>&1; then
         curl -fsSL -o "$output_path" "$url"
     else
