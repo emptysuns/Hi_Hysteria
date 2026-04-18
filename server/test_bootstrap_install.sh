@@ -54,13 +54,19 @@ reset_state() {
     rm -f "$HIHY_BIN_LINK"
     rm -rf "$MOCK_BIN"
     mkdir -p "$MOCK_BIN"
-    export PATH="$MOCK_BIN:/usr/bin:/bin"
+    export PATH="$MOCK_BIN:$ORIGINAL_PATH"
 }
 
 test_download_uses_curl_when_wget_is_missing() {
     reset_state
 
     local curl_log="$TEST_ROOT/curl.log"
+    ln -s /usr/bin/dirname "$MOCK_BIN/dirname"
+    ln -s /bin/mkdir "$MOCK_BIN/mkdir"
+    ln -s /bin/chmod "$MOCK_BIN/chmod"
+    ln -s /bin/cat "$MOCK_BIN/cat"
+    ln -s /bin/mv "$MOCK_BIN/mv"
+    ln -s /bin/rm "$MOCK_BIN/rm"
     cat > "$MOCK_BIN/curl" <<'EOF'
 #!/bin/sh
 log_file="${MOCK_CURL_LOG:?}"
@@ -90,7 +96,10 @@ EOF
 
     export MOCK_CURL_LOG="$curl_log"
 
-    downloadHihyScript "https://example.com/hy2.sh" "$HIHY_BIN_LINK"
+    (
+        export PATH="$MOCK_BIN"
+        downloadHihyScript "https://example.com/hy2.sh" "$HIHY_BIN_LINK"
+    )
 
     assert_file_contains "$curl_log" "https://example.com/hy2.sh" "curl fallback should be used for downloads"
     assert_file_contains "$HIHY_BIN_LINK" "echo mocked" "downloaded bootstrap script should be written"
@@ -105,9 +114,10 @@ test_download_fails_cleanly_without_download_client() {
     ln -s /bin/chmod "$MOCK_BIN/chmod"
     ln -s /bin/mv "$MOCK_BIN/mv"
     ln -s /bin/rm "$MOCK_BIN/rm"
-    export PATH="$MOCK_BIN"
-
-    if downloadHihyScript "https://example.com/hy2.sh" "$HIHY_BIN_LINK" >/dev/null 2>&1; then
+    if (
+        export PATH="$MOCK_BIN"
+        downloadHihyScript "https://example.com/hy2.sh" "$HIHY_BIN_LINK" >/dev/null 2>&1
+    ); then
         printf 'ASSERT FAILED: download should fail when curl and wget are unavailable\n' >&2
         exit 1
     fi
