@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="ver1.06"
+hihyV="ver1.07"
 
 HIHY_ROOT_DIR="${HIHY_ROOT_DIR:-/etc/hihy}"
 HIHY_BIN_LINK="${HIHY_BIN_LINK:-/usr/bin/hihy}"
@@ -1463,16 +1463,22 @@ setHysteriaConfig() {
     fi
     echo -e "\n->认证口令:"$(echoColor red ${auth_secret})"\n"
     echo -e "Tips: 如果使用obfs混淆,抗封锁能力更强,能被识别为未知udp流量。\n但是会增加cpu负载导致峰值速度下降,如果您追求性能且未被针对封锁建议不使用"
-    echo -e "\033[32m(9/13)是否使用salamander进行流量混淆:\n\n\033[0m\033[33m\033[01m1、不使用(推荐)\n2、使用\033[0m\033[32m\n\n输入序号:\033[0m"
+    echo -e "\033[32m(9/13)是否使用流量混淆:\n\n\033[0m\033[33m\033[01m1、不使用(推荐)\n2、salamander - 将数据包混淆为无特征随机字节\n3、gecko(实验性) - 在salamander基础上额外拆分QUIC握手包，抗检测更强\033[0m\033[32m\n\n输入序号:\033[0m"
     read -r obfs_num
     if [ -z "${obfs_num}" ] || [ ${obfs_num} == "1" ]; then
         obfs_status="false"
+        obfs_type=""
+    elif [ ${obfs_num} == "2" ]; then
+        obfs_status="true"
+        obfs_type="salamander"
+        obfs_pass=${auth_secret}
     else
         obfs_status="true"
+        obfs_type="gecko"
         obfs_pass=${auth_secret}
     fi
     if [ "${obfs_status}" == "true" ]; then
-        echo -e "\n->您将使用salamander混淆加密流量\n"
+        echo -e "\n->您将使用${obfs_type}混淆加密流量\n"
     else
         echo -e "\n->您将不使用混淆\n"
     fi
@@ -1600,8 +1606,8 @@ setHysteriaConfig() {
         addOrUpdateYaml "$yaml_file" "congestion.bbrProfile" "${congestion_bbr_profile}"
     fi
     if [ "${obfs_status}" == "true" ]; then
-        addOrUpdateYaml "$yaml_file" "obfs.type" "salamander"
-        addOrUpdateYaml "$yaml_file" "obfs.salamander.password" "${obfs_pass}"
+        addOrUpdateYaml "$yaml_file" "obfs.type" "${obfs_type}"
+        addOrUpdateYaml "$yaml_file" "obfs.${obfs_type}.password" "${obfs_pass}"
     else
         yq eval 'del(.obfs)' -i "$yaml_file"
     fi
@@ -2715,11 +2721,14 @@ generate_client_config() {
     tls_sni=$(getYamlValue "/etc/hihy/conf/backup.yaml" "domain")
     insecure=$(getYamlValue "/etc/hihy/conf/backup.yaml" "insecure")
     masquerade_tcp=$(getYamlValue "/etc/hihy/conf/backup.yaml" "masquerade_tcp")
-    obfs_pass=$(getYamlValue "/etc/hihy/conf/config.yaml" "obfs.salamander.password")
-    if [ -n "${obfs_pass}" ]; then
+    obfs_type=$(getYamlValue "/etc/hihy/conf/config.yaml" "obfs.type")
+    if [ "${obfs_type}" == "salamander" ] || [ "${obfs_type}" == "gecko" ]; then
         obfs_status="true"
+        obfs_pass=$(getYamlValue "/etc/hihy/conf/config.yaml" "obfs.${obfs_type}.password")
     else
         obfs_status="false"
+        obfs_type=""
+        obfs_pass=""
     fi
     SRW=$(getYamlValue "/etc/hihy/conf/config.yaml" "quic.initStreamReceiveWindow")
     CRW=$(getYamlValue "/etc/hihy/conf/config.yaml" "quic.initConnReceiveWindow")
@@ -2802,8 +2811,8 @@ generate_client_config() {
         fi
     fi
     if [ "${obfs_status}" == "true" ]; then
-        addOrUpdateYaml "$client_configfile" "obfs.type" "salamander"
-        addOrUpdateYaml "$client_configfile" "obfs.salamander.password" "${obfs_pass}"
+        addOrUpdateYaml "$client_configfile" "obfs.type" "${obfs_type}"
+        addOrUpdateYaml "$client_configfile" "obfs.${obfs_type}.password" "${obfs_pass}"
     else
         yq eval 'del(.obfs)' -i "$client_configfile"
     fi
@@ -2849,7 +2858,7 @@ generate_client_config() {
         fi
 
         if [ "${obfs_status}" == "true" ]; then
-            url_base="${url_base}&obfs=salamander&obfs-password=${obfs_pass}"
+            url_base="${url_base}&obfs=${obfs_type}&obfs-password=${obfs_pass}"
         fi
         url="${url_base}&sni=${tls_sni}#Hy2-${remarks}"
     fi
@@ -3065,11 +3074,14 @@ EOF
     tls_sni=$(getYamlValue "/etc/hihy/conf/backup.yaml" "domain")
     insecure=$(getYamlValue "/etc/hihy/conf/backup.yaml" "insecure")
     masquerade_tcp=$(getYamlValue "/etc/hihy/conf/backup.yaml" "masquerade_tcp")
-    obfs_pass=$(getYamlValue "/etc/hihy/conf/config.yaml" "obfs.salamander.password")
-    if [ -n "${obfs_pass}" ]; then
+    obfs_type=$(getYamlValue "/etc/hihy/conf/config.yaml" "obfs.type")
+    if [ "${obfs_type}" == "salamander" ] || [ "${obfs_type}" == "gecko" ]; then
         obfs_status="true"
+        obfs_pass=$(getYamlValue "/etc/hihy/conf/config.yaml" "obfs.${obfs_type}.password")
     else
         obfs_status="false"
+        obfs_type=""
+        obfs_pass=""
     fi
     SRW=$(getYamlValue "/etc/hihy/conf/config.yaml" "quic.initStreamReceiveWindow")
     CRW=$(getYamlValue "/etc/hihy/conf/config.yaml" "quic.initConnReceiveWindow")
@@ -3101,7 +3113,7 @@ EOF
     addOrUpdateYaml "${metaFile}" "proxies[0].down" "${download} Mbps"
     addOrUpdateYaml "${metaFile}" "proxies[0].skip-cert-verify" "${insecure}"
     if [ "${obfs_status}" == "true" ]; then
-        addOrUpdateYaml "${metaFile}" "proxies[0].obfs" "salamander"
+        addOrUpdateYaml "${metaFile}" "proxies[0].obfs" "${obfs_type}"
         addOrUpdateYaml "${metaFile}" "proxies[0].obfs-password" "${obfs_pass}"
     else
         yq eval 'del(.proxies[0].obfs, .proxies[0].obfs-password)' -i "${metaFile}"
