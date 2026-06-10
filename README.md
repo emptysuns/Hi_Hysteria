@@ -1,4 +1,19 @@
 # Hi Hysteria
+##### (2026/06/10) ver1.08
+
+```
+自签证书默认启用 pinSHA256 指纹校验，更安全；Realm 模式新增分享链接；自签证书默认安装。
+
+1、自签证书默认不再开启不安全连接(insecure)，改为通过 pinSHA256 校验证书指纹，防止中间人攻击
+2、客户端原生配置、分享链接、ClashMeta 配置均已适配 pinSHA256 字段
+3、安装菜单默认证书申请方式改为「自签证书」，无需域名/80端口，即装即用
+4、Realm 模式新增 hysteria2+realm:// 分享链接，支持二维码输出和原生配置一并导出
+5、旧版自签安装自动向后兼容：从现有证书实时计算指纹并升级，无需重装
+```
+
+<details>
+<summary>历史版本</summary>
+
 ##### (2026/05/24) ver1.07
 
 ```
@@ -8,9 +23,6 @@
 2、Gecko 在 Salamander 基础上额外拆分 QUIC 握手包为随机分片，抗 DPI 检测能力更强
 3、服务端、客户端原生配置、分享链接、ClashMeta 配置均已适配双混淆类型
 ```
-
-<details>
-<summary>历史版本</summary>
 
 ##### (2026/05/12) ver1.06
 
@@ -136,7 +148,7 @@ bash <(curl -fsSL https://git.io/hysteria.sh)
  -------------------------------------------
 |**********      Hi Hysteria       **********|
 |**********    Author: emptysuns   **********|
-|**********   Version: ver1.07     **********|
+|**********   Version: ver1.08     **********|
  -------------------------------------------
 Tips: hihy  命令再次运行本脚本.
 ............................................. 
@@ -452,16 +464,20 @@ Starting hihy...
 客户端配置中server字段使用上述牵手地址,认证密码为: a754799f-ac2a-46ff-b82a-d6141b1a2769 
 
 
-Realm模式不支持分享链接和ClashMeta配置,请使用原生配置文件 
+🔗 2、[hysteria2+realm 分享链接] 适用于支持 Realm URI 的客户端: 
+  hysteria2+realm://public@realm.hy2.io/ab747d7f-03a7-4bf7-982c-79967bae7056?auth=a754799f-ac2a-46ff-b82a-d6141b1a2769&pinSHA256=BA:88:45:17:A1...&obfs=salamander&obfs-password=...&sni=helloworld.com#Hy2-roms 
 
-📄 2、[推荐] [Nekoray/V2rayN/NekoBoxforAndroid]原生配置文件,更新最快、参数最全、效果最好。文件地址: ./Hy2-roms-v2rayN.yaml  
+提示: Realm模式暂不支持ClashMeta配置,请使用上方分享链接或原生配置文件。 
+
+📄 3、[推荐] [Nekoray/V2rayN/NekoBoxforAndroid]原生配置文件,更新最快、参数最全、效果最好。文件地址: ./Hy2-roms-v2rayN.yaml  
 客户端使用教程: https://github.com/emptysuns/Hi_Hysteria/blob/main/md/client.md 
 ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓COPY↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ 
 server: realm://public@realm.hy2.io/ab747d7f-03a7-4bf7-982c-79967bae7056
 auth: a754799f-ac2a-46ff-b82a-d6141b1a2769
 tls:
   sni: helloworld.com
-  insecure: true
+  insecure: false
+  pinSHA256: BA:88:45:17:A1...
 transport:
   type: udp
 obfs:

@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="ver1.07"
+hihyV="ver1.08"
 
 HIHY_ROOT_DIR="${HIHY_ROOT_DIR:-/etc/hihy}"
 HIHY_BIN_LINK="${HIHY_BIN_LINK:-/usr/bin/hihy}"
@@ -942,7 +942,7 @@ setHysteriaConfig() {
             echoColor purple "\n->跳过WARP安装,直接使用服务器真实IP"
         fi
     fi
-    echo -e "\033[32m(1/11)请选择证书申请方式:\n\n\033[0m\033[33m\033[01m1、使用ACME申请(推荐,需打开tcp/80端口)\n2、使用本地证书文件\n3、自签证书\n4、dns验证\033[0m\033[32m\n\n输入序号:\033[0m"
+    echo -e "\033[32m(1/11)请选择证书申请方式:\n\n\033[0m\033[33m\033[01m1、使用ACME申请(需打开tcp/80端口)\n2、使用本地证书文件\n3、自签证书(默认,推荐:已通过pinSHA256指纹校验,安全且无需域名/80端口)\n4、dns验证\033[0m\033[32m\n\n输入序号(直接回车使用默认):\033[0m"
     read -r certNum
     useAcme=false
     useLocalCert=false
@@ -1659,6 +1659,7 @@ setHysteriaConfig() {
         addOrUpdateYaml "$yaml_file" "masquerade.listenHTTPS" ":${port}"
     fi
     addOrUpdateYaml "$yaml_file" "speedTest" "true"
+    pinSHA256=""
     if echo "${useAcme}" | grep -q "false"; then
         if echo "${useLocalCert}" | grep -q "false"; then
             v6str=":"
@@ -1671,7 +1672,7 @@ setHysteriaConfig() {
             if [ -z "${remarks}" ]; then
                 remarks="${ip}"
             fi
-            insecure="1"
+            insecure="0"
             days=3650
             mail="no-reply@qq.com"
             echoColor purple "开始生成自签名证书...\n"
@@ -1688,6 +1689,15 @@ setHysteriaConfig() {
             echoColor green "移动 CA 证书到结果目录..."
             mv /etc/hihy/cert/${domain}.ca.crt /etc/hihy/result
             echoColor purple "证书生成成功！\n"
+            # 计算自签证书的 SHA-256 指纹,客户端通过 pinSHA256 校验,无需开启不安全连接(insecure)
+            pinSHA256=$(openssl x509 -noout -fingerprint -sha256 -in /etc/hihy/cert/${domain}.crt 2>/dev/null | sed 's/^.*=//')
+            if [ -n "${pinSHA256}" ]; then
+                echoColor green "证书 SHA-256 指纹: $(echoColor red ${pinSHA256})"
+                echoColor purple "客户端将通过 pinSHA256 校验该指纹,默认不再开启不安全连接(insecure)。\n"
+            else
+                echoColor yellow "未能计算证书指纹,将回退为不安全连接(insecure=1)模式。\n"
+                insecure="1"
+            fi
             addOrUpdateYaml "$yaml_file" "tls.cert" "/etc/hihy/cert/${domain}.crt"
             addOrUpdateYaml "$yaml_file" "tls.key" "/etc/hihy/cert/${domain}.key"
             addOrUpdateYaml "$yaml_file" "tls.sniGuard" "strict"
@@ -1892,6 +1902,9 @@ setHysteriaConfig() {
         addOrUpdateYaml ${backup_file} "insecure" "true"
     else
         addOrUpdateYaml ${backup_file} "insecure" "false"
+    fi
+    if [ -n "${pinSHA256}" ]; then
+        addOrUpdateYaml ${backup_file} "pinSHA256" "${pinSHA256}" "string"
     fi
     if ! installHihyLauncher; then
         markInstallFailed "launcher" "failed to install hihy launcher"
@@ -2720,6 +2733,15 @@ generate_client_config() {
     auth_secret=$(getYamlValue "/etc/hihy/conf/config.yaml" "auth.password")
     tls_sni=$(getYamlValue "/etc/hihy/conf/backup.yaml" "domain")
     insecure=$(getYamlValue "/etc/hihy/conf/backup.yaml" "insecure")
+    pinSHA256=$(getBackupValueOrDefault "/etc/hihy/conf/backup.yaml" "pinSHA256" "")
+    if [ -z "${pinSHA256}" ] || [ "${pinSHA256}" == "null" ]; then
+        pinSHA256=""
+        # 向后兼容: 旧版自签安装只记录了 insecure 而未保存指纹,这里从证书文件实时计算,自动升级为 pinSHA256 校验
+        cert_path=$(getYamlValue "/etc/hihy/conf/config.yaml" "tls.cert")
+        if [ "${insecure}" == "true" ] && [ -n "${cert_path}" ] && [ "${cert_path}" != "null" ] && [ -f "${cert_path}" ]; then
+            pinSHA256=$(openssl x509 -noout -fingerprint -sha256 -in "${cert_path}" 2>/dev/null | sed 's/^.*=//')
+        fi
+    fi
     masquerade_tcp=$(getYamlValue "/etc/hihy/conf/backup.yaml" "masquerade_tcp")
     obfs_type=$(getYamlValue "/etc/hihy/conf/config.yaml" "obfs.type")
     if [ "${obfs_type}" == "salamander" ] || [ "${obfs_type}" == "gecko" ]; then
@@ -2794,7 +2816,11 @@ generate_client_config() {
     fi
 
     addOrUpdateYaml "$client_configfile" "tls.sni" "${tls_sni}"
-    if [ "${insecure}" == "true" ]; then
+    if [ -n "${pinSHA256}" ]; then
+        # 通过证书指纹校验自签证书,安全且无需开启不安全连接
+        addOrUpdateYaml "$client_configfile" "tls.pinSHA256" "${pinSHA256}" "string"
+        addOrUpdateYaml "$client_configfile" "tls.insecure" "false"
+    elif [ "${insecure}" == "true" ]; then
         addOrUpdateYaml "$client_configfile" "tls.insecure" "true"
     elif [ "${insecure}" == "false" ]; then
         addOrUpdateYaml "$client_configfile" "tls.insecure" "false"
@@ -2841,7 +2867,19 @@ generate_client_config() {
     addOrUpdateYaml "$client_configfile" "lazy" "true"
     addOrUpdateYaml "$client_configfile" "socks5.listen" "127.0.0.1:20808"
     if [ "${realmMode}" == "true" ]; then
-        url=""
+        # Realm 分享链接: hysteria2+realm://<token>@<牵手服务器>[:port]/<realm名>?auth=<密码>&...
+        # 由存储的 realm:// URI 转换而来: 仅替换协议头,userinfo 是牵手 token,Hysteria 密码放入 auth 参数
+        realmShare=$(echo "${realmURI}" | sed -E 's#^realm(\+http)?://#hysteria2+realm\1://#')
+        url="${realmShare}?auth=${auth_secret}"
+        if [ -n "${pinSHA256}" ]; then
+            url="${url}&pinSHA256=${pinSHA256}"
+        elif [ "${insecure}" == "true" ]; then
+            url="${url}&insecure=1"
+        fi
+        if [ "${obfs_status}" == "true" ]; then
+            url="${url}&obfs=${obfs_type}&obfs-password=${obfs_pass}"
+        fi
+        url="${url}&sni=${tls_sni}#Hy2-${remarks}"
     else
         url_base="hy2://${auth_secret}@${serverAddress}"
 
@@ -2851,7 +2889,10 @@ generate_client_config() {
             url_base="${url_base}:${port}/?"
         fi
 
-        if [ "${insecure}" == "true" ]; then
+        if [ -n "${pinSHA256}" ]; then
+            # 自签证书通过指纹校验,无需 insecure
+            url_base="${url_base}pinSHA256=${pinSHA256}"
+        elif [ "${insecure}" == "true" ]; then
             url_base="${url_base}insecure=1"
         else
             url_base="${url_base}insecure=0"
@@ -2878,7 +2919,12 @@ generate_client_config() {
             echo -e "💡 您可能需要$(echoColor red 手动在浏览器添加h3)支持才能访问"
         fi
 
-        if [ "${insecure}" == "true" ]; then
+        if [ -n "${pinSHA256}" ]; then
+            echo -e "\n🔐 安全提示:"
+            echo -e "🔒 您使用自签证书,客户端已通过 $(echoColor red pinSHA256) 校验证书指纹,连接安全,无需开启不安全连接(insecure)。"
+            echo -e "   证书指纹: $(echoColor red ${pinSHA256})"
+            echo -e "   如需在浏览器访问伪装网站,可自行信任证书或设置 hosts 指向该域名。"
+        elif [ "${insecure}" == "true" ]; then
             echo -e "\n⚠️  安全提示:"
             echo -e "🔒 您使用自签证书,如需要验证伪装网站:"
             echo -e "   1. 自行修改浏览器信任证书"
@@ -2895,7 +2941,12 @@ generate_client_config() {
         echoColor yellow "⚠ 请确保您的客户端支持Hysteria2 Realm模式"
         echoColor yellow "客户端配置中server字段使用上述牵手地址,认证密码为: "$(echoColor red ${auth_secret})
         echo -e "\n"
-        echoColor yellow "Realm模式不支持分享链接和ClashMeta配置,请使用原生配置文件"
+        echoColor purple "\n🔗 2、[hysteria2+realm 分享链接] 适用于支持 Realm URI 的客户端:\n"
+        echoColor green "${url}"
+        echo -e "\n"
+        generate_qr "${url}"
+        echo -e "\n"
+        echoColor yellow "提示: Realm模式暂不支持ClashMeta配置,请使用上方分享链接或原生配置文件。"
     else
         echoColor purple "\n🔗 2、[v2rayN-Windows/v2rayN-Andriod/nekobox/passwall/Shadowrocket]分享链接:\n"
         echoColor green "${url}"
@@ -3073,6 +3124,15 @@ EOF
     auth_secret=$(getYamlValue "/etc/hihy/conf/config.yaml" "auth.password")
     tls_sni=$(getYamlValue "/etc/hihy/conf/backup.yaml" "domain")
     insecure=$(getYamlValue "/etc/hihy/conf/backup.yaml" "insecure")
+    pinSHA256=$(getBackupValueOrDefault "/etc/hihy/conf/backup.yaml" "pinSHA256" "")
+    if [ -z "${pinSHA256}" ] || [ "${pinSHA256}" == "null" ]; then
+        pinSHA256=""
+        # 向后兼容: 旧版自签安装只记录了 insecure 而未保存指纹,这里从证书文件实时计算,自动升级为 pinSHA256 校验
+        cert_path=$(getYamlValue "/etc/hihy/conf/config.yaml" "tls.cert")
+        if [ "${insecure}" == "true" ] && [ -n "${cert_path}" ] && [ "${cert_path}" != "null" ] && [ -f "${cert_path}" ]; then
+            pinSHA256=$(openssl x509 -noout -fingerprint -sha256 -in "${cert_path}" 2>/dev/null | sed 's/^.*=//')
+        fi
+    fi
     masquerade_tcp=$(getYamlValue "/etc/hihy/conf/backup.yaml" "masquerade_tcp")
     obfs_type=$(getYamlValue "/etc/hihy/conf/config.yaml" "obfs.type")
     if [ "${obfs_type}" == "salamander" ] || [ "${obfs_type}" == "gecko" ]; then
@@ -3111,7 +3171,14 @@ EOF
     addOrUpdateYaml "${metaFile}" "proxies[0].password" "${auth_secret}"
     addOrUpdateYaml "${metaFile}" "proxies[0].up" "${upload} Mbps"
     addOrUpdateYaml "${metaFile}" "proxies[0].down" "${download} Mbps"
-    addOrUpdateYaml "${metaFile}" "proxies[0].skip-cert-verify" "${insecure}"
+    if [ -n "${pinSHA256}" ]; then
+        # 通过证书指纹校验,Clash.Meta 使用 fingerprint 字段,无需跳过证书校验
+        addOrUpdateYaml "${metaFile}" "proxies[0].skip-cert-verify" "false"
+        addOrUpdateYaml "${metaFile}" "proxies[0].fingerprint" "${pinSHA256}" "string"
+    else
+        addOrUpdateYaml "${metaFile}" "proxies[0].skip-cert-verify" "${insecure}"
+        yq eval 'del(.proxies[0].fingerprint)' -i "${metaFile}"
+    fi
     if [ "${obfs_status}" == "true" ]; then
         addOrUpdateYaml "${metaFile}" "proxies[0].obfs" "${obfs_type}"
         addOrUpdateYaml "${metaFile}" "proxies[0].obfs-password" "${obfs_pass}"
