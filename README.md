@@ -11,34 +11,6 @@
 5、旧版自签安装自动向后兼容：从现有证书实时计算指纹并升级，无需重装
 ```
 
-<details>
-<summary>历史版本</summary>
-
-##### (2026/05/24) ver1.07
-
-```
-新增 Gecko 混淆方式支持。
-
-1、obfs 混淆新增 Gecko（实验性）选项，可在 Salamander 和 Gecko 之间选择
-2、Gecko 在 Salamander 基础上额外拆分 QUIC 握手包为随机分片，抗 DPI 检测能力更强
-3、服务端、客户端原生配置、分享链接、ClashMeta 配置均已适配双混淆类型
-```
-
-##### (2026/05/12) ver1.06
-
-```
-Realm 模式 WARP 集成、obfs 配置修复、代码重构与多项优化。
-
-1、Realm 模式新增 Cloudflare WARP 安装选项，通过 CF IP 隧道辅助打洞，无需公网 IP
-2、Realm 模式下自动跳过防火墙操作和伪装（masquerade）配置段，避免无效交互
-3、WARP 卸载改为交互式确认，Realm 阶段增加 WARP 检测，退出时自动清理
-4、修复不使用 obfs 时配置残留字段问题，改为完全删除 obfs 段而非保留空值
-5、Core 更新后清除版本缓存，防止过期更新通知反复提醒
-6、代码重构：shfmt 格式化、MTU/WARP 默认值更新
-```
-
-</details>
-
 
 [realm p2p穿透打洞，内网使用hysteria2介绍，可以让hy2直接经过cloudflare中转](md/realm.md)
 
