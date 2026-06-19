@@ -1809,7 +1809,7 @@ setHysteriaConfig() {
     if [ "${useAcme}" == "true" ]; then
         countdown 20
     else
-        countdown 5
+        countdown 10
     fi
     msg=$(cat ./hihy_debug.info)
     case ${msg} in
