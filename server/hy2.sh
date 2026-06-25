@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="ver1.08"
+hihyV="ver1.08-a"
 
 HIHY_ROOT_DIR="${HIHY_ROOT_DIR:-/etc/hihy}"
 HIHY_BIN_LINK="${HIHY_BIN_LINK:-/usr/bin/hihy}"
@@ -775,8 +775,6 @@ recoverPartialInstallState() {
         sed -i '/\/etc\/rc\.d\/allow-port start/d' "$rc_local"
         sed -i '/\/etc\/rc\.d\/port-hopping start/d' "$rc_local"
     fi
-
-    rm -f "$bin_link"
 }
 
 addOrUpdateYaml() {
@@ -1700,7 +1698,11 @@ setHysteriaConfig() {
             fi
             addOrUpdateYaml "$yaml_file" "tls.cert" "/etc/hihy/cert/${domain}.crt"
             addOrUpdateYaml "$yaml_file" "tls.key" "/etc/hihy/cert/${domain}.key"
-            addOrUpdateYaml "$yaml_file" "tls.sniGuard" "strict"
+            if [ "${realmMode}" == "true" ]; then
+                addOrUpdateYaml "$yaml_file" "tls.sniGuard" "disable"
+            else
+                addOrUpdateYaml "$yaml_file" "tls.sniGuard" "strict"
+            fi
         else
             u_host=${domain}
             u_domain=${domain}
@@ -1710,7 +1712,11 @@ setHysteriaConfig() {
             insecure="0"
             addOrUpdateYaml "$yaml_file" "tls.cert" "${local_cert}"
             addOrUpdateYaml "$yaml_file" "tls.key" "${local_key}"
-            addOrUpdateYaml "$yaml_file" "tls.sniGuard" "strict"
+            if [ "${realmMode}" == "true" ]; then
+                addOrUpdateYaml "$yaml_file" "tls.sniGuard" "disable"
+            else
+                addOrUpdateYaml "$yaml_file" "tls.sniGuard" "strict"
+            fi
         fi
     else
         u_host=${domain}
@@ -1976,6 +1982,7 @@ updateHysteriaCore() {
         if [ "${localV}" = "${remoteV}" ]; then
             echoColor green "Already the latest version. Ignore."
         else
+            local was_running="false"
             if [ -f "/etc/rc.d/hihy" ] || [ -f "/etc/init.d/hihy" ]; then
                 if [ -f "/etc/rc.d/hihy" ]; then
                     msg=$(/etc/rc.d/hihy status)
@@ -1983,17 +1990,17 @@ updateHysteriaCore() {
                     msg=$(/etc/init.d/hihy status)
                 fi
                 if [ "${msg}" == "hihy is running" ]; then
+                    was_running="true"
                     stop
-                    downloadHysteriaCore
-                    start
-                    # 清除版本检查缓存，确保下次运行重新检查（避免显示过时的"有新版本"通知）
-                    rm -f "$HIHY_VERSION_STATUS_FILE"
-                else
-                    echoColor red "hysteria未运行"
                 fi
+            fi
 
-            else
-                echoColor red "未找到启动脚本!"
+            downloadHysteriaCore
+            # 清除版本检查缓存，确保下次运行重新检查（避免显示过时的"有新版本"通知）
+            rm -f "$HIHY_VERSION_STATUS_FILE"
+
+            if [ "${was_running}" == "true" ]; then
+                start
             fi
             echoColor green "Hysteria Core update done."
         fi
@@ -2100,6 +2107,13 @@ install() {
     mkdir -p /etc/hihy/{bin,conf,cert,result,logs}
     markInstallFailed "install-start" "installation started but not completed"
     echoColor purple "Ready to install.\n"
+
+    # 尽早安装 hihy 启动器，确保即使后续步骤失败，用户仍可用 hihy 命令重试
+    if ! installHihyLauncher; then
+        markInstallFailed "launcher" "failed to install hihy launcher at start"
+        echoColor red "hihy 命令安装失败,请检查网络或写入权限后重试."
+        exit 1
+    fi
 
     # 获取版本并下载核心
     version=$(getLatestHysteriaVersion || true)
