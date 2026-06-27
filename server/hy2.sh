@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="ver1.08-a"
+hihyV="ver1.09"
 
 HIHY_ROOT_DIR="${HIHY_ROOT_DIR:-/etc/hihy}"
 HIHY_BIN_LINK="${HIHY_BIN_LINK:-/usr/bin/hihy}"
@@ -1589,6 +1589,10 @@ setHysteriaConfig() {
         addOrUpdateYaml "$yaml_file" "realm.punchTimeout" "5s"
         addOrUpdateYaml "$yaml_file" "realm.heartbeatInterval" "30s"
         addOrUpdateYaml "$yaml_file" "realm.insecure" "false"
+        addOrUpdateYaml "$yaml_file" "realm.ipMode" "dual"
+        addOrUpdateYaml "$yaml_file" "realm.portMapping.enabled" "true"
+        addOrUpdateYaml "$yaml_file" "realm.portMapping.timeout" "30s"
+        addOrUpdateYaml "$yaml_file" "realm.portMapping.lifetime" "10m"
     else
         yq eval 'del(.realm)' -i "$yaml_file"
     fi
@@ -2825,6 +2829,10 @@ generate_client_config() {
         addOrUpdateYaml "$client_configfile" "realm.punchTimeout" "5s"
         addOrUpdateYaml "$client_configfile" "realm.heartbeatInterval" "30s"
         addOrUpdateYaml "$client_configfile" "realm.insecure" "false"
+        addOrUpdateYaml "$client_configfile" "realm.ipMode" "dual"
+        addOrUpdateYaml "$client_configfile" "realm.portMapping.enabled" "true"
+        addOrUpdateYaml "$client_configfile" "realm.portMapping.timeout" "30s"
+        addOrUpdateYaml "$client_configfile" "realm.portMapping.lifetime" "10m"
     else
         yq eval 'del(.realm)' -i "$client_configfile"
     fi
@@ -2878,7 +2886,7 @@ generate_client_config() {
         yq eval 'del(.bandwidth)' -i "$client_configfile"
     fi
     addOrUpdateYaml "$client_configfile" "fastOpen" "true"
-    addOrUpdateYaml "$client_configfile" "lazy" "true"
+    addOrUpdateYaml "$client_configfile" "lazy" "false"
     addOrUpdateYaml "$client_configfile" "socks5.listen" "127.0.0.1:20808"
     if [ "${realmMode}" == "true" ]; then
         # Realm 分享链接: hysteria2+realm://<token>@<牵手服务器>[:port]/<realm名>?auth=<密码>&...
