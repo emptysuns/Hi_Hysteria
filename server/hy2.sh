@@ -253,8 +253,16 @@ displayCachedVersionNotifications() {
     local hihy_remote
     local core_status
     local core_remote
+    local checked_at
+    local now
 
     if [ ! -f "$HIHY_VERSION_STATUS_FILE" ]; then
+        return 0
+    fi
+
+    checked_at=$(readVersionCheckValue "$HIHY_VERSION_STATUS_FILE" "checked_at")
+    now=$(date +%s)
+    if [ -z "$checked_at" ] || [ $((now - checked_at)) -ge "$HIHY_VERSION_CHECK_TTL" ]; then
         return 0
     fi
 
