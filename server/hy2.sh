@@ -264,7 +264,7 @@ displayCachedVersionNotifications() {
     core_remote=$(readVersionCheckValue "$HIHY_VERSION_STATUS_FILE" "core_remote")
 
     if [ "$hihy_status" = "update" ] && [ -n "$hihy_remote" ]; then
-        echoColor purple "[☺] hihy需更新,version:v${hihy_remote},建议更新并查看日志: https://github.com/emptysuns/Hi_Hysteria/"
+        echoColor purple "[☺] hihy需更新,version:${hihy_remote},建议更新并查看日志: https://github.com/emptysuns/Hi_Hysteria/"
     fi
 
     if [ "$core_status" = "update" ] && [ -n "$core_remote" ]; then
@@ -2027,6 +2027,8 @@ hihyUpdate() {
     fi
     if [ "${localV}" = "${remoteV}" ]; then
         echoColor green "Already the latest version.Ignore."
+        # 清除版本检查缓存，防止因缓存过期而显示过时的"有新版本"通知
+        rm -f "$HIHY_VERSION_STATUS_FILE"
     else
         rm -f "$HIHY_BIN_LINK"
         if ! installHihyLauncher /dev/null "$HIHY_BIN_LINK"; then
@@ -2034,6 +2036,8 @@ hihyUpdate() {
             exit 1
         fi
         echoColor green "hihy更新完成."
+        # 清除版本检查缓存，确保下次运行时重新检查并显示正确状态
+        rm -f "$HIHY_VERSION_STATUS_FILE"
     fi
 
 }

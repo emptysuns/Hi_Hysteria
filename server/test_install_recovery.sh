@@ -156,7 +156,7 @@ EOF
 
     local output
     output=$(displayCachedVersionNotifications)
-    assert_output_contains "$output" "hihy需更新,version:vver9.99-z" "cached hihy update notice should be shown"
+    assert_output_contains "$output" "hihy需更新,version:ver9.99-z" "cached hihy update notice should be shown"
     assert_output_contains "$output" "hysteria2 core有更新,version:app/v9.99.9" "cached core update notice should be shown"
 }
 
