@@ -2004,6 +2004,12 @@ updateHysteriaCore() {
                 if [ "${msg}" == "hihy is running" ]; then
                     was_running="true"
                     stop
+                    # 等待进程完全退出后再下载新二进制文件，避免 "Text file busy" 导致下载失败
+                    local wait_count=0
+                    while pgrep -f "/etc/hihy/bin/appS" >/dev/null 2>&1 && [ $wait_count -lt 10 ]; do
+                        sleep 1
+                        wait_count=$((wait_count + 1))
+                    done
                 fi
             fi
 
