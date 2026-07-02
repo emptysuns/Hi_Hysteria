@@ -2908,16 +2908,16 @@ generate_qr() {
     qrencode -t ANSIUTF8 -o - -l "$level" -m "$margin" -s 1 "${url}"
 
     if [ $? -eq 0 ]; then
-        echoColor green "\nQR code generated successfully."
+        echoColor green "\n$(i18n qr_code_generated_success)"
     else
-        echoColor red "\nFailed to generate QR code."
+        echoColor red "\n$(i18n qr_code_generated_failure)"
         return 1
     fi
 }
 
 generate_client_config() {
     if [ ! -e "/etc/rc.d/hihy" ] && [ ! -e "/etc/init.d/hihy" ]; then
-        echoColor red "hysteria2 未安装!"
+        echoColor red "$(i18n client_config_hysteria_not_installed)"
         exit 1
     fi
     remarks=$(getYamlValue "/etc/hihy/conf/backup.yaml" "remarks")
@@ -3107,69 +3107,69 @@ generate_client_config() {
     fi
     # 在生成配置前添加分隔线
     echo -e "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "📝 生成客户端配置文件..."
+    echo -e "$(i18n client_config_generating)"
 
     # 美化输出信息
-    echo -e "\n✨ 配置信息如下:"
+    echo -e "\n$(i18n client_config_info_title)"
     local localV=$(echo app/$(/etc/hihy/bin/appS version | grep Version: | awk '{print $2}' | head -n 1))
-    echo -e "\n📌 当前hysteria2 server版本: $(echoColor red ${localV})"
+    echo -e "\n$(i18n client_config_server_version "$(echoColor red ${localV})")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
     if [ "${realmMode}" != "true" ]; then
         if [ "${portHoppingStatus}" == "false" ]; then
-            echo -e "⚠️  注意: 伪装并未监听tcp端口"
-            echo -e "💡 您可能需要$(echoColor red 手动在浏览器添加h3)支持才能访问"
+            echo -e "$(i18n client_config_masquerade_tcp_not_listened)"
+            echo -e "$(i18n client_config_masquerade_h3_hint "$(echoColor red "$(i18n client_config_masquerade_h3_action)")")"
         fi
 
         if [ -n "${pinSHA256}" ]; then
-            echo -e "\n🔐 安全提示:"
-            echo -e "🔒 您使用自签证书,客户端已通过 $(echoColor red pinSHA256) 校验证书指纹,连接安全,无需开启不安全连接(insecure)。"
-            echo -e "   证书指纹: $(echoColor red ${pinSHA256})"
-            echo -e "   如需在浏览器访问伪装网站,可自行信任证书或设置 hosts 指向该域名。"
+            echo -e "\n$(i18n client_config_security_tip_title)"
+            echo -e "$(i18n client_config_pinsha256_safe_hint "$(echoColor red pinSHA256)")"
+            echo -e "   $(i18n client_config_fingerprint_label "$(echoColor red ${pinSHA256})")"
+            echo -e "   $(i18n client_config_masquerade_trust_hint)"
         elif [ "${insecure}" == "true" ]; then
-            echo -e "\n⚠️  安全提示:"
-            echo -e "🔒 您使用自签证书,如需要验证伪装网站:"
-            echo -e "   1. 自行修改浏览器信任证书"
-            echo -e "   2. 设置hosts使IP指向该域名"
+            echo -e "\n$(i18n client_config_security_warning_title)"
+            echo -e "$(i18n client_config_selfsigned_verify_hint)"
+            echo -e "   $(i18n client_config_selfsigned_verify_step1)"
+            echo -e "   $(i18n client_config_selfsigned_verify_step2)"
         fi
-        echoColor purple "\n🌐 1、伪装地址: $(echoColor red https://${tls_sni}:${port})"
+        echoColor purple "\n$(i18n client_config_masquerade_address "$(echoColor red https://${tls_sni}:${port})")"
     fi
 
     if [ "${realmMode}" == "true" ]; then
-        echoColor purple "\n🌐 Realm模式 - 服务器通过P2P打洞连接,无需公网IP和端口"
-        echoColor purple "\n🔗 1、牵手地址:"
+        echoColor purple "\n$(i18n client_config_realm_mode_desc)"
+        echoColor purple "\n$(i18n client_config_realm_rendezvous_label)"
         echoColor green "  ${realmURI}"
         echo -e "\n"
-        echoColor yellow "⚠ 请确保您的客户端支持Hysteria2 Realm模式"
-        echoColor yellow "客户端配置中server字段使用上述牵手地址,认证密码为: "$(echoColor red ${auth_secret})
+        echoColor yellow "$(i18n client_config_realm_client_support_warning)"
+        echoColor yellow "$(i18n client_config_realm_server_password "$(echoColor red ${auth_secret})")"
         echo -e "\n"
-        echoColor purple "\n🔗 2、[hysteria2+realm 分享链接] 适用于支持 Realm URI 的客户端:\n"
+        echoColor purple "\n$(i18n client_config_realm_share_link_title)"
         echoColor green "${url}"
         echo -e "\n"
         generate_qr "${url}"
         echo -e "\n"
-        echoColor yellow "提示: Realm模式暂不支持ClashMeta配置,请使用上方分享链接或原生配置文件。"
+        echoColor yellow "$(i18n client_config_realm_no_clashmeta_hint)"
     else
-        echoColor purple "\n🔗 2、[v2rayN-Windows/v2rayN-Andriod/nekobox/passwall/Shadowrocket]分享链接:\n"
+        echoColor purple "\n$(i18n client_config_share_link_title)"
         echoColor green "${url}"
         echo -e "\n"
         generate_qr "${url}"
     fi
 
     if [ "${realmMode}" == "true" ]; then
-        echoColor purple "\n📄 2、[推荐] [Nekoray/V2rayN/NekoBoxforAndroid]原生配置文件,更新最快、参数最全、效果最好。文件地址: $(echoColor green ${client_configfile})"
+        echoColor purple "\n$(i18n client_config_native_file_realm "$(echoColor green ${client_configfile})")"
     else
-        echoColor purple "\n📄 3、[推荐] [Nekoray/V2rayN/NekoBoxforAndroid]原生配置文件,更新最快、参数最全、效果最好。文件地址: $(echoColor green ${client_configfile})"
+        echoColor purple "\n$(i18n client_config_native_file_standard "$(echoColor green ${client_configfile})")"
     fi
-    echoColor purple "客户端使用教程: https://github.com/emptysuns/Hi_Hysteria/blob/main/md/client.md"
-    echoColor green "↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓COPY↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓"
+    echoColor purple "$(i18n client_config_tutorial_link)"
+    echoColor green "↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓$(i18n client_config_copy_marker)↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓"
     cat ${client_configfile}
-    echoColor green "↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑COPY↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑"
+    echoColor green "↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑$(i18n client_config_copy_marker)↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑"
     if [ "${realmMode}" != "true" ]; then
         generateMetaYaml
     fi
 
-    echo -e "\n✅ 配置生成完成!"
+    echo -e "\n$(i18n client_config_done)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
 }
 
@@ -3391,9 +3391,9 @@ EOF
     addOrUpdateYaml "${metaFile}" "proxy-groups[0].name" "PROXY"
     addOrUpdateYaml "${metaFile}" "proxy-groups[0].type" "select"
     addOrUpdateYaml "${metaFile}" "proxy-groups[0].proxies" "[${remarks}]"
-    echoColor purple "\n📱 4、[Clash.Mini/ClashX.Meta/Clash.Meta for Android/Clash.verge/openclash] ClashMeta配置。文件地址: $(echoColor green ${metaFile})"
+    echoColor purple "\n$(i18n client_config_clashmeta_file "$(echoColor green ${metaFile})")"
     if [ "${realmMode}" == "true" ]; then
-        echoColor yellow "⚠ Clash Meta可能不完全支持Realm模式,建议优先使用原生配置文件"
+        echoColor yellow "$(i18n client_config_clashmeta_realm_hint)"
     fi
 
 }
