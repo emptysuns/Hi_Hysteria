@@ -380,11 +380,11 @@ displayCachedVersionNotifications() {
     core_remote=$(readVersionCheckValue "$HIHY_VERSION_STATUS_FILE" "core_remote")
 
     if [ "$hihy_status" = "update" ] && [ -n "$hihy_remote" ]; then
-        echoColor purple "[☺] hihy需更新,version:${hihy_remote},建议更新并查看日志: https://github.com/emptysuns/Hi_Hysteria/"
+        echoColor purple "$(i18n notify_hihy_update ${hihy_remote})"
     fi
 
     if [ "$core_status" = "update" ] && [ -n "$core_remote" ]; then
-        echoColor purple "[!] hysteria2 core有更新,version:${core_remote}  日志: https://v2.hysteria.network/docs/Changelog/"
+        echoColor purple "$(i18n notify_core_update ${core_remote})"
     fi
 }
 
@@ -2795,7 +2795,7 @@ delPortHoppingNat() {
 
 checkRoot() {
     if [ "$(id -u)" -ne 0 ]; then
-        echoColor red "Please run this script with root privileges!"
+        echoColor red "$(i18n error_root_required)"
         exit 1
     fi
 }
@@ -3402,7 +3402,7 @@ checkLogs() {
     if [ -f "/etc/hihy/logs/hihy.log" ]; then
         tail -f /etc/hihy/logs/hihy.log
     else
-        echoColor red "日志文件不存在!"
+        echoColor red "$(i18n logs_not_found)"
     fi
 }
 start() {
@@ -3414,12 +3414,12 @@ start() {
             /etc/init.d/hihy start
         fi
         if [ $? -eq 0 ]; then
-            echoColor green "启动成功!"
+            echoColor green "$(i18n service_start_success)"
         else
-            echoColor red "启动失败!"
+            echoColor red "$(i18n service_start_failure)"
         fi
     else
-        echoColor red "未找到启动脚本!"
+        echoColor red "$(i18n service_script_not_found)"
     fi
 }
 stop() {
@@ -3430,12 +3430,12 @@ stop() {
             /etc/init.d/hihy stop
         fi
         if [ $? -eq 0 ]; then
-            echoColor green "停止成功!"
+            echoColor green "$(i18n service_stop_success)"
         else
-            echoColor red "停止失败!"
+            echoColor red "$(i18n service_stop_failure)"
         fi
     else
-        echoColor red "未找到启动脚本!"
+        echoColor red "$(i18n service_script_not_found)"
     fi
 }
 restart() {
@@ -3446,12 +3446,12 @@ restart() {
             /etc/init.d/hihy restart
         fi
         if [ $? -eq 0 ]; then
-            echoColor green "重启成功!"
+            echoColor green "$(i18n service_restart_success)"
         else
-            echoColor red "重启失败!"
+            echoColor red "$(i18n service_restart_failure)"
         fi
     else
-        echoColor red "未找到启动脚本!"
+        echoColor red "$(i18n service_script_not_found)"
     fi
 }
 checkStatus() {
@@ -3462,19 +3462,19 @@ checkStatus() {
             msg=$(/etc/init.d/hihy status)
         fi
         if [ $? -ne 0 ]; then
-            echoColor red "检查状态失败!"
+            echoColor red "$(i18n service_status_failure)"
             exit 1
         fi
 
-        if echo "$msg" | grep -q "hihy is running"; then
-            echoColor green "hysteria正在运行"
+        if echo "$msg" | grep -q "is running"; then
+            echoColor green "$(i18n service_running "hysteria")"
             version=$(/etc/hihy/bin/appS version | grep "^Version" | awk '{print $2}')
-            echoColor purple "当前版本: $(echoColor red ${version})"
+            echoColor purple "$(i18n service_current_version ${version})"
         else
-            echoColor red "hysteria未运行"
+            echoColor red "$(i18n service_not_running "hysteria")"
         fi
     else
-        echoColor red "未找到启动脚本!"
+        echoColor red "$(i18n service_script_not_found)"
     fi
 }
 
@@ -3482,13 +3482,13 @@ checkStatus() {
 format_bytes() {
     local bytes=$1
     if [ $bytes -lt 1024 ]; then
-        echo "${bytes}B"
+        echo "$(i18n unit_bytes ${bytes})"
     elif [ $bytes -lt $((1024 * 1024)) ]; then
-        echo "$(echo "scale=2; $bytes/1024" | bc)KB"
+        echo "$(i18n unit_kilobytes $(echo "scale=2; $bytes/1024" | bc))"
     elif [ $bytes -lt $((1024 * 1024 * 1024)) ]; then
-        echo "$(echo "scale=2; $bytes/(1024*1024)" | bc)MB"
+        echo "$(i18n unit_megabytes $(echo "scale=2; $bytes/(1024*1024)" | bc))"
     else
-        echo "$(echo "scale=2; $bytes/(1024*1024*1024)" | bc)GB"
+        echo "$(i18n unit_gigabytes $(echo "scale=2; $bytes/(1024*1024*1024)" | bc))"
     fi
 }
 
@@ -3502,10 +3502,10 @@ getHysteriaTrafic() {
         CURL_OPTS=()
     fi
 
-    echo "=========== Hysteria 服务器状态 ==========="
+    echo "$(i18n traffic_server_status_title)"
 
     # 流量统计部分保持不变
-    echoColor green "【流量统计】"
+    echoColor green "$(i18n traffic_stats_label)"
     curl -s "${CURL_OPTS[@]}" "http://127.0.0.1:${api_port}/traffic" \
         | grep -oE '"[^"]+":{"tx":[0-9]+,"rx":[0-9]+}' \
         | while IFS=: read -r user stats; do
@@ -3514,43 +3514,56 @@ getHysteriaTrafic() {
             user=$(echo $user | tr -d '"')
             tx_formatted=$(format_bytes $tx)
             rx_formatted=$(format_bytes $rx)
-            printf "用户: %-20s 上传: %8s  下载: %8s\n" "$user" "$tx_formatted" "$rx_formatted"
+            printf "$(i18n traffic_stats_row)\n" "$user" "$tx_formatted" "$rx_formatted"
         done
 
     # 在线用户部分保持不变
-    echoColor green "\n【在线用户】"
+    echoColor green "\n$(i18n traffic_online_users_label)"
     curl -s "${CURL_OPTS[@]}" "http://127.0.0.1:${api_port}/online" \
         | grep -oE '"[^"]+":[0-9]+' \
         | while IFS=: read -r user count; do
             user=$(echo $user | tr -d '"')
             count=$(echo $count | tr -d ' ')
-            printf "用户: %-20s 设备数: %d\n" "$user" "$count"
+            printf "$(i18n traffic_online_users_row)\n" "$user" "$count"
         done
 
-    echoColor green "\n【活动连接】"
+    echoColor green "\n$(i18n traffic_active_connections_label)"
     STREAMS_OUTPUT=$(curl -s "${CURL_OPTS[@]}" -H "Accept: text/plain" "http://127.0.0.1:${api_port}/dump/streams")
 
     if [ "$(echo "$STREAMS_OUTPUT" | wc -l)" -le 1 ]; then
-        echo "当前没有活动连接"
+        echo "$(i18n traffic_no_active_connections)"
     else
         # 打印表头
+        local _h_state _h_user _h_conn_id _h_flows _h_up _h_down _h_alive _h_last_active _h_req_addr _h_target_addr
+        _h_state="$(i18n traffic_header_state)"
+        _h_user="$(i18n traffic_header_user)"
+        _h_conn_id="$(i18n traffic_header_conn_id)"
+        _h_flows="$(i18n traffic_header_flows)"
+        _h_up="$(i18n traffic_header_upload)"
+        _h_down="$(i18n traffic_header_download)"
+        _h_alive="$(i18n traffic_header_alive_time)"
+        _h_last_active="$(i18n traffic_header_last_active)"
+        _h_req_addr="$(i18n traffic_header_request_address)"
+        _h_target_addr="$(i18n traffic_header_target_address)"
         printf "%-8s | %-15s | %-10s | %-3s | %-10s | %-10s | %-12s | %-12s | %-20s | %-20s\n" \
-            "状态" "用户" "连接ID" "流数" "上传" "下载" "存活时间" "最后活动" "请求地址" "目标地址"
+            "$_h_state" "$_h_user" "$_h_conn_id" "$_h_flows" "$_h_up" "$_h_down" "$_h_alive" "$_h_last_active" "$_h_req_addr" "$_h_target_addr"
         echo "----------|-----------------|------------|------|------------|------------|--------------|--------------|----------------------|----------------------"
 
         # 使用临时文件存储排序数据
         temp_file=$(mktemp)
 
-        echo "$STREAMS_OUTPUT" | awk 'BEGIN {
-            status["ESTAB"]="已建立"
-            status["CLOSED"]="已关闭"
+        echo "$STREAMS_OUTPUT" | awk -v estab="$(i18n traffic_status_estab)" \
+            -v closed="$(i18n traffic_status_closed)" \
+            'BEGIN {
+            status["ESTAB"]=estab
+            status["CLOSED"]=closed
         }
 
         function format_bytes(bytes) {
-            if (bytes < 1024) return bytes "B"
-            if (bytes < 1024*1024) return sprintf("%.2fKB", bytes/1024)
-            if (bytes < 1024*1024*1024) return sprintf("%.2fMB", bytes/(1024*1024))
-            return sprintf("%.2fGB", bytes/(1024*1024*1024))
+            if (bytes < 1024) return bytes byte_suffix
+            if (bytes < 1024*1024) return sprintf("%.2f%s", bytes/1024, kb_suffix)
+            if (bytes < 1024*1024*1024) return sprintf("%.2f%s", bytes/(1024*1024), mb_suffix)
+            return sprintf("%.2f%s", bytes/(1024*1024*1024), gb_suffix)
         }
 
         function format_time(time) {
@@ -3575,10 +3588,10 @@ getHysteriaTrafic() {
         }
 
         function format_time_display(seconds) {
-            if (seconds < 1) return sprintf("%.0fms", seconds * 1000)
-            if (seconds < 60) return sprintf("%.1f秒", seconds)
-            if (seconds < 3600) return sprintf("%.1f分钟", seconds/60)
-            return sprintf("%.1f小时", seconds/3600)
+            if (seconds < 1) return sprintf("%.0f%s", seconds * 1000, ms_suffix)
+            if (seconds < 60) return sprintf("%.1f%s", seconds, s_suffix)
+            if (seconds < 3600) return sprintf("%.1f%s", seconds/60, m_suffix)
+            return sprintf("%.1f%s", seconds/3600, h_suffix)
         }
 
         NR > 1 {
@@ -3589,7 +3602,15 @@ getHysteriaTrafic() {
                 format_time_display(format_time($7)), \
                 last_active, \
                 $9, $10
-        }' | sort -t'|' -k8,8nr >"$temp_file"
+        }' -v byte_suffix="$(i18n unit_byte_literal)" \
+            -v kb_suffix="$(i18n unit_kilobyte_literal)" \
+            -v mb_suffix="$(i18n unit_megabyte_literal)" \
+            -v gb_suffix="$(i18n unit_gigabyte_literal)" \
+            -v ms_suffix="$(i18n unit_millisecond_literal)" \
+            -v s_suffix="$(i18n unit_second_literal)" \
+            -v m_suffix="$(i18n unit_minute_literal)" \
+            -v h_suffix="$(i18n unit_hour_literal)" \
+            | sort -t'|' -k8,8nr >"$temp_file"
 
         # 读取排序后的数据并格式化输出
         while IFS='|' read -r state user conn_id flows up down alive last_active req_addr target_addr; do
@@ -3601,7 +3622,7 @@ getHysteriaTrafic() {
         rm -f "$temp_file"
     fi
 
-    echo "========================================"
+    echo "$(i18n traffic_separator_line)"
 }
 
 # 辅助函数：格式化时间显示
@@ -3610,20 +3631,20 @@ format_time_display() {
 
     # 处理毫秒级别
     if (($(echo "$seconds < 1" | bc -l))); then
-        printf "%.0f毫秒" $(echo "$seconds * 1000" | bc -l)
+        printf "$(i18n unit_milliseconds $(echo "$seconds * 1000" | bc -l))"
         return
     fi
 
     # 处理秒级别
     if (($(echo "$seconds < 60" | bc -l))); then
-        printf "%.1f秒" "$seconds"
+        printf "$(i18n unit_seconds $seconds)"
         return
     fi
 
     # 处理分钟级别
     if (($(echo "$seconds < 3600" | bc -l))); then
         local minutes=$(echo "$seconds / 60" | bc -l)
-        printf "%.1f分钟" "$minutes"
+        printf "$(i18n unit_minutes $minutes)"
         return
     fi
 
@@ -3632,9 +3653,9 @@ format_time_display() {
     # 如果小时数小于0.1，显示为分钟
     if (($(echo "$hours < 0.1" | bc -l))); then
         local minutes=$(echo "$seconds / 60" | bc -l)
-        printf "%.1f分钟" "$minutes"
+        printf "$(i18n unit_minutes $minutes)"
     else
-        printf "%.1f小时" "$hours"
+        printf "$(i18n unit_hours $hours)"
     fi
 }
 
@@ -3654,26 +3675,26 @@ delHihyFirewallPort() {
     if command -v ufw >/dev/null && ufw status | hasFirewallToken "active"; then
         if ufw status | hasFirewallToken "${port}/${protocol}"; then
             ufw delete allow "${port}/${protocol}" 2>/dev/null
-            echoColor purple "UFW DELETE: ${port}/${protocol}"
+            echoColor purple "$(i18n firewall_ufw_delete ${port}/${protocol})"
         # 兼容旧版本未带协议的 ufw 规则
         elif ufw status | hasFirewallToken "${port}"; then
             ufw delete allow "${port}" 2>/dev/null
-            echoColor purple "UFW DELETE: ${port}"
+            echoColor purple "$(i18n firewall_ufw_delete ${port})"
         fi
         if [ -n "${firewall_port_range}" ] && ufw status | hasFirewallToken "${firewall_port_range}/${protocol}"; then
             ufw delete allow "${firewall_port_range}/${protocol}" 2>/dev/null
-            echoColor purple "UFW DELETE: ${firewall_port_range}/${protocol}"
+            echoColor purple "$(i18n firewall_ufw_delete ${firewall_port_range}/${protocol})"
         fi
     elif command -v firewall-cmd >/dev/null && systemctl is-active --quiet firewalld; then
         if firewall-cmd --list-ports --permanent | hasFirewallToken "${port}/${protocol}"; then
             firewall-cmd --zone=public --remove-port="${port}/${protocol}" --permanent 2>/dev/null
             firewall-cmd --reload 2>/dev/null
-            echoColor purple "FIREWALLD DELETE: ${port}/${protocol}"
+            echoColor purple "$(i18n firewall_firewalld_delete ${port}/${protocol})"
         fi
         if [ -n "${firewall_port_range}" ] && firewall-cmd --list-ports --permanent | hasFirewallToken "${firewall_port_range}/${protocol}"; then
             firewall-cmd --zone=public --remove-port="${firewall_port_range}/${protocol}" --permanent 2>/dev/null
             firewall-cmd --reload 2>/dev/null
-            echoColor purple "FIREWALLD DELETE: ${firewall_port_range}/${protocol}"
+            echoColor purple "$(i18n firewall_firewalld_delete ${firewall_port_range}/${protocol})"
         fi
     elif command -v iptables >/dev/null; then
         iptables-save | sed -e "/hihysteria/d" | iptables-restore
@@ -3692,9 +3713,9 @@ delHihyFirewallPort() {
             fi
         fi
 
-        echoColor purple "IPTABLES DELETE: ${port}/${protocol}"
+        echoColor purple "$(i18n firewall_iptables_delete ${port}/${protocol})"
         if [ -n "${firewall_port_range}" ]; then
-            echoColor purple "IPTABLES DELETE: ${firewall_port_range}/${protocol}"
+            echoColor purple "$(i18n firewall_iptables_delete ${firewall_port_range}/${protocol})"
         fi
     fi
 }
