@@ -565,7 +565,7 @@ checkSystemForUpdate() {
         installType="apk add --no-cache"
         upgrade="apk update"
     else
-        echoColor red "\n未检测到支持的包管理器，请将以下信息反馈给开发者："
+        echoColor red "\n$(i18n package_manager_not_supported)"
         echoColor yellow "$(cat /etc/issue 2>/dev/null)"
         echoColor yellow "$(cat /proc/version 2>/dev/null)"
         exit 1
@@ -605,7 +605,7 @@ checkSystemForUpdate() {
 
     # 仅在需要安装包时更新软件源
     if [ "$updateNeeded" = true ]; then
-        echoColor purple "\n更新软件源..."
+        echoColor purple "\n$(i18n package_manager_update_sources)"
         ${upgrade}
 
         # 安装必需的包
@@ -660,19 +660,19 @@ checkSystemForUpdate() {
             esac
         fi
 
-        echoColor purple "\n软件包安装完成."
+        echoColor purple "\n$(i18n package_install_complete)"
     fi
 
     # 检查 yq 命令
     # 安装 yq
     if ! command -v yq >/dev/null; then
         arch=$(getArchitecture)
-        echoColor purple "正在下载 yq (${arch})..."
+        echoColor purple "$(i18n downloading_yq ${arch})..."
         if ! downloadToFile "https://github.com/mikefarah/yq/releases/latest/download/yq_linux_${arch}" "$HIHY_YQ_BIN"; then
             if ! command -v wget >/dev/null 2>&1 && ! command -v curl >/dev/null 2>&1; then
-                echoColor red "下载 yq 失败：未找到 wget 或 curl"
+                echoColor red "$(i18n download_yq_failed_no_tool)"
             else
-                echoColor red "下载 yq 失败：wget/curl 下载异常"
+                echoColor red "$(i18n download_yq_failed_network)"
             fi
             exit 1
         fi
@@ -698,20 +698,20 @@ getPortBindMsg() {
     command=$(echo "$msg" | awk '{print $1}')
     pid=$(echo "$msg" | awk '{print $2}')
     name=$(echo "$msg" | awk '{print $9}')
-    echoColor purple "Port: ${1}/${2} 已经被 ${command}(${name}) 占用,进程pid为: ${pid}."
-    echoColor green "是否自动关闭端口占用?(y/N)"
+    echoColor purple "$(i18n port_bind_in_use ${1} ${2} ${command} ${name} ${pid})"
+    echoColor green "$(i18n port_bind_auto_close_prompt)"
     read -r bindP
 
     if [ -z "$bindP" ] || [[ ! "$bindP" =~ ^[yY]$ ]]; then
-        echoColor red "由于端口被占用，退出安装。请手动关闭或者更换端口..."
+        echoColor red "$(i18n port_bind_exit)"
         if [ "$1" == "TCP" ] && [ "$2" == "80" ]; then
-            echoColor "如果需求上无法关闭 ${1}/${2}端口，请使用其他证书获取方式"
+            echoColor "$(i18n port_bind_alternative_cert_for_80 ${1} ${2})"
         fi
         exit
     fi
 
     pkill -f "/etc/hihy/bin/appS"
-    echoColor purple "正在解绑..."
+    echoColor purple "$(i18n port_bind_unbinding)"
     sleep 3
 
     if [ "$1" == "TCP" ]; then
@@ -721,10 +721,10 @@ getPortBindMsg() {
     fi
 
     if [ -n "$msg" ]; then
-        echoColor red "端口占用关闭失败,强制杀死进程后进程重启,请查看是否存在守护进程..."
+        echoColor red "$(i18n port_bind_close_failed)"
         exit
     else
-        echoColor green "端口解绑成功..."
+        echoColor green "$(i18n port_bind_unbound)"
     fi
 }
 
@@ -947,7 +947,7 @@ getYamlValue() {
 
 countdown() {
     local seconds=$1
-    echo -ne "\033[32m⏰ 倒计时:\033[0m "
+    echo -ne "\033[32m$(i18n countdown_prefix)\033[0m "
 
     while [ $seconds -gt 0 ]; do
         # 打印当前数字
@@ -965,7 +965,7 @@ countdown() {
 
     # 清除最后一个数字并显示完成消息
     echo -ne " " # 清除最后显示的数字
-    echo -e "\n\033[32m✨ 完成!\033[0m"
+    echo -e "\n\033[32m$(i18n countdown_done)\033[0m"
 }
 
 setHysteriaConfig() {
@@ -2099,10 +2099,10 @@ downloadHysteriaCore() {
     local version
     version=$(getLatestHysteriaVersion)
 
-    echo -e "The Latest hysteria version: $(echoColor red "${version}")\nDownload..."
+    echo -e "$(i18n latest_hysteria_version) $(echoColor red "${version}")\n$(i18n download_label)..."
 
     if [ -z "$version" ]; then
-        echoColor red "[Network error]: Failed to get the latest version of hysteria in Github!"
+        echoColor red "$(i18n network_error_get_latest_version)"
         exit 1
     fi
 
@@ -2130,7 +2130,7 @@ downloadHysteriaCore() {
             download_url="${url_base}loong64"
             ;;
         *)
-            echoColor yellowBlack "Error[OS Message]:${arch}\nPlease open an issue at https://github.com/emptysuns/Hi_Hysteria/issues !"
+            echoColor yellowBlack "$(i18n unsupported_arch ${arch})"
             exit 1
             ;;
     esac
@@ -2139,9 +2139,9 @@ downloadHysteriaCore() {
 
     if [ -f "/etc/hihy/bin/appS" ]; then
         chmod 755 /etc/hihy/bin/appS
-        echoColor purple "\nDownload completed."
+        echoColor purple "\n$(i18n download_completed)"
     else
-        echoColor red "Network Error: Can't connect to Github!"
+        echoColor red "$(i18n network_error_cannot_connect_github)"
         exit 1
     fi
 }
@@ -2151,10 +2151,10 @@ updateHysteriaCore() {
         local localV=$(echo app/$(/etc/hihy/bin/appS version | grep Version: | awk '{print $2}' | head -n 1))
         local remoteV
         remoteV=$(getLatestHysteriaVersion || true)
-        echo -e "Local core version: $(echoColor red "${localV}")"
-        echo -e "Remote core version: $(echoColor red "${remoteV}")"
+        echo -e "$(i18n local_core_version) $(echoColor red "${localV}")"
+        echo -e "$(i18n remote_core_version) $(echoColor red "${remoteV}")"
         if [ "${localV}" = "${remoteV}" ]; then
-            echoColor green "Already the latest version. Ignore."
+            echoColor green "$(i18n already_latest_version)"
         else
             local was_running="false"
             if [ -f "/etc/rc.d/hihy" ] || [ -f "/etc/init.d/hihy" ]; then
@@ -2182,10 +2182,10 @@ updateHysteriaCore() {
             if [ "${was_running}" == "true" ]; then
                 start
             fi
-            echoColor green "Hysteria Core update done."
+            echoColor green "$(i18n hysteria_core_update_done)"
         fi
     else
-        echoColor red "Hysteria core not found."
+        echoColor red "$(i18n hysteria_core_not_found)"
         exit 1
     fi
 }
@@ -2198,20 +2198,20 @@ hihyUpdate() {
     localV=${hihyV}
     remoteV=$(getLatestHihyVersion || true)
     if [ -z $remoteV ]; then
-        echoColor red "Network Error: Can't connect to Github!"
+        echoColor red "$(i18n network_error_cannot_connect_github)"
         exit
     fi
     if [ "${localV}" = "${remoteV}" ]; then
-        echoColor green "Already the latest version.Ignore."
+        echoColor green "$(i18n already_latest_version)"
         # 清除版本检查缓存，防止因缓存过期而显示过时的"有新版本"通知
         rm -f "$HIHY_VERSION_STATUS_FILE"
     else
         rm -f "$HIHY_BIN_LINK"
         if ! installHihyLauncher /dev/null "$HIHY_BIN_LINK"; then
-            echoColor red "hihy更新失败,请检查网络或写入权限."
+            echoColor red "$(i18n hihy_cmd_install_fail)"
             exit 1
         fi
-        echoColor green "hihy更新完成."
+        echoColor green "$(i18n hihy_update_complete)"
         # 清除版本检查缓存，确保下次运行时重新检查并显示正确状态
         rm -f "$HIHY_VERSION_STATUS_FILE"
     fi
@@ -2225,7 +2225,7 @@ hyCore_update_notifycation() {
 setup_rc_local_for_arch() {
     # 检测是否为 Arch Linux
     if grep -q "Arch Linux" /etc/os-release; then
-        echo "Detected Arch Linux. Setting up rc.local with systemd..."
+        echo "$(i18n arch_detected_setup)"
 
         # 创建 /etc/systemd/system/rc-local.service 文件
         cat <<EOF | tee /etc/systemd/system/rc-local.service
@@ -2246,14 +2246,14 @@ EOF
         # 启用 rc-local 服务
         systemctl enable rc-local
 
-        echo "rc.local has been set up and started with systemd."
+        echo "$(i18n arch_rc_local_setup_done)"
     fi
 }
 
 uninstall_rc_local_for_arch() {
     # 检测是否为 Arch Linux
     if grep -q "Arch Linux" /etc/os-release; then
-        echo "Detected Arch Linux. Uninstalling rc.local systemd service..."
+        echo "$(i18n arch_detected_uninstall)"
 
         # 停止并禁用 rc-local 服务
         systemctl stop rc-local
@@ -2265,7 +2265,7 @@ uninstall_rc_local_for_arch() {
         # 重新加载 systemd 配置
         systemctl daemon-reload
 
-        echo "rc.local systemd service has been uninstalled."
+        echo "$(i18n arch_rc_local_uninstall_done)"
     fi
 }
 
@@ -2274,28 +2274,28 @@ install() {
     install_state=$(classifyInstallState)
 
     if [ "$install_state" = "installed" ]; then
-        echoColor green "你已经成功安装hysteria,如需修改配置请使用选项9/12"
+        echoColor green "$(i18n already_installed)"
         exit 0
     fi
 
     if [ "$install_state" = "partially-installed" ]; then
-        echoColor yellow "检测到未完成的安装残留，正在清理脚本管理的文件后继续安装..."
+        echoColor yellow "$(i18n partial_install_cleanup)"
         cleanupLegacyPortHoppingNatIfPresent >/dev/null 2>&1 || true
         delHihyFirewallPort udp >/dev/null 2>&1 || true
         delHihyFirewallPort tcp >/dev/null 2>&1 || true
         recoverPartialInstallState
-        echoColor purple "已完成部分安装状态恢复，继续执行安装。"
+        echoColor purple "$(i18n partial_install_recovered)"
     fi
 
     # 创建必要目录
     mkdir -p /etc/hihy/{bin,conf,cert,result,logs}
     markInstallFailed "install-start" "installation started but not completed"
-    echoColor purple "Ready to install.\n"
+    echoColor purple "$(i18n install_ready)"
 
     # 尽早安装 hihy 启动器，确保即使后续步骤失败，用户仍可用 hihy 命令重试
     if ! installHihyLauncher; then
         markInstallFailed "launcher" "failed to install hihy launcher at start"
-        echoColor red "hihy 命令安装失败,请检查网络或写入权限后重试."
+        echoColor red "$(i18n hihy_cmd_install_fail)"
         exit 1
     fi
 
@@ -2481,7 +2481,7 @@ EOF
     setup_rc_local_for_arch
 
     generate_client_config
-    echoColor yellowBlack "安装完毕"
+    echoColor yellowBlack "$(i18n install_done)"
 }
 
 # 将 listen 中的范围端口格式 47000-48000 转换为防火墙规则使用的 47000:48000
@@ -2500,9 +2500,9 @@ hasFirewallToken() {
 checkUFWAllowPort() {
     local port=$1
     if ufw status | hasFirewallToken "$port"; then
-        echoColor purple "UFW OPEN: ${port}"
+        echoColor purple "$(i18n firewall_ufw_open ${port})"
     else
-        echoColor red "UFW OPEN FAIL: ${port}"
+        echoColor red "$(i18n firewall_ufw_open_fail ${port})"
         exit 1
     fi
 }
@@ -2512,9 +2512,9 @@ checkFirewalldAllowPort() {
     local port=$1
     local protocol=$2
     if firewall-cmd --list-ports --permanent | hasFirewallToken "${port}/${protocol}"; then
-        echoColor purple "FIREWALLD OPEN: ${port}/${protocol}"
+        echoColor purple "$(i18n firewall_firewalld_open ${port} ${protocol})"
     else
-        echoColor red "FIREWALLD OPEN FAIL: ${port}/${protocol}"
+        echoColor red "$(i18n firewall_firewalld_open_fail ${port} ${protocol})"
         exit 1
     fi
 }
@@ -2530,7 +2530,7 @@ allowPort() {
         if command -v iptables >/dev/null 2>&1; then
             if ! iptables -L | grep -q "allow ${1}/${2}(hihysteria)"; then
                 iptables -I INPUT -p ${1} --dport ${2} -m comment --comment "allow ${1}/${2}(hihysteria)" -j ACCEPT
-                echoColor purple "IPTABLES OPEN: ${1}/${2}"
+                echoColor purple "$(i18n firewall_iptables_open ${1} ${2})"
 
                 # 保存 iptables 规则
                 if [ -d /etc/iptables ]; then
@@ -2547,7 +2547,7 @@ allowPort() {
         if command -v nft >/dev/null 2>&1; then
             if ! nft list ruleset | grep -q "allow ${1}/${2}(hihysteria)"; then
                 nft add rule inet filter input ip protocol ${1} dport ${2} comment "allow ${1}/${2}(hihysteria)" accept
-                echoColor purple "NFTABLES OPEN: ${1}/${2}"
+                echoColor purple "$(i18n firewall_nftables_open ${1} ${2})"
                 nft list ruleset >/etc/nftables.conf
             fi
             return 0
@@ -2560,7 +2560,7 @@ allowPort() {
             if systemctl is-active --quiet netfilter-persistent; then
                 if ! iptables -L | grep -q "allow ${1}/${2}(hihysteria)"; then
                     iptables -I INPUT -p ${1} --dport ${2} -m comment --comment "allow ${1}/${2}(hihysteria)" -j ACCEPT
-                    echoColor purple "IPTABLES OPEN: ${1}/${2}"
+                    echoColor purple "$(i18n firewall_iptables_open ${1} ${2})"
                     netfilter-persistent save
                 fi
                 return 0
@@ -2570,7 +2570,7 @@ allowPort() {
             if systemctl is-active --quiet firewalld; then
                 if ! firewall-cmd --list-ports --permanent | hasFirewallToken "${2}/${1}"; then
                     firewall-cmd --zone=public --add-port=${2}/${1} --permanent
-                    echoColor purple "FIREWALLD OPEN: ${1}/${2}"
+                    echoColor purple "$(i18n firewall_firewalld_open ${1} ${2})"
                     firewall-cmd --reload
                 fi
                 return 0
@@ -2616,7 +2616,7 @@ EOF
                 fi
             fi
 
-            echoColor purple "IPTABLES OPEN: ${1}/${2}"
+            echoColor purple "$(i18n firewall_iptables_open ${1} ${2})"
             return 0
         fi
 
@@ -2624,14 +2624,14 @@ EOF
         if command -v nft >/dev/null 2>&1; then
             if ! nft list ruleset | grep -q "allow ${1}/${2}(hihysteria)"; then
                 nft add rule inet filter input ip protocol ${1} dport ${2} comment "allow ${1}/${2}(hihysteria)" accept
-                echoColor purple "NFTABLES OPEN: ${1}/${2}"
+                echoColor purple "$(i18n firewall_nftables_open ${1} ${2})"
                 nft list ruleset >/etc/nftables.conf
             fi
             return 0
         fi
     fi
 
-    echoColor red "未检测到支持的防火墙工具，请手动开放端口 ${1}/${2}"
+    echoColor red "$(i18n no_supported_firewall ${1} ${2})"
     return 1
 }
 
@@ -2642,7 +2642,7 @@ addPortHoppingNat() {
 
     # 检查必需命令
     if ! command -v iptables >/dev/null 2>&1; then
-        echoColor red "未找到 iptables,请先安装"
+        echoColor red "$(i18n iptables_not_found)"
         return 1
     fi
     iptables -t nat -A PREROUTING -p udp --dport $1:$2 -m comment --comment "NAT $1:$2 to $3 (PortHopping-hihysteria)" -j DNAT --to-destination :$3
@@ -2692,7 +2692,7 @@ depend() {
 }
 
 start() {
-    ebegin "Adding Port Hopping NAT rules"
+    ebegin "$(i18n port_hopping_service_adding)"
 EOF
         # 添加实际规则
         echo "    iptables -t nat -A PREROUTING -p udp --dport $1:$2 -m comment --comment \"NAT $1:$2 to $3 (PortHopping-hihysteria)\" -j DNAT --to-destination :$3" >>/etc/init.d/port-hopping
@@ -2702,7 +2702,7 @@ EOF
 }
 
 stop() {
-    ebegin "Removing Port Hopping NAT rules"
+    ebegin "$(i18n port_hopping_service_removing)"
     iptables-save | grep -v "PortHopping-hihysteria" | iptables-restore
     ip6tables-save | grep -v "PortHopping-hihysteria" | ip6tables-restore
     eend $?
@@ -2734,7 +2734,7 @@ EOF
         fi
     fi
 
-    echoColor purple "Port Hopping NAT 规则已添加并持久化。"
+    echoColor purple "$(i18n port_hopping_nat_added)"
 }
 
 delPortHoppingNat() {
@@ -2790,7 +2790,7 @@ delPortHoppingNat() {
         ip6tables-save >/etc/iptables/rules.v6
     fi
 
-    echoColor purple "Port Hopping NAT 规则已清理完成"
+    echoColor purple "$(i18n port_hopping_nat_removed)"
 }
 
 checkRoot() {
@@ -2805,12 +2805,12 @@ uninstall() {
     install_state=$(classifyInstallState)
     portHoppingStatus=$(getBackupValueOrDefault "/etc/hihy/conf/backup.yaml" "portHoppingStatus" "false")
     if [ "$install_state" = "not-installed" ]; then
-        echoColor red "Hysteria 未安装!"
+        echoColor red "$(i18n hysteria_not_installed)"
         exit 1
     fi
 
     if [ "$install_state" = "partially-installed" ]; then
-        echoColor yellow "检测到未完成的安装残留，正在按部分安装状态执行卸载清理..."
+        echoColor yellow "$(i18n partial_uninstall_cleanup)"
     fi
 
     # 停止服务
@@ -2869,16 +2869,16 @@ uninstall() {
 
     # 检测并提示卸载WARP/WireProxy
     if command -v warp >/dev/null 2>&1 && [ -f "/etc/wireguard/warp.conf" ]; then
-        echoColor purple "\n->检测到WARP/WireProxy安装"
-        echoColor green "是否卸载WARP/WireProxy?"
-        echo -e "\033[33m\033[01m1、卸载\n2、保留\033[0m\033[32m\n\n输入序号:\033[0m"
+        echoColor purple "\n$(i18n warp_detected)"
+        echoColor green "$(i18n warp_uninstall_prompt)"
+        echo -e "\033[33m\033[01m$(i18n warp_uninstall_choice)\033[0m\033[32m\n\n$(i18n prompt_enter_number):\033[0m"
         read -r warpUninstallChoice
         if [ -z "${warpUninstallChoice}" ] || [ "${warpUninstallChoice}" == "1" ]; then
-            echoColor purple "\n->正在卸载WARP/WireProxy..."
+            echoColor purple "\n$(i18n warp_uninstalling)"
             warp u || true
-            echoColor purple "\n->WARP/WireProxy卸载完成"
+            echoColor purple "\n$(i18n warp_uninstall_done)"
         else
-            echoColor purple "\n->保留WARP/WireProxy安装"
+            echoColor purple "\n$(i18n warp_keep_installation)"
         fi
     fi
     clearInstallFailureMarker
@@ -2887,9 +2887,9 @@ uninstall() {
     uninstall_rc_local_for_arch
     # 检查是否完全删除
     if [ ! -d "/etc/hihy" ]; then
-        echoColor green "Hysteria 已完全卸载!"
+        echoColor green "$(i18n uninstall_complete)"
     else
-        echoColor red "卸载过程中发生错误，请检查是否有残留文件或进程。"
+        echoColor red "$(i18n uninstall_error)"
         exit 1
     fi
 }
