@@ -3724,51 +3724,51 @@ changeIp64() {
     local socks5_status=$(getYamlValue "/etc/hihy/conf/backup.yaml" "socks5_status")
     local config_file="/etc/hihy/conf/config.yaml"
     if [ "${socks5_status}" == "true" ]; then
-        echoColor red "当前已经开启socks5转发,不支持修改优先级,如需分流请使用ACL管理"
+        echoColor red "$(i18n ip_priority_socks5_active_error)"
         exit 1
     fi
     mode_now=$(getYamlValue "$config_file" "outbounds[0].direct.mode")
 
-    echoColor purple "当前模式: $(echoColor red ${mode_now})"
-    echoColor yellow "1) ipv4优先"
-    echoColor yellow "2) ipv6优先"
-    echoColor yellow "3) 自动选择"
-    echoColor yellow "0) 退出"
-    read -r -p "请选择: " input
+    echoColor purple "$(i18n ip_priority_current_mode "$(echoColor red "${mode_now}")")"
+    echoColor yellow "$(i18n ip_priority_choice_ipv4)"
+    echoColor yellow "$(i18n ip_priority_choice_ipv6)"
+    echoColor yellow "$(i18n ip_priority_choice_auto)"
+    echoColor yellow "$(i18n prompt_exit)"
+    read -r -p "$(i18n prompt_choose)" input
     case $input in
         1)
             if [ "${mode_now}" == "46" ]; then
-                echoColor yellow "当前已经是ipv4优先模式"
+                echoColor yellow "$(i18n ip_priority_already_ipv4)"
             else
                 addOrUpdateYaml "$config_file" "outbounds[0].direct.mode" "46"
                 restart
-                echoColor green "切换成功"
+                echoColor green "$(i18n switch_success)"
             fi
 
             ;;
         2)
             if [ "${mode_now}" == "64" ]; then
-                echoColor yellow "当前已经是ipv6优先模式"
+                echoColor yellow "$(i18n ip_priority_already_ipv6)"
             else
                 addOrUpdateYaml "$config_file" "outbounds[0].direct.mode" "64"
                 restart
-                echoColor green "切换成功"
+                echoColor green "$(i18n switch_success)"
             fi
 
             ;;
 
         3)
             if [ "${mode_now}" == "auto" ]; then
-                echoColor yellow "当前已经是自动选择模式"
+                echoColor yellow "$(i18n ip_priority_already_auto)"
             else
                 addOrUpdateYaml "$config_file" "outbounds[0].direct.mode" "auto"
                 restart
-                echoColor green "切换成功"
+                echoColor green "$(i18n switch_success)"
             fi
             ;;
         0) exit 0 ;;
         *)
-            echoColor red "输入错误!"
+            echoColor red "$(i18n error_input_error)"
             exit 1
             ;;
     esac
@@ -3776,7 +3776,7 @@ changeIp64() {
 
 changeServerConfig() {
     if [ ! -e "/etc/rc.d/hihy" ] && [ ! -e "/etc/init.d/hihy" ]; then
-        echoColor red "请先安装hysteria2,再去修改配置..."
+        echoColor red "$(i18n change_config_install_first)"
         exit
     fi
     portHoppingStatus=$(getYamlValue "/etc/hihy/conf/backup.yaml" "portHoppingStatus")
@@ -3797,100 +3797,100 @@ changeServerConfig() {
     setHysteriaConfig
     start
     generate_client_config
-    echoColor green "配置修改成功"
+    echoColor green "$(i18n change_config_success)"
 
 }
 
 aclControl() {
     local acl_file="/etc/hihy/acl/acl.txt"
     if [ ! -f "${acl_file}" ]; then
-        echoColor red "未找到acl文件"
+        echoColor red "$(i18n acl_file_not_found)"
         exit 1
     fi
-    echoColor purple "请选择管理操作:"
-    echoColor yellow "1) 添加"
-    echoColor yellow "2) 删除"
-    echoColor yellow "3) 查看"
-    echoColor yellow "0) 退出"
-    read -r -p "请选择: " input
+    echoColor purple "$(i18n acl_action_prompt)"
+    echoColor yellow "$(i18n acl_choice_add)"
+    echoColor yellow "$(i18n acl_choice_delete)"
+    echoColor yellow "$(i18n acl_choice_view)"
+    echoColor yellow "$(i18n menu_option_exit)"
+    read -r -p "$(i18n menu_prompt_choice)" input
     case $input in
         1)
-            echoColor green "请选择ACL控制方式"
-            echoColor yellow "1) 添加域名ipv4分流"
-            echoColor yellow "2) 添加域名ipv6分流"
-            echoColor yellow "3) 添加屏蔽域名"
-            read -r -p "请选择: " input
+            echoColor green "$(i18n acl_control_method_title)"
+            echoColor yellow "$(i18n acl_choice_v4_suffix)"
+            echoColor yellow "$(i18n acl_choice_v6_suffix)"
+            echoColor yellow "$(i18n acl_choice_reject_suffix)"
+            read -r -p "$(i18n menu_prompt_choice)" input
             case $input in
                 1)
-                    read -r -p "请输入要分流ipv4的域名: " domain
+                    read -r -p "$(i18n acl_v4_domain_prompt)" domain
                     if [ -z "${domain}" ]; then
-                        echoColor red "域名不能为空"
+                        echoColor red "$(i18n domain_cannot_be_empty)"
                         exit 1
                     fi
                     if grep -q "v4_only(suffix:${domain})" "${acl_file}"; then
-                        echoColor red "规则已存在"
+                        echoColor red "$(i18n acl_rule_exists)"
                     else
                         echo "v4_only(suffix:${domain})" >>"${acl_file}"
-                        echoColor green "添加成功"
+                        echoColor green "$(i18n add_success)"
                         restart
                     fi
                     ;;
                 2)
-                    read -r -p "请输入要分流ipv6的域名: " domain
+                    read -r -p "$(i18n acl_v6_domain_prompt)" domain
                     if [ -z "${domain}" ]; then
-                        echoColor red "域名不能为空"
+                        echoColor red "$(i18n domain_cannot_be_empty)"
                         exit 1
                     fi
                     if grep -q "v6_only(suffix:${domain})" "${acl_file}"; then
-                        echoColor red "规则已存在"
+                        echoColor red "$(i18n acl_rule_exists)"
                     else
                         echo "v6_only(suffix:${domain})" >>"${acl_file}"
-                        echoColor green "添加成功"
+                        echoColor green "$(i18n add_success)"
                         restart
                     fi
                     ;;
                 3)
-                    read -r -p "请输入要屏蔽的域名: " rejectInput
+                    read -r -p "$(i18n acl_reject_domain_prompt)" rejectInput
                     if [ -z "${rejectInput}" ]; then
-                        echoColor red "域名不能为空"
+                        echoColor red "$(i18n domain_cannot_be_empty)"
                         exit 1
                     fi
                     if grep -q "reject(suffix:${rejectInput})" "${acl_file}"; then
-                        echoColor red "规则已存在"
+                        echoColor red "$(i18n acl_rule_exists)"
                     else
                         echo "reject(suffix:${rejectInput})" >>"${acl_file}"
-                        echoColor green "添加成功"
+                        echoColor green "$(i18n add_success)"
                         restart
                     fi
                     ;;
                 *)
-                    echoColor red "输入错误!"
+                    echoColor red "$(i18n error_input_error)"
                     exit 1
                     ;;
             esac
             ;;
         2)
-            read -r -p "请输入要删除的域名规则: " domain
+            read -r -p "$(i18n acl_delete_rule_prompt)" domain
             if [ -z "${domain}" ]; then
-                echoColor red "域名不能为空"
+                echoColor red "$(i18n domain_cannot_be_empty)"
                 exit 1
             fi
             if grep -q "${domain}" "${acl_file}"; then
                 sed -i "/${domain}/d" "${acl_file}"
-                echoColor green "删除成功"
+                echoColor green "$(i18n delete_success)"
                 restart
             else
-                echoColor red "规则不存在"
+                echoColor red "$(i18n acl_rule_not_exists)"
             fi
 
             ;;
         3)
-            echoColor purple "当前ACL列表:"
+            echoColor purple "$(i18n acl_current_list)"
             cat "${acl_file}"
             ;;
         0) exit 0 ;;
         *)
-            echoColor red "输入错误!"
+            echoColor red "$(i18n error_input_error)"
             exit 1
             ;;
     esac
@@ -3899,57 +3899,57 @@ aclControl() {
 
 addSocks5Outbound() {
     if [ ! -f "/etc/hihy/conf/config.yaml" ]; then
-        echoColor red "未找到配置文件"
+        echoColor red "$(i18n config_file_not_found)"
         exit 1
     fi
     local server_config="/etc/hihy/conf/config.yaml"
     local backup_config="/etc/hihy/conf/backup.yaml"
-    echo -e "Tip: WireProxy借助cloudflare warp提供免费好用的socks5代理,比起warp全局开销更小,建议性能不好的机器使用."
-    echo -e "\033[32m请选择:\n\n\033[0m\033[33m\033[01m1、自动添加一个warp socks5接口作为hysteria2出站(默认,使用fscarmen WireProxy方案)\n2、自定义socks5地址\n3、卸载已经配置的outbound\033[0m\033[32m\n\n输入序号:\033[0m"
-    read -r num
+    echo -e "$(i18n socks5_warp_tip)"
+    echoColor yellow "$(i18n menu_option_exit)"
+    read -r -p "$(i18n menu_prompt_choice)" num
     if [ -z "${num}" ] || [ ${num} == "1" ]; then
         socks5_status=$(getYamlValue "/etc/hihy/conf/backup.yaml" "socks5_status")
         if [ "${socks5_status}" == "true" ]; then
-            echoColor red "当前已经开启socks5 outbound,请删除后再添加"
+            echoColor red "$(i18n socks5_already_enabled)"
             exit 1
         fi
         local conf_file="/etc/wireguard/proxy.conf"
         if [ -f "$conf_file" ]; then
-            echoColor green "找到WireProxy配置文件,使用当前配置"
+            echoColor green "$(i18n socks5_warp_config_found)"
         else
             wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh && bash menu.sh w
         fi
 
         if [ ! -f "$conf_file" ]; then
-            echoColor red "未找到WireProxy配置文件,请保证正确安装WireProxy"
+            echoColor red "$(i18n socks5_warp_config_not_found)"
             exit 1
         fi
         local port=$(grep "BindAddress" "$conf_file" | grep -v "^#" | awk -F':' '{print $2}')
-        echoColor purple "->本机WireProxy socks5端口: $(echoColor red ${port})"
+        echoColor purple "$(i18n socks5_local_warp_port "$(echoColor red "${port}")")"
 
         # 在数组开头插入新的outbound配置
         yq eval '.outbounds = [{"name": "warp", "type": "socks5", "socks5": {"addr": "127.0.0.1:'$port'"}}] + .outbounds' -i "${server_config}"
 
         restart
         addOrUpdateYaml ${backup_config} "socks5_status" "true"
-        echoColor green "添加warp outbound成功"
+        echoColor green "$(i18n socks5_add_warp_success)"
 
     elif [ ${num} == "2" ]; then
         socks5_status=$(getYamlValue "/etc/hihy/conf/backup.yaml" "socks5_status")
         if [ "${socks5_status}" == "true" ]; then
-            echoColor red "当前已经开启socks5 outbound,请删除后再添加"
+            echoColor red "$(i18n socks5_already_enabled)"
             exit 1
         fi
-        read -r -p "请输入socks5地址(ip:端口): " socks5_addr
+        read -r -p "$(i18n socks5_addr_prompt)" socks5_addr
         if [ -z "${socks5_addr}" ]; then
-            echoColor red "地址不能为空"
+            echoColor red "$(i18n addr_cannot_be_empty)"
             exit 1
         fi
-        read -r -p "请输入socks5用户名,如果没有鉴权直接留空: " socks5_user
+        read -r -p "$(i18n socks5_user_prompt)" socks5_user
         if [ -n "${socks5_user}" ]; then
-            read -r -p "请输入socks5密码: " socks5_pass
+            read -r -p "$(i18n socks5_pass_prompt)" socks5_pass
             if [ -z "${socks5_pass}" ]; then
-                echoColor red "密码不能为空"
+                echoColor red "$(i18n password_cannot_be_empty)"
                 exit 1
             fi
         fi
@@ -3962,7 +3962,7 @@ addSocks5Outbound() {
         fi
         restart
         addOrUpdateYaml ${backup_config} "socks5_status" "true"
-        echoColor green "添加socks5 outbound成功"
+        echoColor green "$(i18n socks5_add_custom_success)"
     elif [ ${num} == "3" ]; then
         # 删除outbounds相关配置
         outbound_name=$(getYamlValue ${server_config} "outbounds[0].name")
@@ -3973,13 +3973,13 @@ addSocks5Outbound() {
             fi
             restart
             addOrUpdateYaml ${backup_config} "socks5_status" "false"
-            echoColor green "卸载成功"
+            echoColor green "$(i18n uninstall_success)"
         else
-            echoColor red "未找到socks5 outbound"
+            echoColor red "$(i18n socks5_outbound_not_found)"
         fi
 
     else
-        echoColor red "输入错误"
+        echoColor red "$(i18n error_input_error)"
         exit 1
     fi
 
