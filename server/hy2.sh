@@ -3876,36 +3876,36 @@ addSocks5Outbound() {
 show_menu() {
     clear
     echo -e " -------------------------------------------"
-    echo -e "|**********      Hi Hysteria       **********|"
+    echo -e "|**********      $(i18n menu_title)       **********|"
     echo -e "|**********    Author: emptysuns   **********|"
-    echo -e "|**********     Version: $(echoColor red "${hihyV}")    **********|"
+    echo -e "|**********     $(i18n menu_version "$(echoColor red "${hihyV}")")    **********|"
     echo -e " -------------------------------------------"
-    echo -e "Tips: $(echoColor green "hihy") 命令再次运行本脚本."
+    echo -e "$(i18n menu_hint_hihy_cmd "$(echoColor green "hihy")")"
     echo -e "$(echoColor skyBlue ".............................................")"
     echo -e "$(echoColor purple "###############################")"
 
     echo -e "$(echoColor skyBlue ".....................")"
-    echo -e "$(echoColor yellow "1)  安装 hysteria2")"
-    echo -e "$(echoColor magenta "2)  卸载")"
+    echo -e "$(echoColor yellow "$(i18n menu_option_install)")"
+    echo -e "$(echoColor magenta "$(i18n menu_option_uninstall)")"
     echo -e "$(echoColor skyBlue ".....................")"
-    echo -e "$(echoColor yellow "3)  启动")"
-    echo -e "$(echoColor magenta "4)  暂停")"
-    echo -e "$(echoColor yellow "5)  重新启动")"
-    echo -e "$(echoColor yellow "6)  运行状态")"
+    echo -e "$(echoColor yellow "$(i18n menu_option_start)")"
+    echo -e "$(echoColor magenta "$(i18n menu_option_stop)")"
+    echo -e "$(echoColor yellow "$(i18n menu_option_restart)")"
+    echo -e "$(echoColor yellow "$(i18n menu_option_status)")"
     echo -e "$(echoColor skyBlue ".....................")"
-    echo -e "$(echoColor yellow "7)  更新Core")"
-    echo -e "$(echoColor yellow "8)  查看当前配置")"
-    echo -e "$(echoColor red "9)  重新配置")"
-    echo -e "$(echoColor yellow "10) 切换ipv4/ipv6优先级")"
-    echo -e "$(echoColor yellow "11) 更新hihy")"
-    echo -e "$(echoColor lightMagenta "12) ACL域名分流")"
-    echo -e "$(echoColor skyBlue "13) 查看hysteria2统计信息")"
-    echo -e "$(echoColor yellow "14) 查看实时日志")"
-    echo -e "$(echoColor yellow "15) 添加socks5出站[支持自动配置warp]")"
+    echo -e "$(echoColor yellow "$(i18n menu_option_update_core)")"
+    echo -e "$(echoColor yellow "$(i18n menu_option_view_config)")"
+    echo -e "$(echoColor red "$(i18n menu_option_reconfigure)")"
+    echo -e "$(echoColor yellow "$(i18n menu_option_switch_ip_priority)")"
+    echo -e "$(echoColor yellow "$(i18n menu_option_update_hihy)")"
+    echo -e "$(echoColor lightMagenta "$(i18n menu_option_acl)")"
+    echo -e "$(echoColor skyBlue "$(i18n menu_option_traffic_stats)")"
+    echo -e "$(echoColor yellow "$(i18n menu_option_logs)")"
+    echo -e "$(echoColor yellow "$(i18n menu_option_socks5)")"
 
     echo -e "$(echoColor purple "###############################")"
 
-    echo -e "$(echoColor magenta "0) 退出")"
+    echo -e "$(echoColor magenta "$(i18n menu_option_exit)")"
     echo -e "$(echoColor skyBlue ".............................................")"
     echo -e ""
     hihy_update_notifycation
@@ -3914,14 +3914,14 @@ show_menu() {
 }
 
 wait_for_continue() {
-    echo -e "\n$(echoColor green "按任意键返回主菜单...")"
+    echo -e "\n$(echoColor green "$(i18n menu_wait_continue)")"
     read -r -n 1 -s
 }
 
 menu() {
     while true; do
         show_menu
-        read -r -p "请选择: " input
+        read -r -p "$(i18n menu_prompt_choice)" input
         case $input in
             1)
                 install
@@ -3985,7 +3985,7 @@ menu() {
                 ;;
             0) exit 0 ;;
             *)
-                echoColor red "Input Error !!!"
+                echoColor red "$(i18n error_input_error)"
                 wait_for_continue
                 ;;
         esac
@@ -3997,63 +3997,63 @@ if [ "${BASH_SOURCE[0]}" = "$0" ]; then
     checkRoot
     case "$1" in
         install | 1)
-            echoColor purple "-> 1) 安装 hysteria"
+            echoColor purple "$(i18n cmd_title_install)"
             install
             ;;
         uninstall | 2)
-            echoColor purple "-> 2) 卸载 hysteria"
+            echoColor purple "$(i18n cmd_title_uninstall)"
             uninstall
             ;;
         start | 3)
-            echoColor purple "-> 3) 启动 hysteria"
+            echoColor purple "$(i18n cmd_title_start)"
             start
             ;;
         stop | 4)
-            echoColor purple "-> 4) 暂停 hysteria"
+            echoColor purple "$(i18n cmd_title_stop)"
             stop
             ;;
         restart | 5)
-            echoColor purple "-> 5) 重新启动 hysteria"
+            echoColor purple "$(i18n cmd_title_restart)"
             restart
             ;;
         checkStatus | 6)
-            echoColor purple "-> 6) 运行状态"
+            echoColor purple "$(i18n cmd_title_status)"
             checkStatus
             ;;
         updateHysteriaCore | 7)
-            echoColor purple "-> 7) 更新Core"
+            echoColor purple "$(i18n cmd_title_update_core)"
             updateHysteriaCore
             ;;
         generate_client_config | 8)
-            echoColor purple "-> 8) 查看当前配置"
+            echoColor purple "$(i18n cmd_title_view_config)"
             generate_client_config
             ;;
         changeServerConfig | 9)
-            echoColor purple "-> 9) 重新配置"
+            echoColor purple "$(i18n cmd_title_reconfigure)"
             changeServerConfig
             ;;
         changeIp64 | 10)
-            echoColor purple "-> 10) 切换ipv4/ipv6优先级"
+            echoColor purple "$(i18n cmd_title_switch_ip_priority)"
             changeIp64
             ;;
         hihyUpdate | 11)
-            echoColor purple "-> 11) 更新hihy"
+            echoColor purple "$(i18n cmd_title_update_hihy)"
             hihyUpdate
             ;;
         aclControl | 12)
-            echoColor purple "-> 12) ACL管理"
+            echoColor purple "$(i18n cmd_title_acl)"
             aclControl
             ;;
         getHysteriaTrafic | 13)
-            echoColor purple "-> 13) 查看hysteria统计信息"
+            echoColor purple "$(i18n cmd_title_traffic_stats)"
             getHysteriaTrafic
             ;;
         checkLogs | 14)
-            echoColor purple "-> 14) 查看实时日志"
+            echoColor purple "$(i18n cmd_title_logs)"
             checkLogs
             ;;
         addSocks5Outbound | 15)
-            echoColor purple "-> 15) 添加socks5出站"
+            echoColor purple "$(i18n cmd_title_socks5)"
             addSocks5Outbound
             ;;
         cronTask) cronTask ;;
