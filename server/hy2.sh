@@ -1,6 +1,77 @@
 #!/bin/bash
 hihyV="ver1.09"
 
+# i18n 多语言支持
+HIHY_I18N_SCHEMA=1
+HIHY_I18N_DIR="${HIHY_I18N_DIR:-/etc/hihy/i18n}"
+HIHY_I18N_CONF="${HIHY_I18N_CONF:-/etc/hihy/conf/i18n.conf}"
+HIHY_LANG="${HIHY_LANG:-}"
+
+loadPersistedLanguage() {
+    if [ -f "$HIHY_I18N_CONF" ] && [ -z "$HIHY_LANG" ]; then
+        HIHY_LANG=$(grep -E '^HIHY_LANG=' "$HIHY_I18N_CONF" | tail -n 1 | cut -d'=' -f2-)
+    fi
+    HIHY_LANG="${HIHY_LANG:-en}"
+}
+
+savePersistedLanguage() {
+    mkdir -p "$(dirname "$HIHY_I18N_CONF")"
+    printf 'HIHY_LANG=%s\n' "$HIHY_LANG" >"$HIHY_I18N_CONF"
+}
+
+detectRtlFromMeta() {
+    local file="$1"
+    grep '"rtl"' "$file" 2>/dev/null | grep -q 'true'
+}
+
+# 按 key 读取 JSON 字符串；返回空表示未找到
+i18nValueFromFile() {
+    local file="$1"
+    local key="$2"
+    if [ ! -f "$file" ]; then
+        return
+    fi
+    local line
+    line=$(grep -E "^\s*\"${key}\":\s*\"" "$file" | head -n 1)
+    [ -z "$line" ] && return
+    # 提取第一个 "..." 之后的内容
+    line="${line#*: \"}"
+    line="${line%\"*}"
+    printf '%s' "$line"
+}
+
+i18nLookup() {
+    local key="$1"
+    local lang_file="${HIHY_I18N_DIR}/hy2.sh.${HIHY_LANG}.json"
+    local en_file="${HIHY_I18N_DIR}/hy2.sh.en.json"
+    local value
+
+    value=$(i18nValueFromFile "$lang_file" "$key")
+    if [ -n "$value" ]; then
+        printf '%s' "$value"
+        return 0
+    fi
+
+    if [ "$HIHY_LANG" != "en" ]; then
+        value=$(i18nValueFromFile "$en_file" "$key")
+        if [ -n "$value" ]; then
+            printf '%s' "$value"
+            return 0
+        fi
+    fi
+
+    printf '%s' "$key"
+}
+
+# Usage: i18n <key> [arg1] [arg2] ...
+i18n() {
+    local key="$1"
+    shift
+    local template
+    template=$(i18nLookup "$key")
+    # 简单模板插值：%s, %d, %%, 依次用 bash printf 填充
+    printf "$template" "$@"
+}
 HIHY_ROOT_DIR="${HIHY_ROOT_DIR:-/etc/hihy}"
 HIHY_BIN_LINK="${HIHY_BIN_LINK:-/usr/bin/hihy}"
 HIHY_YQ_BIN="${HIHY_YQ_BIN:-/usr/bin/yq}"
@@ -3922,6 +3993,7 @@ menu() {
 }
 
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then
+    loadPersistedLanguage
     checkRoot
     case "$1" in
         install | 1)
