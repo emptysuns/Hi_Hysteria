@@ -975,36 +975,41 @@ setHysteriaConfig() {
         rm -f "${acl_file}"
     fi
     touch $acl_file
-    echoColor yellowBlack "开始配置:"
-    echo -e "\033[32m(0/13)是否使用Realm模式(P2P穿透,无需公网IP):\n\n\033[0m"
-    echo -e "Realm是Hysteria2的P2P穿透模式,通过牵手(rendezvous)服务器介绍双方进行UDP打洞,"
-    echo -e "打洞成功后流量直连,不经过牵手服务器。服务器无需公网IP、无需端口转发即可运行。"
-    echo -e "适用: NAT/家庭宽带/CGNAT/无公网IP环境。详情: https://hysteria.network/zh/docs/advanced/Realms/"
-    echo -e "\033[33m\033[01m⚠ 目前仅支持使用hysteria core直接运行\033[0m\033[32m\n"
-    echo -e "\033[33m\033[01m1、不使用(默认)\n2、使用Realm模式\033[0m\033[32m\n\n输入序号:\033[0m"
+    echoColor yellowBlack "$(i18n config_start_title)"
+    echoColor green "$(i18n realm_prompt_title)"
+    echoColor white "$(i18n realm_intro_line1)"
+    echoColor white "$(i18n realm_intro_line2)"
+    echoColor white "$(i18n realm_intro_line3)"
+    echoColor white "$(i18n realm_intro_line4)"
+    echoColor yellow "$(i18n realm_warning_core_only)"
+    echoColor yellow "$(i18n realm_choice_disable_default)"
+    echoColor yellow "$(i18n realm_choice_enable)"
+    echoColor green "$(i18n prompt_enter_number)"
     read -r realmChoice
     if [ -z "${realmChoice}" ] || [ "${realmChoice}" == "1" ]; then
         realmMode="false"
     else
         realmMode="true"
         realmName=$(generate_uuid)
-        echo -e "\n->您的Realm名(请勿泄露,知道此名称的人可以获得你的服务器ip地址): "$(echoColor red ${realmName})"\n"
-        echoColor green "\n请选择牵手(rendezvous)服务器:"
-        echo -e "官方服务器地址为 realm.hy2.io, 使用默认密码 public 即可,无需修改"
-        echo -e "\033[33m\033[01m1、官方牵手服务器(默认): realm.hy2.io\n2、自建牵手服务器\033[0m\033[32m\n\n输入序号:\033[0m"
+        echo -e "\n->$(i18n realm_name_label)"$(echoColor red ${realmName})"\n"
+        echoColor green "$(i18n realm_server_prompt)"
+        echoColor white "$(i18n realm_server_official_hint)"
+        echoColor yellow "$(i18n realm_server_choice_official)"
+        echoColor yellow "$(i18n realm_server_choice_custom)"
+        echoColor green "$(i18n prompt_enter_number)"
         read -r realmServerChoice
         if [ -z "${realmServerChoice}" ] || [ "${realmServerChoice}" == "1" ]; then
             realmAddress="realm.hy2.io"
             realmPassword="public"
         else
-            echoColor green "请输入牵手服务器地址(格式: host:port 或 host):"
+            echoColor green "$(i18n realm_address_prompt)"
             read -r realmAddressInput
             while [ -z "${realmAddressInput}" ]; do
-                echoColor red "地址不能为空,请重新输入:"
+                echoColor red "$(i18n realm_address_empty)"
                 read -r realmAddressInput
             done
             realmAddress="${realmAddressInput}"
-            echoColor green "请输入牵手服务器密码(默认: public):"
+            echoColor green "$(i18n realm_password_prompt)"
             read -r realmPasswordInput
             if [ -z "${realmPasswordInput}" ]; then
                 realmPassword="public"
@@ -1013,50 +1018,56 @@ setHysteriaConfig() {
             fi
         fi
         realmURI="realm://${realmPassword}@${realmAddress}/${realmName}"
-        echo -e "\n->牵手地址: "$(echoColor red ${realmURI})"\n"
+        echo -e "\n->$(i18n realm_uri_label)"$(echoColor red ${realmURI})"\n"
         if command -v warp >/dev/null 2>&1 && [ -f "/etc/wireguard/warp.conf" ]; then
-            echoColor purple "\n->检测到已安装WARP,可通过 warp d 命令获得双栈WARP IP"
+            echoColor purple "$(i18n warp_installed_hint)"
         fi
-        echoColor green "\n(可选)是否安装服务器全局WARP[fscarmen]通过Cloudflare WARP IP打洞连接Hysteria2?"
-        echo -e "原理: WARP通过WireGuard协议接入Cloudflare全球边缘网络,为服务器分配WARP IP。"
-        echo -e "Hysteria2利用该WARP IP进行Realm打洞,客户端实际连接到Cloudflare边缘节点,"
-        echo -e "从而隐藏服务器真实IP,相当于变相在Cloudflare CDN上使用Hysteria2。"
-        echo -e "注意: 由于cloudflare warp是nat4, 所以客户端必须得是有公网ip或者nat1/2才能使用(一般可以直接用无需担心)"
-        echo -e ""
-        echo -e "\033[33m\033[01m1、跳过(默认)\n2、安装WARP\033[0m\033[32m\n\n输入序号:\033[0m"
+        echoColor green "$(i18n warp_install_prompt)"
+        echoColor white "$(i18n warp_principle_line1)"
+        echoColor white "$(i18n warp_principle_line2)"
+        echoColor white "$(i18n warp_principle_line3)"
+        echoColor white "$(i18n warp_principle_line4)"
+        echoColor yellow "$(i18n warp_choice_skip)"
+        echoColor yellow "$(i18n warp_choice_install)"
+        echoColor green "$(i18n prompt_enter_number)"
         read -r warpChoice
         if [ "${warpChoice}" == "2" ]; then
-            echoColor purple "\n->开始安装WARP,请稍候..."
-            echoColor purple "请在WARP安装菜单中选择 [全局] 工作模式(出现菜单时手动选择全局)"
+            echoColor purple "$(i18n warp_installing)"
+            echoColor purple "$(i18n warp_select_global_mode)"
             wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh 2>/dev/null
             bash menu.sh d
             if [ -f "/etc/wireguard/warp.conf" ]; then
                 current_mtu=$(grep -oP '^MTU = \K\d+' /etc/wireguard/warp.conf)
                 if [ -n "${current_mtu}" ] && [ "${current_mtu}" -lt 1320 ]; then
                     sed -i "s/^MTU = ${current_mtu}/MTU = 1320/g" /etc/wireguard/warp.conf
-                    echoColor purple "\n->MTU已从 ${current_mtu} 调整为 1320"
+                    echoColor purple "\n->$(i18n warp_mtu_adjusted ${current_mtu})"
                 elif [ -n "${current_mtu}" ]; then
-                    echoColor purple "\n->当前MTU=${current_mtu},无需调整(≥1320)"
+                    echoColor purple "\n->$(i18n warp_mtu_no_adjust ${current_mtu})"
                 fi
-                echoColor purple "\n->正在开启WARP..."
+                echoColor purple "$(i18n warp_enabling)"
                 warp o
                 sleep 3
-                echoColor purple "\n->正在重新开启WARP以确保连接稳定..."
+                echoColor purple "$(i18n warp_reenabling)"
                 warp o
                 warpEnabled="true"
-                echoColor purple "\n->WARP安装完成,Hysteria2将通过Cloudflare WARP IP打洞连接"
+                echoColor purple "$(i18n warp_install_done)"
             else
-                echoColor red "\n->WARP安装失败: 未找到/etc/wireguard/warp.conf"
-                echoColor red "请手动执行: wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh && bash menu.sh d"
-                echoColor red "WARP未成功安装,终止脚本执行"
+                echoColor red "$(i18n warp_install_fail)"
+                echoColor red "$(i18n warp_manual_cmd)"
+                echoColor red "$(i18n warp_install_fail_exit)"
                 exit 1
             fi
         else
             warpEnabled="false"
-            echoColor purple "\n->跳过WARP安装,直接使用服务器真实IP"
+            echoColor purple "$(i18n warp_skip)"
         fi
     fi
-    echo -e "\033[32m(1/11)请选择证书申请方式:\n\n\033[0m\033[33m\033[01m1、使用ACME申请(需打开tcp/80端口)\n2、使用本地证书文件\n3、自签证书(默认,推荐:已通过pinSHA256指纹校验,安全且无需域名/80端口)\n4、dns验证\033[0m\033[32m\n\n输入序号(直接回车使用默认):\033[0m"
+    echoColor green "$(i18n cert_prompt_title)"
+    echoColor yellow "$(i18n cert_choice_acme)"
+    echoColor yellow "$(i18n cert_choice_local)"
+    echoColor yellow "$(i18n cert_choice_selfsigned)"
+    echoColor yellow "$(i18n cert_choice_dns)"
+    echoColor green "$(i18n prompt_enter_number_or_default)"
     read -r certNum
     useAcme=false
     useLocalCert=false
@@ -1067,36 +1078,39 @@ setHysteriaConfig() {
     touch $yaml_file
 
     if [ -z "${certNum}" ] || [ "${certNum}" == "3" ]; then
-        echoColor green "请输入自签证书的域名(默认:helloworld.com):"
+        echoColor green "$(i18n selfsigned_domain_prompt)"
         read -r domain
         if [ -z "${domain}" ]; then
             domain="helloworld.com"
         fi
-        echo -e "->自签证书域名为:"$(echoColor red ${domain})"\n"
+        echo -e "->$(i18n selfsigned_domain_label)"$(echoColor red ${domain})"\n"
         if [ "${realmMode}" == "true" ]; then
             ip=""
-            echo -e "\n->牵手地址: "$(echoColor red ${realmURI})"\n"
+            echo -e "\n->$(i18n realm_uri_label_with_cert)"$(echoColor red ${realmURI})"\n"
         else
             ip=$(curl -4 -s -m 8 ip.sb)
             if [ -z "${ip}" ]; then
                 ip=$(curl -s -m 8 ip.sb)
             fi
-            echoColor green "判断客户端连接所使用的地址是否正确?公网ip:"$(echoColor red ${ip})"\n"
+            echoColor green "$(i18n public_ip_check)"$(echoColor red ${ip})"\n"
             while true; do
-                echo -e "\033[32m请选择:\n\n\033[0m\033[33m\033[01m1、正确(默认)\n2、不正确,手动输入ip\033[0m\033[32m\n\n输入序号:\033[0m"
+                echoColor green "$(i18n prompt_choose)"
+                echoColor yellow "$(i18n ip_correct_default)"
+                echoColor yellow "$(i18n ip_incorrect)"
+                echoColor green "$(i18n prompt_enter_number)"
                 read -r ipNum
                 if [ -z "${ipNum}" ] || [ "${ipNum}" == "1" ]; then
                     break
                 elif [ "${ipNum}" == "2" ]; then
-                    echoColor green "请输入正确的公网ip(ipv6地址不需要加[]):"
+                    echoColor green "$(i18n ip_prompt)"
                     read -r ip
                     if [ -z "${ip}" ]; then
-                        echoColor red "输入错误,请重新输入..."
+                        echoColor red "$(i18n input_error_retry)"
                         continue
                     fi
                     break
                 else
-                    echoColor red "\n->输入错误,请重新输入:"
+                    echoColor red "$(i18n input_error_please_retry)"
                 fi
             done
         fi
@@ -1104,43 +1118,43 @@ setHysteriaConfig() {
         key="/etc/hihy/cert/${domain}.key"
         useAcme=false
         if [ "${realmMode}" == "true" ]; then
-            echoColor purple "\n\n->您已选择自签${domain}证书加密.牵手地址:"$(echoColor red ${realmURI})"\n"
+            echoColor purple "\n\n->$(i18n selfsigned_cert_summary_realm ${domain})"$(echoColor red ${realmURI})"\n"
         else
-            echoColor purple "\n\n->您已选择自签${domain}证书加密.公网ip:"$(echoColor red ${ip})"\n"
+            echoColor purple "\n\n->$(i18n selfsigned_cert_summary_ip ${domain})"$(echoColor red ${ip})"\n"
         fi
         echo -e "\n"
 
     elif [ "${certNum}" == "2" ]; then
-        echoColor green "请输入证书cert文件路径(需fullchain cert,提供完整证书链):"
+        echoColor green "$(i18n local_cert_path_prompt)"
         read -r local_cert
         while :; do
             if [ ! -f "${local_cert}" ]; then
-                echoColor red "\n\n->路径不存在,请重新输入!"
-                echoColor green "请输入证书cert文件路径:"
+                echoColor red "\n\n->$(i18n path_not_exist)"
+                echoColor green "$(i18n local_cert_path_prompt)"
                 read -r local_cert
             else
                 break
             fi
         done
-        echo -e "\n\n->cert文件路径: "$(echoColor red ${local_cert})"\n"
-        echoColor green "请输入证书key文件路径:"
+        echo -e "\n\n->$(i18n local_cert_label)"$(echoColor red ${local_cert})"\n"
+        echoColor green "$(i18n local_key_path_prompt)"
         read -r local_key
         while :; do
             if [ ! -f "${local_key}" ]; then
-                echoColor red "\n\n->路径不存在,请重新输入!"
-                echoColor green "请输入证书key文件路径:"
+                echoColor red "\n\n->$(i18n path_not_exist)"
+                echoColor green "$(i18n local_key_path_prompt)"
                 read -r local_key
             else
                 break
             fi
         done
-        echo -e "\n\n->key文件路径: "$(echoColor red ${local_key})"\n"
-        echoColor green "请输入所选证书域名:"
+        echo -e "\n\n->$(i18n local_key_label)"$(echoColor red ${local_key})"\n"
+        echoColor green "$(i18n local_cert_domain_prompt)"
         read -r domain
         while :; do
             if [ -z "${domain}" ]; then
-                echoColor red "\n\n->此选项不能为空,请重新输入!"
-                echoColor green "请输入所选证书域名:"
+                echoColor red "\n\n->$(i18n this_option_cannot_be_empty)"
+                echoColor green "$(i18n local_cert_domain_prompt)"
                 read -r domain
             else
                 break
@@ -1148,181 +1162,191 @@ setHysteriaConfig() {
         done
         useAcme=false
         useLocalCert=true
-        echoColor purple "\n\n->您已选择本地证书加密.域名:"$(echoColor red ${domain})"\n"
+        echoColor purple "\n\n->$(i18n local_cert_summary)"$(echoColor red ${domain})"\n"
     elif [ "${certNum}" == "4" ]; then
-        echoColor green "请输入域名:"
+        echoColor green "$(i18n domain_prompt) $(i18n domain_requirement)"
         read -r domain
         while :; do
             if [ -z "${domain}" ]; then
-                echoColor red "\n\n->此选项不能为空,请重新输入!"
-                echoColor green "请输入域名(需正确解析到本机,关闭CDN):"
+                echoColor red "\n\n->$(i18n this_option_cannot_be_empty)"
+                echoColor green "$(i18n domain_prompt) $(i18n domain_requirement)"
                 read -r domain
             else
                 break
             fi
         done
-        echo -e "\n\n->域名: "$(echoColor red ${domain})"\n"
-        echo -e "\033[32m请选择DNS服务商:\n\n\033[0m\033[33m\033[01m1、Cloudflare(默认)\n2、Duck DNS\n3、Gandi.net\n4、Godaddy\n5、Name.com\n6、Vultr\033[0m\033[32m\n\n输入序号:\033[0m"
+        echo -e "\n\n->$(i18n domain_label)"$(echoColor red ${domain})"\n"
+        echoColor green "$(i18n dns_provider_prompt)"
+        echoColor yellow "$(i18n dns_choice_cloudflare)"
+        echoColor yellow "$(i18n dns_choice_duckdns)"
+        echoColor yellow "$(i18n dns_choice_gandi)"
+        echoColor yellow "$(i18n dns_choice_godaddy)"
+        echoColor yellow "$(i18n dns_choice_namecom)"
+        echoColor yellow "$(i18n dns_choice_vultr)"
+        echoColor green "$(i18n prompt_enter_number)"
         read -r dnsNum
         if [ -z "${dnsNum}" ] || [ "${dnsNum}" == "1" ]; then
             dns="cloudflare"
-            echo -e "\n\n->您选择Cloudflare DNS验证\n"
-            echoColor green "请输入cloudflare_api_token:"
+            echo -e "\n\n->$(i18n dns_selected_cloudflare)\n"
+            echoColor green "$(i18n cloudflare_token_prompt)"
             while :; do
                 read -r cloudflare_api_token
                 if [ -z "${cloudflare_api_token}" ]; then
-                    echoColor red "\n\n->此选项不能为空,请重新输入!"
-                    echoColor green "请输入cloudflare_api_token:"
+                    echoColor red "\n\n->$(i18n this_option_cannot_be_empty)"
+                    echoColor green "$(i18n cloudflare_token_prompt)"
                 else
                     break
                 fi
             done
         elif [ "${dnsNum}" == "2" ]; then
             dns="duckdns"
-            echo -e "\n\n->您选择Duck DNS DNS验证\n"
-            echoColor green "请输入Duck DNS duckdns_api_token:"
+            echo -e "\n\n->$(i18n dns_selected_duckdns)\n"
+            echoColor green "$(i18n duckdns_token_prompt)"
             while :; do
                 read -r duckdns_api_token
                 if [ -z "${duckdns_api_token}" ]; then
-                    echoColor red "\n\n->此选项不能为空,请重新输入!"
-                    echoColor green "请输入Duck DNS duckdns_api_token:"
+                    echoColor red "\n\n->$(i18n this_option_cannot_be_empty)"
+                    echoColor green "$(i18n duckdns_token_prompt)"
                 else
                     break
                 fi
             done
-            echoColor green "请输入Duck DNS duckdns_override_domain:"
+            echoColor green "$(i18n duckdns_override_prompt)"
             while :; do
                 read -r duckdns_override_domain
                 if [ -z "${duckdns_override_domain}" ]; then
-                    echoColor red "\n\n->此选项不能为空,请重新输入!"
-                    echoColor green "请输入Duck DNS duckdns_override_domain:"
+                    echoColor red "\n\n->$(i18n this_option_cannot_be_empty)"
+                    echoColor green "$(i18n duckdns_override_prompt)"
                 else
                     break
                 fi
             done
         elif [ "${dnsNum}" == "3" ]; then
             dns="gandi"
-            echo -e "\n\n->您选择Gandi.net DNS验证\n"
-            echoColor green "请输入Gandi gandi_api_token:"
+            echo -e "\n\n->$(i18n dns_selected_gandi)\n"
+            echoColor green "$(i18n gandi_token_prompt)"
             while :; do
                 read -r gandi_api_token
                 if [ -z "${gandi_api_token}" ]; then
-                    echoColor red "\n\n->此选项不能为空,请重新输入!"
-                    echoColor green "请输入Gandi gandi_api_token:"
+                    echoColor red "\n\n->$(i18n this_option_cannot_be_empty)"
+                    echoColor green "$(i18n gandi_token_prompt)"
                 else
                     break
                 fi
             done
         elif [ "${dnsNum}" == "4" ]; then
             dns="godaddy"
-            echo -e "\n\n->您选择Godaddy DNS验证\n"
-            echoColor green "请输入Godaddy godaddy_api_token:"
+            echo -e "\n\n->$(i18n dns_selected_godaddy)\n"
+            echoColor green "$(i18n godaddy_token_prompt)"
             while :; do
                 read -r godaddy_api_token
                 if [ -z "${godaddy_api_token}" ]; then
-                    echoColor red "\n\n->此选项不能为空,请重新输入!"
-                    echoColor green "请输入 Godaddy godaddy_api_token:"
+                    echoColor red "\n\n->$(i18n this_option_cannot_be_empty)"
+                    echoColor green "$(i18n godaddy_token_prompt)"
                 else
                     break
                 fi
             done
         elif [ "${dnsNum}" == "5" ]; then
             dns="namedotcom"
-            echo -e "\n\n->您选择Name.com DNS验证\n"
-            echoColor green "请输入Name.com namedotcom_api_token:"
+            echo -e "\n\n->$(i18n dns_selected_namecom)\n"
+            echoColor green "$(i18n namecom_token_prompt)"
             while :; do
                 read -r namedotcom_api_token
                 if [ -z "${namedotcom_api_token}" ]; then
-                    echoColor red "\n\n->此选项不能为空,请重新输入!"
-                    echoColor green "请输入Name.com namedotcom_api_token:"
+                    echoColor red "\n\n->$(i18n this_option_cannot_be_empty)"
+                    echoColor green "$(i18n namecom_token_prompt)"
                 else
                     break
                 fi
             done
-            echoColor green "请输入Name.com namedotcom_user:"
+            echoColor green "$(i18n namecom_user_prompt)"
             while :; do
                 read -r namedotcom_user
                 if [ -z "${namedotcom_user}" ]; then
-                    echoColor red "\n\n->此选项不能为空,请重新输入!"
-                    echoColor green "请输入Name.com namedotcom_user:"
+                    echoColor red "\n\n->$(i18n this_option_cannot_be_empty)"
+                    echoColor green "$(i18n namecom_user_prompt)"
                 else
                     break
                 fi
             done
-            echoColor green "请输入Name.com namedotcom_server:"
+            echoColor green "$(i18n namecom_server_prompt)"
             while :; do
                 read -r namedotcom_server
                 if [ -z "${namedotcom_server}" ]; then
-                    echoColor red "\n\n->此选项不能为空,请重新输入!"
-                    echoColor green "请输入Name.com namedotcom_server:"
+                    echoColor red "\n\n->$(i18n this_option_cannot_be_empty)"
+                    echoColor green "$(i18n namecom_server_prompt)"
                 else
                     break
                 fi
             done
         elif [ "${dnsNum}" == "6" ]; then
             dns="vultr"
-            echo -e "\n\n->您选择Vultr DNS验证\n"
-            echoColor green "请输入Vultr vultr_api_token:"
+            echo -e "\n\n->$(i18n dns_selected_vultr)\n"
+            echoColor green "$(i18n vultr_token_prompt)"
             while :; do
                 read -r vultr_api_token
                 if [ -z "${vultr_api_token}" ]; then
-                    echoColor red "\n\n->此选项不能为空,请重新输入!"
-                    echoColor green "请输入Vultr vultr_api_token:"
+                    echoColor red "\n\n->$(i18n this_option_cannot_be_empty)"
+                    echoColor green "$(i18n vultr_token_prompt)"
                 else
                     break
                 fi
             done
         else
-            echoColor red "\n->输入错误,请重新输入:"
+            echoColor red "$(i18n input_error_please_retry)"
         fi
         ip=$(curl -4 -s -m 8 ip.sb)
         if [ -z "${ip}" ]; then
             ip=$(curl -s -m 8 ip.sb)
         fi
-        echoColor green "判断客户端连接所使用的地址是否正确?公网ip:"$(echoColor red ${ip})"\n"
+        echoColor green "$(i18n public_ip_check)"$(echoColor red ${ip})"\n"
         while true; do
-            echo -e "\033[32m请选择:\n\n\033[0m\033[33m\033[01m1、正确(默认)\n2、不正确,手动输入ip\033[0m\033[32m\n\n输入序号:\033[0m"
+            echoColor green "$(i18n prompt_choose)"
+            echoColor yellow "$(i18n ip_correct_default)"
+            echoColor yellow "$(i18n ip_incorrect)"
+            echoColor green "$(i18n prompt_enter_number)"
             read -r ipNum
             if [ -z "${ipNum}" ] || [ "${ipNum}" == "1" ]; then
                 break
             elif [ "${ipNum}" == "2" ]; then
-                echoColor green "请输入正确的公网ip(ipv6地址不需要加[]):"
+                echoColor green "$(i18n ip_prompt)"
                 read -r ip
                 if [ -z "${ip}" ]; then
-                    echoColor red "输入错误,请重新输入..."
+                    echoColor red "$(i18n input_error_retry)"
                     continue
                 fi
                 break
             else
-                echoColor red "\n->输入错误,请重新输入:"
+                echoColor red "$(i18n input_error_please_retry)"
             fi
         done
-        echo -e "\n\n->您选择使用acme dns验证申请证书: "$(echoColor red ${domain})"\n"
-        echo -e "\n ->dns验证方式: "$(echoColor red ${dns})"\n"
-        echo -e "\n ->公网ip: "$(echoColor red ${ip})"\n"
+        echo -e "\n\n->$(i18n dns_acme_summary)"$(echoColor red ${domain})"\n"
+        echo -e "\n ->$(i18n dns_method_label)"$(echoColor red ${dns})"\n"
+        echo -e "\n ->$(i18n public_ip_label)"$(echoColor red ${ip})"\n"
         useAcme=true
         useDns=true
     else
-        echoColor green "请输入域名(需正确解析到本机,关闭CDN):"
+        echoColor green "$(i18n domain_prompt) $(i18n domain_requirement)"
         read -r domain
         while :; do
             if [ -z "${domain}" ]; then
-                echoColor red "\n\n->此选项不能为空,请重新输入!"
-                echoColor green "请输入域名(需正确解析到本机,关闭CDN):"
+                echoColor red "\n\n->$(i18n this_option_cannot_be_empty)"
+                echoColor green "$(i18n domain_prompt) $(i18n domain_requirement)"
                 read -r domain
             else
                 break
             fi
         done
         while :; do
-            echoColor purple "\n->检测${domain},DNS解析..."
+            echoColor purple "\n->$(i18n detecting_domain_dns ${domain})"
             ip_resolv=$(dig +short ${domain} A)
             if [ -z "${ip_resolv}" ]; then
                 ip_resolv=$(dig +short ${domain} AAAA)
             fi
             if [ -z "${ip_resolv}" ]; then
-                echoColor red "\n\n->域名解析失败,没有获得任何dns记录(A/AAAA),请检查域名是否正确解析到本机!"
-                echoColor green "请输入域名(需正确解析到本机,关闭CDN):"
+                echoColor red "\n\n->$(i18n dns_resolution_failed)"
+                echoColor green "$(i18n domain_prompt) $(i18n domain_requirement)"
                 read -r domain
                 continue
             fi
@@ -1337,21 +1361,21 @@ setHysteriaConfig() {
             if [ -z "${localip}" ]; then
                 localip=$(curl -s -m 8 ip.sb)
                 if [ -z "${localip}" ]; then
-                    echoColor red "\n\n->获取本机ip失败,请检查网络连接!curl -s -m 8 ip.sb"
+                    echoColor red "\n\n->$(i18n local_ip_fetch_failed)"
                     exit 1
                 fi
             fi
             if [ "${localip}" != "${remoteip}" ]; then
-                echo -e " \n\n->本机ip: "$(echoColor red ${localip})" \n\n->域名ip: "$(echoColor red ${remoteip})"\n"
-                echoColor green "多ip或者dns未生效时可能检测失败,如果你确定正确解析到了本机,是否自己指定本机ip? [y/N]:"
+                echo -e " \n\n->$(i18n local_ip_label)"$(echoColor red ${localip})" \n\n->$(i18n domain_ip_label)"$(echoColor red ${remoteip})"\n"
+                echoColor green "$(i18n self_assign_ip_prompt)"
                 read -r isLocalip
                 if [ "${isLocalip}" == "y" ]; then
-                    echoColor green "请自行输入本机ip:"
+                    echoColor green "$(i18n enter_local_ip)"
                     read -r localip
                     while :; do
                         if [ -z "${localip}" ]; then
-                            echoColor red "\n\n->此选项不能为空,请重新输入!"
-                            echoColor green "请输入本机ip:"
+                            echoColor red "\n\n->$(i18n this_option_cannot_be_empty)"
+                            echoColor green "$(i18n enter_local_ip)"
                             read -r localip
                         else
                             break
@@ -1359,8 +1383,8 @@ setHysteriaConfig() {
                     done
                 fi
                 if [ "${localip}" != "${remoteip}" ]; then
-                    echoColor red "\n\n->域名解析到的ip与本机ip不一致,请重新输入!"
-                    echoColor green "请输入域名(需正确解析到本机,关闭CDN):"
+                    echoColor red "\n\n->$(i18n domain_ip_mismatch)"
+                    echoColor green "$(i18n domain_prompt) $(i18n domain_requirement)"
                     read -r domain
                     continue
                 else
@@ -1372,30 +1396,30 @@ setHysteriaConfig() {
         done
         useAcme=true
         useDns=false
-        echoColor purple "\n\n->解析正确,使用hysteria内置ACME申请证书.域名:"$(echoColor red ${domain})"\n"
+        echoColor purple "\n\n->$(i18n acme_summary)"$(echoColor red ${domain})"\n"
     fi
 
     if [ "${realmMode}" == "true" ]; then
         port=""
-        echoColor purple "\n->Realm模式无需配置端口,跳过端口设置\n"
+        echoColor purple "\n->$(i18n realm_skip_port)\n"
     else
         while :; do
-            echoColor green "\n(2/11)请输入你想要开启的端口,此端口是server端口,推荐443.(默认随机10000-65535)"
-            echo "并没有证据表明非udp/443的端口会被阻断,它仅仅是可能有更好的伪装一种措施,$(echoColor red "如果你使用端口跳跃的话，这里建议使用随机端口")"
+            echoColor green "\n$(i18n port_prompt)"
+            echo "$(i18n port_hint)"
             read -r port
             if [ -z "${port}" ]; then
                 port=$(($(od -An -N2 -i /dev/urandom) % (65534 - 10001) + 10001))
-                echo -e "\n->使用随机端口:"$(echoColor red udp/${port})"\n"
+                echo -e "\n->$(i18n random_port_label)"$(echoColor red udp/${port})"\n"
             else
-                echo -e "\n->您输入的端口:"$(echoColor red udp/${port})"\n"
+                echo -e "\n->$(i18n entered_port_label)"$(echoColor red udp/${port})"\n"
             fi
             if [ "${port}" -gt 65535 ]; then
-                echoColor red "端口范围错误,请重新输入!"
+                echoColor red "$(i18n port_range_error)"
                 continue
             fi
             pIDa=$(lsof -i udp:${port} | grep -v "PID" | awk '{print $2}')
             if [ "$pIDa" != "" ]; then
-                echoColor red "\n->端口${port}被占用,PID:${pIDa}!请重新输入或者运行kill -9 ${pIDa}后重新安装!"
+                echoColor red "\n->$(i18n port_in_use ${port} ${pIDa} ${pIDa})"
             else
                 break
             fi
@@ -1403,56 +1427,62 @@ setHysteriaConfig() {
     fi
 
     if [ "${realmMode}" != "true" ]; then
-        echoColor green "\n->(3/13)是否使用端口跳跃(Port Hopping),推荐使用"
-        echo -e "Tip: 长时间单端口 UDP 连接容易被运营商封锁/QoS/断流,启动此功能可以有效避免此问题."
-        echo -e "更加详细介绍请参考: https://v2.hysteria.network/zh/docs/advanced/Port-Hopping/\n"
-        echo -e "\033[32m选择是否启用:\n\n\033[0m\033[33m\033[01m1、启用(默认)\n2、跳过\033[0m\033[32m\n\n输入序号:\033[0m"
+        echoColor green "\n$(i18n port_hopping_prompt)"
+        echoColor white "$(i18n port_hopping_intro)"
+        echoColor white "$(i18n port_hopping_detail_url)"
+        echoColor green "$(i18n prompt_choose)"
+        echoColor yellow "$(i18n port_hopping_choice_enable)"
+        echoColor yellow "$(i18n port_hopping_choice_skip)"
+        echoColor green "$(i18n prompt_enter_number)"
         read -r portHoppingStatus
         if [ -z "${portHoppingStatus}" ] || [ "${portHoppingStatus}" == "1" ]; then
             portHoppingStatus="true"
-            echoColor purple "\n->您选择启用端口跳跃/多端口(Port Hopping)功能"
-            echo -e "端口跳跃/多端口(Port Hopping)功能需要占用多个端口,请保证这些端口没有监听其他服务\nTip: 将使用 Hysteria2 原生范围监听,服务端会自动处理范围内端口的转发规则.\n"
+            echoColor purple "$(i18n port_hopping_enabled)"
+            echoColor white "$(i18n port_hopping_range_hint)"
             while :; do
-                echoColor green "请输入起始端口(默认47000):"
+                echoColor green "$(i18n port_hopping_start)"
                 read -r portHoppingStart
                 if [ -z "${portHoppingStart}" ]; then
                     portHoppingStart=47000
                 fi
                 if [ ${portHoppingStart} -gt 65535 ]; then
-                    echoColor red "\n->端口范围错误,请重新输入!"
+                    echoColor red "$(i18n port_range_error)"
                     continue
                 fi
-                echo -e "\n->起始端口:"$(echoColor red ${portHoppingStart})"\n"
-                echoColor green "请输入结束端口(默认48000):"
+                echo -e "\n->$(i18n start_port_label)"$(echoColor red ${portHoppingStart})"\n"
+                echoColor green "$(i18n port_hopping_end)"
                 read -r portHoppingEnd
                 if [ -z "${portHoppingEnd}" ]; then
                     portHoppingEnd=48000
                 fi
                 if [ ${portHoppingEnd} -gt 65535 ]; then
-                    echoColor red "\n->端口范围错误,请重新输入!"
+                    echoColor red "$(i18n port_range_error)"
                     continue
                 fi
-                echo -e "\n->结束端口:"$(echoColor red ${portHoppingEnd})"\n"
+                echo -e "\n->$(i18n end_port_label)"$(echoColor red ${portHoppingEnd})"\n"
                 if [ ${portHoppingStart} -ge ${portHoppingEnd} ]; then
-                    echoColor red "\n->起始端口必须小于结束端口,请重新输入!"
+                    echoColor red "$(i18n start_port_greater_error)"
                 else
                     break
                 fi
             done
-            echo -e "\033[32m请选择端口跳跃时间模式:\n\n\033[0m\033[33m\033[01m1、固定跳跃时间(默认)\n2、随机跳跃时间\033[0m\033[32m\n\n输入序号:\033[0m"
+            echoColor green "$(i18n port_hopping_mode_prompt)"
+            echoColor yellow "$(i18n port_hopping_mode_fixed)"
+            echoColor yellow "$(i18n port_hopping_mode_random)"
+            echoColor green "$(i18n prompt_enter_number)"
             read -r portHoppingIntervalModeNum
             if [ -z "${portHoppingIntervalModeNum}" ] || [ "${portHoppingIntervalModeNum}" == "1" ]; then
                 portHoppingIntervalMode="fixed"
                 while :; do
-                    echoColor green "请输入固定跳跃间隔(默认30s, 不能低于5s):"
+                    echoColor green "$(i18n fixed_hop_interval_prompt)"
                     read -r portHoppingHopInterval
                     if [ -z "${portHoppingHopInterval}" ]; then
                         portHoppingHopInterval="30s"
                     fi
-                    echo -e "\n->固定跳跃间隔:"$(echoColor red ${portHoppingHopInterval})"\n"
+                    echo -e "\n->$(i18n fixed_hop_interval_label)"$(echoColor red ${portHoppingHopInterval})"\n"
                     hopSeconds=$(echo "${portHoppingHopInterval}" | sed 's/s$//')
                     if ! echo "${hopSeconds}" | grep -Eq '^[0-9]+$' || [ "${hopSeconds}" -lt 5 ]; then
-                        echoColor red "\n->固定跳跃间隔格式错误,请输入不小于5s的秒数,例如30s"
+                        echoColor red "$(i18n fixed_hop_interval_error)"
                         continue
                     fi
                     break
@@ -1463,37 +1493,37 @@ setHysteriaConfig() {
                 portHoppingIntervalMode="random"
                 portHoppingHopInterval=""
                 while :; do
-                    echoColor green "请输入最小跳跃间隔(默认10s, 不能低于5s):"
+                    echoColor green "$(i18n min_hop_interval_prompt)"
                     read -r portHoppingMinHopInterval
                     if [ -z "${portHoppingMinHopInterval}" ]; then
                         portHoppingMinHopInterval="10s"
                     fi
-                    echo -e "\n->最小跳跃间隔:"$(echoColor red ${portHoppingMinHopInterval})"\n"
+                    echo -e "\n->$(i18n min_hop_interval_label)"$(echoColor red ${portHoppingMinHopInterval})"\n"
                     minHopSeconds=$(echo "${portHoppingMinHopInterval}" | sed 's/s$//')
                     if ! echo "${minHopSeconds}" | grep -Eq '^[0-9]+$' || [ "${minHopSeconds}" -lt 5 ]; then
-                        echoColor red "\n->最小跳跃间隔格式错误,请输入不小于5s的秒数,例如10s"
+                        echoColor red "$(i18n min_hop_interval_error)"
                         continue
                     fi
-                    echoColor green "请输入最大跳跃间隔(默认30s, 需大于等于最小间隔):"
+                    echoColor green "$(i18n max_hop_interval_prompt)"
                     read -r portHoppingMaxHopInterval
                     if [ -z "${portHoppingMaxHopInterval}" ]; then
                         portHoppingMaxHopInterval="30s"
                     fi
-                    echo -e "\n->最大跳跃间隔:"$(echoColor red ${portHoppingMaxHopInterval})"\n"
+                    echo -e "\n->$(i18n max_hop_interval_label)"$(echoColor red ${portHoppingMaxHopInterval})"\n"
                     maxHopSeconds=$(echo "${portHoppingMaxHopInterval}" | sed 's/s$//')
                     if ! echo "${maxHopSeconds}" | grep -Eq '^[0-9]+$' || [ "${maxHopSeconds}" -lt "${minHopSeconds}" ]; then
-                        echoColor red "\n->最大跳跃间隔格式错误,请输入大于等于最小间隔的秒数,例如30s"
+                        echoColor red "$(i18n max_hop_interval_error)"
                         continue
                     fi
                     break
                 done
             fi
             clientPort="${portHoppingStart}-${portHoppingEnd}"
-            echo -e "\n->您选择的端口跳跃/多端口(Port Hopping)参数为: "$(echoColor red ${portHoppingStart}-${portHoppingEnd})"\n"
+            echo -e "\n->$(i18n port_hopping_range_label)"$(echoColor red ${portHoppingStart}-${portHoppingEnd})"\n"
             if [ "${portHoppingIntervalMode}" == "fixed" ]; then
-                echo -e "\n->固定跳跃间隔: "$(echoColor red ${portHoppingHopInterval})"\n"
+                echo -e "\n->$(i18n fixed_hop_interval_summary)"$(echoColor red ${portHoppingHopInterval})"\n"
             else
-                echo -e "\n->随机跳跃间隔范围: "$(echoColor red ${portHoppingMinHopInterval}~${portHoppingMaxHopInterval})"\n"
+                echo -e "\n->$(i18n random_hop_interval_summary)"$(echoColor red ${portHoppingMinHopInterval}~${portHoppingMaxHopInterval})"\n"
             fi
         else
             portHoppingStatus="false"
@@ -1501,83 +1531,95 @@ setHysteriaConfig() {
             portHoppingHopInterval=""
             portHoppingMinHopInterval=""
             portHoppingMaxHopInterval=""
-            echoColor red "\n->您选择不使用端口跳跃功能"
+            echoColor red "$(i18n port_hopping_disabled)"
         fi
     else
         portHoppingStatus="false"
-        echoColor purple "\n->Realm模式无需端口跳跃,跳过此设置\n"
+        echoColor purple "\n->$(i18n realm_skip_port_hopping)\n"
     fi
 
-    echoColor green "(4/13)请选择拥塞控制模式:"
-    echo -e "Reno: 更保守、更稳，适合优先考虑兼容性和稳定性的场景"
-    echo -e "BBR: 更积极，通常吞吐更高，适合追求速度的场景"
-    echo -e "Brutal: Hysteria 2 独享特色，固定速率模型，在恶劣网络环境下通常更值得优先尝试，尤其适合已知链路真实带宽、希望获得更强抗抖动和抢带宽能力的场景"
-    echo -e "\033[32m请选择:\n\n\033[0m\033[33m\033[01m1、Reno(保守)\n2、BBR(均衡)\n3、Brutal(激进,默认)\033[0m\033[32m\n\n输入序号:\033[0m"
+    echoColor green "$(i18n congestion_title)"
+    echoColor white "$(i18n congestion_reno_hint)"
+    echoColor white "$(i18n congestion_bbr_hint)"
+    echoColor white "$(i18n congestion_brutal_hint)"
+    echoColor green "$(i18n prompt_choose)"
+    echoColor yellow "$(i18n congestion_choice_reno)"
+    echoColor yellow "$(i18n congestion_choice_bbr)"
+    echoColor yellow "$(i18n congestion_choice_brutal)"
+    echoColor green "$(i18n prompt_enter_number)"
     read -r congestion_num
     if [ "${congestion_num}" == "1" ]; then
         congestion_mode="reno"
         congestion_type="reno"
         congestion_bbr_profile=""
         ignore_client_bandwidth="true"
-        echo -e "\n->您选择的拥塞控制模式: "$(echoColor red Reno)"\n"
+        echo -e "\n->$(i18n congestion_selected_reno)\n"
     elif [ "${congestion_num}" == "2" ]; then
         congestion_mode="bbr"
         congestion_type="bbr"
         ignore_client_bandwidth="true"
-        echoColor green "BBR 提供三档调节方式，适合不同网络环境："
-        echo -e "1、保守 / conservative：更保守，收敛更稳，适合链路波动较大、网络质量一般、优先稳定性的场景"
-        echo -e "2、均衡 / standard(默认)：官方默认预设，速度与稳定性更均衡，适合大多数 VPS 和家庭宽带环境"
-        echo -e "3、激进 / aggressive：更激进，更积极抢占带宽，适合链路质量较好、追求更高吞吐的场景，但波动时可能更敏感"
-        echo -e "\033[32m请选择 BBR 预设等级:\n\n\033[0m\033[33m\033[01m1、初级(conservative)\n2、中级(standard，默认)\n3、高级(aggressive)\033[0m\033[32m\n\n输入序号:\033[0m"
+        echoColor green "$(i18n bbr_profile_title)"
+        echoColor white "$(i18n bbr_profile_conservative)"
+        echoColor white "$(i18n bbr_profile_standard)"
+        echoColor white "$(i18n bbr_profile_aggressive)"
+        echoColor green "$(i18n bbr_profile_prompt)"
+        echoColor yellow "$(i18n bbr_choice_conservative)"
+        echoColor yellow "$(i18n bbr_choice_standard)"
+        echoColor yellow "$(i18n bbr_choice_aggressive)"
+        echoColor green "$(i18n prompt_enter_number)"
         read -r bbr_profile_num
         case ${bbr_profile_num} in
             2) congestion_bbr_profile="conservative" ;;
             3) congestion_bbr_profile="aggressive" ;;
             *) congestion_bbr_profile="standard" ;;
         esac
-        echo -e "\n->您选择的拥塞控制模式: "$(echoColor red BBR)" / BBR预设: "$(echoColor red ${congestion_bbr_profile})"\n"
+        echo -e "\n->$(i18n congestion_selected_bbr)"$(echoColor red ${congestion_bbr_profile})"\n"
     else
         congestion_mode="brutal"
         congestion_type=""
         congestion_bbr_profile=""
         ignore_client_bandwidth="false"
-        echo -e "\n->您选择的拥塞控制模式: "$(echoColor red Brutal)"\n"
+        echo -e "\n->$(i18n congestion_selected_brutal)\n"
     fi
 
     if [ "${congestion_mode}" == "brutal" ]; then
-        echoColor green "(5/13)请输入您到此服务器的平均延迟,用于 Brutal 模式下估算 QUIC 窗口(默认200,单位:ms):"
+        echoColor green "$(i18n delay_prompt)"
         read -r delay
         if [ -z "${delay}" ]; then
             delay=200
         fi
-        echo -e "\n->延迟:$(echoColor red ${delay})ms\n"
-        echo -e "\n期望速度,这是客户端在 Brutal 模式下使用的目标带宽。"$(echoColor red Tips:脚本会自动*1.10做冗余，带宽不要高于真实链路极限，否则反而可能更不稳定!)
-        echoColor green "(6/13)请输入客户端期望的下行速度:(默认50,单位:mbps):"
+        echo -e "\n->$(i18n delay_label)"$(echoColor red ${delay})"ms\n"
+        echo -e "\n$(i18n bandwidth_expectation)"$(echoColor red "Tips:")
+        echoColor green "$(i18n download_prompt)"
         read -r download
         if [ -z "${download}" ]; then
             download=50
         fi
-        echo -e "\n->客户端下行速度："$(echoColor red ${download})"mbps\n"
-        echo -e "\033[32m(7/13)请输入客户端期望的上行速度(默认10,单位:mbps):\033[0m"
+        echo -e "\n->$(i18n download_label)"$(echoColor red ${download})"mbps\n"
+        echoColor green "$(i18n upload_prompt)"
         read -r upload
         if [ -z "${upload}" ]; then
             upload=10
         fi
-        echo -e "\n->客户端上行速度："$(echoColor red ${upload})"mbps\n"
+        echo -e "\n->$(i18n upload_label)"$(echoColor red ${upload})"mbps\n"
     else
         delay=""
         download=""
         upload=""
-        echoColor lightYellow "(5-7/13)当前选择的是非 Brutal 模式，已跳过延时与上下行带宽输入，改用拥塞控制器本地配置。"
+        echoColor lightYellow "$(i18n non_brutal_skip)"
     fi
-    echoColor green "(8/13)请输入认证口令(默认随机生成UUID作为密码,建议使用强密码):"
+    echoColor green "$(i18n auth_secret_prompt)"
     read -r auth_secret
     if [ -z "${auth_secret}" ]; then
         auth_secret=$(generate_uuid)
     fi
-    echo -e "\n->认证口令:"$(echoColor red ${auth_secret})"\n"
-    echo -e "Tips: 如果使用obfs混淆,抗封锁能力更强,能被识别为未知udp流量。\n但是会增加cpu负载导致峰值速度下降,如果您追求性能且未被针对封锁建议不使用"
-    echo -e "\033[32m(9/13)是否使用流量混淆:\n\n\033[0m\033[33m\033[01m1、不使用(推荐)\n2、salamander - 将数据包混淆为无特征随机字节\n3、gecko(实验性) - 在salamander基础上额外拆分QUIC握手包，抗检测更强\033[0m\033[32m\n\n输入序号:\033[0m"
+    echo -e "\n->$(i18n auth_secret_label)"$(echoColor red ${auth_secret})"\n"
+    echoColor white "$(i18n obfs_hint)"
+    echoColor green "$(i18n obfs_prompt)"
+    echoColor yellow "$(i18n obfs_choice_disable)"
+    echoColor yellow "$(i18n obfs_choice_salamander)"
+    echoColor yellow "$(i18n obfs_choice_gecko)"
+    echoColor green "$(i18n prompt_enter_number)"
     read -r obfs_num
     if [ -z "${obfs_num}" ] || [ ${obfs_num} == "1" ]; then
         obfs_status="false"
@@ -1592,93 +1634,106 @@ setHysteriaConfig() {
         obfs_pass=${auth_secret}
     fi
     if [ "${obfs_status}" == "true" ]; then
-        echo -e "\n->您将使用${obfs_type}混淆加密流量\n"
+        echo -e "\n->$(i18n obfs_enabled ${obfs_type})\n"
     else
-        echo -e "\n->您将不使用混淆\n"
+        echo -e "\n->$(i18n obfs_disabled)\n"
     fi
     if [ "${realmMode}" != "true" ]; then
-        echo -e "\033[32m(10/13)请选择伪装类型:\n\n\033[0m\033[33m\033[01m1、string(默认、返回一个固定的字符串)\n2、proxy(作为一个反向代理，从另一个网站提供内容。)\n3、file(作为一个静态文件服务器，从一个目录提供内容。目录内必须含有index.html)\033[0m\033[32m\n\n输入序号:\033[0m"
+        echoColor green "$(i18n masquerade_prompt)"
+        echoColor yellow "$(i18n masquerade_choice_string)"
+        echoColor yellow "$(i18n masquerade_choice_proxy)"
+        echoColor yellow "$(i18n masquerade_choice_file)"
+        echoColor green "$(i18n prompt_enter_number)"
         read -r masquerade_type
         if [ -z "${masquerade_type}" ] || [ ${masquerade_type} == "1" ]; then
             masquerade_type="string"
-            echo -e "请输入伪装字符串(默认:HelloWorld):"
+            echoColor green "$(i18n masquerade_string_prompt)"
             read -r masquerade_string
             if [ -z "${masquerade_string}" ]; then
                 masquerade_string="HelloWorld"
             fi
-            echo -e "\n->伪装字符串:$(echoColor red ${masquerade_string})\n"
-            echo -e "请输入http伪装标头content-stuff(默认:HelloWorld):"
+            echo -e "\n->$(i18n masquerade_string_label)"$(echoColor red ${masquerade_string})"\n"
+            echoColor green "$(i18n masquerade_stuff_prompt)"
             read -r masquerade_stuff
             if [ -z "${masquerade_stuff}" ]; then
                 masquerade_stuff="HelloWorld"
             fi
-            echo -e "\n->http伪装标头content-stuff:$(echoColor red ${masquerade_stuff})\n"
+            echo -e "\n->$(i18n masquerade_stuff_label)"$(echoColor red ${masquerade_stuff})"\n"
         elif [ ${masquerade_type} == "2" ]; then
             masquerade_type="proxy"
-            echoColor green "请输入伪装代理地址(默认:https://www.helloworld.org):"
-            echo -e "反代该网址但不会替换网页内域名"
+            echoColor green "$(i18n masquerade_proxy_prompt)"
+            echoColor white "$(i18n masquerade_proxy_hint)"
             read -r masquerade_proxy
             if [ -z "${masquerade_proxy}" ]; then
                 masquerade_proxy="https://www.helloworld.org"
             fi
-            echo -e "\n->伪装代理地址:"$(echoColor red ${masquerade_proxy})"\n"
-            echo -e "\033[32m是否附加 X-Forwarded-For / Host / Proto 请求头:\n\n\033[0m\033[33m\033[01m1、启用(默认)\n2、关闭\033[0m\033[32m\n\n输入序号:\033[0m"
+            echo -e "\n->$(i18n masquerade_proxy_label)"$(echoColor red ${masquerade_proxy})"\n"
+            echoColor green "$(i18n xforwarded_prompt)"
+            echoColor yellow "$(i18n xforwarded_choice_enable)"
+            echoColor yellow "$(i18n xforwarded_choice_disable)"
+            echoColor green "$(i18n prompt_enter_number)"
             read -r masquerade_xforwarded
             if [ -z "${masquerade_xforwarded}" ] || [ "${masquerade_xforwarded}" == "1" ]; then
                 masquerade_xforwarded="true"
             else
                 masquerade_xforwarded="false"
             fi
-            echo -e "\n->X-Forwarded请求头: "$(echoColor red ${masquerade_xforwarded})"\n"
+            echo -e "\n->$(i18n xforwarded_label)"$(echoColor red ${masquerade_xforwarded})"\n"
         else
             masquerade_type="file"
             masquerade_xforwarded="false"
-            echoColor green "请输入伪装网站文件目录(默认:/etc/hihy/file,将自动下载mikutap部署):"
-            echo -e "默认预览: https://hfiprogramming.github.io/mikutap/"
+            echoColor green "$(i18n masquerade_file_prompt)"
+            echoColor white "$(i18n masquerade_file_hint)"
             read -r masquerade_file
             if [ -z "${masquerade_file}" ]; then
                 masquerade_file="/etc/hihy/file"
             fi
-            echo -e "\n->伪装网站文件目录:"$(echoColor red ${masquerade_file})"\n"
+            echo -e "\n->$(i18n masquerade_file_label)"$(echoColor red ${masquerade_file})"\n"
         fi
         if [ "${masquerade_type}" != "proxy" ]; then
             masquerade_xforwarded="false"
         fi
         if [ "${realmMode}" == "true" ]; then
             masquerade_tcp="false"
-            echoColor purple "\n->Realm模式无需TCP监听,跳过伪装端口设置\n"
+            echoColor purple "$(i18n realm_skip_masquerade_tcp)"
         else
-            echoColor green "(11/13)是否同时监听tcp/${port}端口来增强伪装行为(做戏做全套):"
-            echoColor lightYellow "通常网站支持 HTTP/3 的只是将其作为一个升级选项"
-            echo -e "监听一个tcp端口来提供伪装内容,使伪装更加自然,如果不启用此选项,浏览器将在不启用H3功能下访问不了伪装内容"
-            echo -e "\033[32m请选择:\n\n\033[0m\033[33m\033[01m1、启用(默认)\n2、跳过\033[0m\033[32m\n\n输入序号:\033[0m"
+            echoColor green "$(i18n masquerade_tcp_prompt ${port})"
+            echoColor lightYellow "$(i18n masquerade_tcp_hint1)"
+            echoColor white "$(i18n masquerade_tcp_hint2)"
+            echoColor green "$(i18n prompt_choose)"
+            echoColor yellow "$(i18n masquerade_tcp_choice_enable)"
+            echoColor yellow "$(i18n masquerade_tcp_choice_skip)"
+            echoColor green "$(i18n prompt_enter_number)"
             read -r masquerade_tcp
             if [ -z "${masquerade_tcp}" ] || [ ${masquerade_tcp} == "1" ]; then
                 masquerade_tcp="true"
-                echo -e "\n->您选择同时监听$(echoColor red tcp/${port})端口\n"
+                echo -e "\n->$(i18n masquerade_tcp_enabled ${port})\n"
             else
                 masquerade_tcp="false"
-                echo -e "\n->您选择不监听tcp/${port}端口\n"
+                echo -e "\n->$(i18n masquerade_tcp_disabled ${port})\n"
             fi
         fi
     fi
-    echoColor green "\n(12/13)是否在服务器屏蔽http3流量(hysteria对udp流量拥塞控制无增强效果，导致访问youtube等使用QUIC连接的网站效果不佳):"
-    echoColor lightYellow "如果开启此选项，hysteria2将不会代理udp/443，无法使用QUIC连接访问网站，并且需要在客户端配置中禁用QUIC连接，否则会导致连接失败。\n"
-    echo -e "也可以仅在客户端屏蔽QUIC/HTTP3/UDP 443连接，服务器不做屏蔽，效果一样\n"
-    echo -e "\033[32m请选择:\n\n\033[0m\033[33m\033[01m1、启用(推荐)\n2、跳过(默认)\033[0m\033[32m\n\n输入序号:\033[0m"
+    echoColor green "$(i18n block_http3_prompt)"
+    echoColor lightYellow "$(i18n block_http3_hint1)"
+    echoColor white "$(i18n block_http3_hint2)"
+    echoColor green "$(i18n prompt_choose)"
+    echoColor yellow "$(i18n block_http3_choice_enable)"
+    echoColor yellow "$(i18n block_http3_choice_skip)"
+    echoColor green "$(i18n prompt_enter_number)"
     read -r block_http3
     if [ -z "${block_http3}" ] || [ ${block_http3} == "2" ]; then
         block_http3="false"
-        echo -e "\n->您选择不屏蔽http3流量，这会导致访问使用QUIC连接的网站无hy2增强效果\n"
-        echoColor lightYellow "Tip: 建议在客户端开启屏蔽QUIC/HTTP3/UDP 443此选项以获得更好的访问体验。\n"
+        echo -e "\n->$(i18n block_http3_disabled)\n"
+        echoColor lightYellow "$(i18n client_only_block_http3_tip)"
     else
         block_http3="true"
-        echoColor red "\n->您选择屏蔽http3流量，请根据自己使用的客户端，屏蔽QUIC/HTTP3流量，否则会导致对使用QUIC的网站连接失败\n"
+        echoColor red "$(i18n block_http3_enabled)"
     fi
-    echoColor green "(13/13)请输入客户端名称备注(默认使用域名或IP区分,例如输入test,则名称为Hy2-test):"
+    echoColor green "$(i18n remarks_prompt)"
     read -r remarks
-    echoColor green "\n配置录入完成!\n"
-    echoColor yellowBlack "执行配置..."
+    echoColor green "$(i18n config_input_done)"
+    echoColor yellowBlack "$(i18n config_executing)"
     max_CRW=0
     if [ "${congestion_mode}" == "brutal" ]; then
         download=$(($download + $download / 10))
@@ -1793,27 +1848,26 @@ setHysteriaConfig() {
             insecure="0"
             days=3650
             mail="no-reply@qq.com"
-            echoColor purple "开始生成自签名证书...\n"
-            echoColor green "生成 CA 私钥..."
+            echoColor purple "$(i18n cert_generating_start)"
+            echoColor green "$(i18n cert_ca_key)"
             openssl genrsa -out /etc/hihy/cert/${domain}.ca.key 2048
-            echoColor green "生成 CA 证书..."
+            echoColor green "$(i18n cert_ca_cert)"
             openssl req -new -x509 -days ${days} -key /etc/hihy/cert/${domain}.ca.key -subj "/C=CN/ST=GuangDong/L=ShenZhen/O=PonyMa/OU=Tecent/emailAddress=${mail}/CN=Tencent Root CA" -out /etc/hihy/cert/${domain}.ca.crt
-            echoColor green "生成服务器私钥和 CSR..."
+            echoColor green "$(i18n cert_server_key_csr)"
             openssl req -newkey rsa:2048 -nodes -keyout /etc/hihy/cert/${domain}.key -subj "/C=CN/ST=GuangDong/L=ShenZhen/O=PonyMa/OU=Tecent/emailAddress=${mail}/CN=${domain}" -out /etc/hihy/cert/${domain}.csr
-            echoColor green "使用 CA 签署服务器证书..."
+            echoColor green "$(i18n cert_sign_server)"
             openssl x509 -req -extfile <(printf "subjectAltName=DNS:${domain},DNS:${domain}") -days ${days} -in /etc/hihy/cert/${domain}.csr -CA /etc/hihy/cert/${domain}.ca.crt -CAkey /etc/hihy/cert/${domain}.ca.key -CAcreateserial -out /etc/hihy/cert/${domain}.crt
-            echoColor green "清理临时文件..."
+            echoColor green "$(i18n cert_cleanup)"
             rm /etc/hihy/cert/${domain}.ca.key /etc/hihy/cert/${domain}.ca.srl /etc/hihy/cert/${domain}.csr
-            echoColor green "移动 CA 证书到结果目录..."
+            echoColor green "$(i18n cert_move_ca)"
             mv /etc/hihy/cert/${domain}.ca.crt /etc/hihy/result
-            echoColor purple "证书生成成功！\n"
-            # 计算自签证书的 SHA-256 指纹,客户端通过 pinSHA256 校验,无需开启不安全连接(insecure)
+            echoColor purple "$(i18n cert_success)"
             pinSHA256=$(openssl x509 -noout -fingerprint -sha256 -in /etc/hihy/cert/${domain}.crt 2>/dev/null | sed 's/^.*=//')
             if [ -n "${pinSHA256}" ]; then
-                echoColor green "证书 SHA-256 指纹: $(echoColor red ${pinSHA256})"
-                echoColor purple "客户端将通过 pinSHA256 校验该指纹,默认不再开启不安全连接(insecure)。\n"
+                echoColor green "$(i18n cert_sha256_label)"$(echoColor red ${pinSHA256})
+                echoColor purple "$(i18n cert_pinsha256_hint)"
             else
-                echoColor yellow "未能计算证书指纹,将回退为不安全连接(insecure=1)模式。\n"
+                echoColor yellow "$(i18n cert_fingerprint_fail)"
                 insecure="1"
             fi
             addOrUpdateYaml "$yaml_file" "tls.cert" "/etc/hihy/cert/${domain}.crt"
@@ -1930,7 +1984,7 @@ setHysteriaConfig() {
         touch /etc/sysctl.conf
     fi
     sysctl -p
-    echo -e "\033[1;;35m\nTest config...\n\033[0m"
+    echoColor purple "\n$(i18n test_config)\n"
     startInstallValidationProcess "${yaml_file}" "./hihy_debug.info"
     if [ "${useAcme}" == "true" ]; then
         countdown 20
@@ -1941,12 +1995,12 @@ setHysteriaConfig() {
     case ${msg} in
         *"failed to get a certificate with ACME"*)
             markInstallFailed "certificate" "failed to get a certificate with ACME"
-            echoColor red "域名:${u_host},申请证书失败!请重新安装使用自签证书."
+            echoColor red "$(i18n acme_cert_fail ${u_host})"
             rm /etc/hihy/conf/config.yaml
             rm /etc/hihy/result/backup.yaml
             delHihyFirewallPort
             rm ./hihy_debug.info
-            echoColor yellow "当前安装处于未完成状态，可修正问题后重新执行安装，或执行卸载进行清理。"
+            echoColor yellow "$(i18n acme_incomplete_state)"
             exit
             ;;
         *"bind: address already in use"*)
@@ -1954,14 +2008,14 @@ setHysteriaConfig() {
             rm /etc/hihy/conf/config.yaml
             rm /etc/hihy/result/backup.yaml
             delHihyFirewallPort
-            echoColor red "端口被占用,请更换端口!"
+            echoColor red "$(i18n port_bind_fail)"
             rm ./hihy_debug.info
-            echoColor yellow "当前安装处于未完成状态，可更换端口后重新执行安装，或执行卸载进行清理。"
+            echoColor yellow "$(i18n acme_incomplete_state)"
             exit
             ;;
         *"server up and running"*)
-            echoColor green "Test success!"
-            echoColor purple "Stop test program..."
+            echoColor green "$(i18n test_success)"
+            echoColor purple "$(i18n stop_test_program)"
             pkill -f "/etc/hihy/bin/appS"
             rm ./hihy_debug.info
             if [ "${realmMode}" != "true" ]; then
@@ -1974,7 +2028,7 @@ setHysteriaConfig() {
                     allowPort tcp ${port}
                 fi
             fi
-            echoColor purple "Generating config..."
+            echoColor purple "$(i18n generating_config)"
             ;;
         *)
             markInstallFailed "config-test" "unknown error while validating generated config"
@@ -1982,8 +2036,8 @@ setHysteriaConfig() {
                 apk add --no-cache procps
             fi
             pkill -f "/etc/hihy/bin/appS"
-            echoColor red "未知错误: 请查看下方错误信息,并提交issue到github"
-            echoColor yellow "已保留未完成安装状态，修正问题后可重新执行安装，或执行卸载进行清理。"
+            echoColor red "$(i18n unknown_error)"
+            echoColor yellow "$(i18n unknown_error_incomplete_state)"
             cat ./hihy_debug.info
             rm ./hihy_debug.info
             exit
@@ -2034,11 +2088,11 @@ setHysteriaConfig() {
     fi
     if ! installHihyLauncher; then
         markInstallFailed "launcher" "failed to install hihy launcher"
-        echoColor red "hihy 命令安装失败,请检查网络或写入权限后重试."
+        echoColor red "$(i18n hihy_cmd_install_fail)"
         exit 1
     fi
     clearInstallFailureMarker
-    echoColor greenWhite "安装成功,请查看下方配置详细信息"
+    echoColor greenWhite "$(i18n install_success)"
 }
 
 downloadHysteriaCore() {
