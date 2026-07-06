@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="ver1.10"
+hihyV="ver1.11"
 
 HIHY_ROOT_DIR="${HIHY_ROOT_DIR:-/etc/hihy}"
 HIHY_BIN_LINK="${HIHY_BIN_LINK:-/usr/bin/hihy}"
@@ -1985,12 +1985,7 @@ updateHysteriaCore() {
                 if [ "${msg}" == "hihy is running" ]; then
                     was_running="true"
                     stop
-                    # 等待进程完全退出后再下载新二进制文件，避免 "Text file busy" 导致下载失败
-                    local wait_count=0
-                    while pgrep -f "/etc/hihy/bin/appS" >/dev/null 2>&1 && [ $wait_count -lt 10 ]; do
-                        sleep 1
-                        wait_count=$((wait_count + 1))
-                    done
+                    killHysteriaProcess TERM
                 fi
             fi
 
@@ -2099,8 +2094,10 @@ install() {
 
     if [ "$install_state" = "partially-installed" ]; then
         echoColor yellow "检测到未完成的安装残留，正在清理脚本管理的文件后继续安装..."
+        killHysteriaProcess KILL
         delHihyFirewallPort udp >/dev/null 2>&1 || true
         delHihyFirewallPort tcp >/dev/null 2>&1 || true
+        cleanupHysteria2Iptables >/dev/null 2>&1 || true
         recoverPartialInstallState
         echoColor purple "已完成部分安装状态恢复，继续执行安装。"
     fi
@@ -2453,6 +2450,53 @@ EOF
     return 1
 }
 
+killHysteriaProcess() {
+    local signal="${1:-TERM}"
+    local pid_file="${2:-/var/run/hihy.pid}"
+
+    if [ -f "$pid_file" ]; then
+        local pid
+        pid=$(cat "$pid_file" 2>/dev/null)
+        if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+            kill "-${signal}" "$pid" 2>/dev/null || true
+            sleep 1
+        fi
+        rm -f "$pid_file"
+    fi
+
+    if pgrep -f "/etc/hihy/bin/appS" >/dev/null 2>&1; then
+        pkill "-${signal}" -f "/etc/hihy/bin/appS" 2>/dev/null || true
+        sleep 2
+        if pgrep -f "/etc/hihy/bin/appS" >/dev/null 2>&1; then
+            pkill -9 -f "/etc/hihy/bin/appS" 2>/dev/null || true
+            sleep 1
+        fi
+    fi
+}
+
+cleanupHysteria2Iptables() {
+    for table in nat mangle; do
+        if command -v iptables-save >/dev/null 2>&1; then
+            iptables -t "$table" -S 2>/dev/null | grep -oP 'HYSTERIA-\S+' | sort -u | while read -r chain; do
+                iptables -t "$table" -S 2>/dev/null | grep -E " -j $chain$" | sed 's/-A/-D/' | while read -r rule; do
+                    iptables -t "$table" $rule 2>/dev/null || true
+                done
+                iptables -t "$table" -F "$chain" 2>/dev/null || true
+                iptables -t "$table" -X "$chain" 2>/dev/null || true
+            done
+        fi
+        if command -v ip6tables-save >/dev/null 2>&1; then
+            ip6tables -t "$table" -S 2>/dev/null | grep -oP 'HYSTERIA-\S+' | sort -u | while read -r chain; do
+                ip6tables -t "$table" -S 2>/dev/null | grep -E " -j $chain$" | sed 's/-A/-D/' | while read -r rule; do
+                    ip6tables -t "$table" $rule 2>/dev/null || true
+                done
+                ip6tables -t "$table" -F "$chain" 2>/dev/null || true
+                ip6tables -t "$table" -X "$chain" 2>/dev/null || true
+            done
+        fi
+    done
+}
+
 checkRoot() {
     if [ "$(id -u)" -ne 0 ]; then
         echoColor red "Please run this script with root privileges!"
@@ -2487,13 +2531,16 @@ uninstall() {
         fi
     fi
 
-    # 删除 iptables 规则
+    killHysteriaProcess TERM
+
+    # 删除 iptables 规则（脚本和 Hysteria2 自身添加的）
     if command -v iptables-save >/dev/null 2>&1 && command -v iptables-restore >/dev/null 2>&1; then
         iptables-save 2>/dev/null | grep -v "hihysteria" | iptables-restore >/dev/null 2>&1 || true
     fi
     if command -v ip6tables-save >/dev/null 2>&1 && command -v ip6tables-restore >/dev/null 2>&1; then
         ip6tables-save 2>/dev/null | grep -v "hihysteria" | ip6tables-restore >/dev/null 2>&1 || true
     fi
+    cleanupHysteria2Iptables
 
     # 保存 iptables 规则
     if [ -d "/etc/iptables" ]; then
@@ -3424,6 +3471,8 @@ changeServerConfig() {
     fi
     masquerade_tcp=$(getYamlValue "/etc/hihy/conf/backup.yaml" "masquerade_tcp")
     stop
+    killHysteriaProcess TERM
+    cleanupHysteria2Iptables >/dev/null 2>&1 || true
     if [ "${masquerade_tcp}" == "true" ]; then
         delHihyFirewallPort tcp
         delHihyFirewallPort udp
