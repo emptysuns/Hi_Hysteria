@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="ver1.09"
+hihyV="ver1.10"
 
 HIHY_ROOT_DIR="${HIHY_ROOT_DIR:-/etc/hihy}"
 HIHY_BIN_LINK="${HIHY_BIN_LINK:-/usr/bin/hihy}"
@@ -674,17 +674,6 @@ getBackupValueOrDefault() {
     fi
 }
 
-cleanupLegacyPortHoppingNatIfPresent() {
-    if command -v iptables-save >/dev/null 2>&1 && iptables-save 2>/dev/null | grep -q "PortHopping-hihysteria"; then
-        delPortHoppingNat >/dev/null 2>&1 || true
-        return
-    fi
-
-    if command -v ip6tables-save >/dev/null 2>&1 && ip6tables-save 2>/dev/null | grep -q "PortHopping-hihysteria"; then
-        delPortHoppingNat >/dev/null 2>&1 || true
-    fi
-}
-
 getInstallFailureMarker() {
     local root_dir="${1:-$HIHY_ROOT_DIR}"
     echo "${root_dir}/result/install.failed"
@@ -781,7 +770,6 @@ recoverPartialInstallState() {
     if [ -f "$rc_local" ]; then
         sed -i '/\/etc\/rc\.d\/hihy start/d' "$rc_local"
         sed -i '/\/etc\/rc\.d\/allow-port start/d' "$rc_local"
-        sed -i '/\/etc\/rc\.d\/port-hopping start/d' "$rc_local"
     fi
 }
 
@@ -1814,10 +1802,6 @@ setHysteriaConfig() {
         sysctl -w net.core.rmem_max=${max_CRW}
         sysctl -w net.core.wmem_max=${max_CRW}
     fi
-    if echo "${portHoppingStatus}" | grep -q "true"; then
-        sysctl -w net.ipv4.ip_forward=1
-        sysctl -w net.ipv6.conf.all.forwarding=1
-    fi
     if [ ! -f "/etc/sysctl.conf" ]; then
         touch /etc/sysctl.conf
     fi
@@ -1858,9 +1842,6 @@ setHysteriaConfig() {
             rm ./hihy_debug.info
             if [ "${realmMode}" != "true" ]; then
                 allowPort udp ${port}
-                if [ "${portHoppingStatus}" == "true" ]; then
-                    allowPort udp ${portHoppingStart}:${portHoppingEnd}
-                fi
                 if [ "${masquerade_tcp}" == "true" ]; then
                     getPortBindMsg TCP ${port}
                     allowPort tcp ${port}
@@ -2118,7 +2099,6 @@ install() {
 
     if [ "$install_state" = "partially-installed" ]; then
         echoColor yellow "检测到未完成的安装残留，正在清理脚本管理的文件后继续安装..."
-        cleanupLegacyPortHoppingNatIfPresent >/dev/null 2>&1 || true
         delHihyFirewallPort udp >/dev/null 2>&1 || true
         delHihyFirewallPort tcp >/dev/null 2>&1 || true
         recoverPartialInstallState
@@ -2473,164 +2453,6 @@ EOF
     return 1
 }
 
-addPortHoppingNat() {
-    # $1 portHoppingStart
-    # $2 portHoppingEnd
-    # $3 portHoppingTarget
-
-    # 检查必需命令
-    if ! command -v iptables >/dev/null 2>&1; then
-        echoColor red "未找到 iptables,请先安装"
-        return 1
-    fi
-    iptables -t nat -A PREROUTING -p udp --dport $1:$2 -m comment --comment "NAT $1:$2 to $3 (PortHopping-hihysteria)" -j DNAT --to-destination :$3
-    ip6tables -t nat -A PREROUTING -p udp --dport $1:$2 -m comment --comment "NAT $1:$2 to $3 (PortHopping-hihysteria)" -j DNAT --to-destination :$3
-    if [ -f "/etc/alpine-release" ]; then
-        # Alpine Linux: 使用 OpenRC
-        # 确保加载必要模块
-        modprobe ip_tables
-        modprobe ip6_tables
-        modprobe iptable_nat
-        modprobe ip6table_nat
-
-        # 创建并初始化 iptables 规则目录
-        mkdir -p /etc/iptables
-
-        # 创建基础规则
-        iptables -P INPUT ACCEPT
-        iptables -P FORWARD ACCEPT
-        iptables -P OUTPUT ACCEPT
-        iptables -F
-
-        ip6tables -P INPUT ACCEPT
-        ip6tables -P FORWARD ACCEPT
-        ip6tables -P OUTPUT ACCEPT
-        ip6tables -F
-
-        # 保存规则
-        /etc/init.d/iptables save
-        /etc/init.d/ip6tables save
-
-        # 启动 iptables 服务
-        rc-service iptables start
-        rc-service ip6tables start
-
-        # 确保服务开机启动
-        rc-update add iptables default
-        rc-update add ip6tables default
-
-        # 创建 port-hopping 服务
-        cat >/etc/init.d/port-hopping <<'EOF'
-#!/sbin/openrc-run
-
-description="Port Hopping NAT rules for Hysteria"
-depend() {
-    need net iptables ip6tables
-    after firewall
-}
-
-start() {
-    ebegin "Adding Port Hopping NAT rules"
-EOF
-        # 添加实际规则
-        echo "    iptables -t nat -A PREROUTING -p udp --dport $1:$2 -m comment --comment \"NAT $1:$2 to $3 (PortHopping-hihysteria)\" -j DNAT --to-destination :$3" >>/etc/init.d/port-hopping
-        echo "    ip6tables -t nat -A PREROUTING -p udp --dport $1:$2 -m comment --comment \"NAT $1:$2 to $3 (PortHopping-hihysteria)\" -j DNAT --to-destination :$3" >>/etc/init.d/port-hopping
-        cat >>/etc/init.d/port-hopping <<'EOF'
-    eend $?
-}
-
-stop() {
-    ebegin "Removing Port Hopping NAT rules"
-    iptables-save | grep -v "PortHopping-hihysteria" | iptables-restore
-    ip6tables-save | grep -v "PortHopping-hihysteria" | ip6tables-restore
-    eend $?
-}
-EOF
-        chmod +x /etc/init.d/port-hopping
-
-        # 添加到默认运行级别并启动
-        rc-update add port-hopping default
-        rc-service port-hopping start
-
-    else
-        # 其他 Linux 系统的处理保持不变
-        mkdir -p /etc/rc.d
-        cat >/etc/rc.d/port-hopping <<EOF
-#!/bin/sh
-iptables -t nat -A PREROUTING -p udp --dport $1:$2 -m comment --comment "NAT $1:$2 to $3 (PortHopping-hihysteria)" -j DNAT --to-destination :$3
-ip6tables -t nat -A PREROUTING -p udp --dport $1:$2 -m comment --comment "NAT $1:$2 to $3 (PortHopping-hihysteria)" -j DNAT --to-destination :$3
-EOF
-        chmod +x /etc/rc.d/port-hopping
-
-        if [ ! -f "/etc/rc.local" ]; then
-            touch /etc/rc.local
-            echo "#!/bin/bash" >/etc/rc.local
-            chmod +x /etc/rc.local
-        fi
-        if ! grep -q "/etc/rc.d/port-hopping start" /etc/rc.local; then
-            echo "/etc/rc.d/port-hopping start" >>/etc/rc.local
-        fi
-    fi
-
-    echoColor purple "Port Hopping NAT 规则已添加并持久化。"
-}
-
-delPortHoppingNat() {
-    # 删除 OpenRC 服务（如果存在）
-    if [ -f "/etc/alpine-release" ] && [ -f "/etc/init.d/port-hopping" ]; then
-        rc-service port-hopping stop
-        rc-update del port-hopping default
-        rm -f /etc/init.d/port-hopping
-    fi
-
-    # 删除 port-hopping 规则
-    if [ -f "/etc/rc.d/port-hopping" ]; then
-        rm -f /etc/rc.d/port-hopping
-    fi
-
-    # 删除 rc.local port-hopping 规则（如果存在）
-    if [ -f "/etc/rc.local" ]; then
-        sed -i '/\/etc\/rc.d\/port-hopping/d' /etc/rc.local
-    fi
-
-    # 删除所有 hihysteria 相关的 NAT 规则
-    local nat_rules_v4=$(iptables-save | grep -E "PortHopping-hihysteria|hihysteria")
-    local nat_rules_v6=$(ip6tables-save | grep -E "PortHopping-hihysteria|hihysteria")
-
-    if [ -n "$nat_rules_v4" ]; then
-        while IFS= read -r rule; do
-            local clean_rule=$(echo "$rule" | sed 's/-A/-D/')
-            # 添加执行结果检查
-            if eval "iptables $clean_rule 2>/dev/null" || ! iptables -t nat -C $(echo "$clean_rule" | cut -d' ' -f2-) 2>/dev/null; then
-                # 规则删除成功或规则已不存在都视为成功
-                continue
-            # else
-            #     echoColor yellow "警告: 删除 IPv4 规则失败: $clean_rule"
-            fi
-        done <<<"$nat_rules_v4"
-    fi
-
-    if [ -n "$nat_rules_v6" ]; then
-        while IFS= read -r rule; do
-            local clean_rule=$(echo "$rule" | sed 's/-A/-D/')
-            # 添加执行结果检查
-            if eval "ip6tables $clean_rule 2>/dev/null" || ! ip6tables -t nat -C $(echo "$clean_rule" | cut -d' ' -f2-) 2>/dev/null; then
-                # 规则删除成功或规则已不存在都视为成功
-                continue
-            # else
-            #     echoColor yellow "警告: 删除 IPv6 规则失败: $clean_rule"
-            fi
-        done <<<"$nat_rules_v6"
-    fi
-    # 保存 iptables 规则
-    if [ -d "/etc/iptables" ]; then
-        iptables-save >/etc/iptables/rules.v4
-        ip6tables-save >/etc/iptables/rules.v6
-    fi
-
-    echoColor purple "Port Hopping NAT 规则已清理完成"
-}
-
 checkRoot() {
     if [ "$(id -u)" -ne 0 ]; then
         echoColor red "Please run this script with root privileges!"
@@ -2688,7 +2510,6 @@ uninstall() {
 
     delHihyFirewallPort udp
     delHihyFirewallPort tcp
-    cleanupLegacyPortHoppingNatIfPresent
 
     # 删除相关目录和文件
     rm -rf /etc/hihy
@@ -3603,7 +3424,6 @@ changeServerConfig() {
     fi
     masquerade_tcp=$(getYamlValue "/etc/hihy/conf/backup.yaml" "masquerade_tcp")
     stop
-    cleanupLegacyPortHoppingNatIfPresent
     if [ "${masquerade_tcp}" == "true" ]; then
         delHihyFirewallPort tcp
         delHihyFirewallPort udp
