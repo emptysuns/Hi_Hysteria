@@ -479,5 +479,6 @@
   "install_enter_number": "输入序号:",
   "install_selected_version": "您选择的hysteria版本为: %s",
   "install_downloading_hihy": "正在下载 hihy...",
-  "install_hihy_launch_failed": "hihy 启动失败，请检查下载结果或稍后重试"
+  "install_hihy_launch_failed": "hihy 启动失败，请检查下载结果或稍后重试",
+  "core_downloading": "下载中..."
 }

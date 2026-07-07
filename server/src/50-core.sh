@@ -3,7 +3,7 @@ downloadHysteriaCore() {
     local version
     version=$(getLatestHysteriaVersion)
 
-    echo -e "$(i18n latest_hysteria_version) $(echoColor red "${version}")\n$(i18n download_label)..."
+    echo -e "$(i18n latest_hysteria_version) $(echoColor red "${version}")\n$(i18n core_downloading)"
 
     if [ -z "$version" ]; then
         echoColor red "$(i18n network_error_get_latest_version)"
@@ -39,7 +39,14 @@ downloadHysteriaCore() {
             ;;
     esac
 
-    wget -q -O /etc/hihy/bin/appS --no-check-certificate "$download_url"
+    if command -v wget >/dev/null 2>&1; then
+        wget --show-progress -O /etc/hihy/bin/appS --no-check-certificate "$download_url"
+    elif command -v curl >/dev/null 2>&1; then
+        curl -fL# -o /etc/hihy/bin/appS "$download_url"
+    else
+        echoColor red "$(i18n network_error_cannot_connect_github)"
+        exit 1
+    fi
 
     if [ -f "/etc/hihy/bin/appS" ]; then
         chmod 755 /etc/hihy/bin/appS

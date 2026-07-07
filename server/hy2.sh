@@ -2093,7 +2093,9 @@ setHysteriaConfig() {
         *"server up and running"*)
             echoColor green "$(i18n test_success)"
             echoColor purple "$(i18n stop_test_program)"
-            pkill -f "/etc/hihy/bin/appS"
+            pkill -f "/etc/hihy/bin/appS" 2>/dev/null || true
+            sleep 1
+            pkill -9 -f "/etc/hihy/bin/appS" 2>/dev/null || true
             rm ./hihy_debug.info
             if [ "${realmMode}" != "true" ]; then
                 allowPort udp ${port}
@@ -2109,7 +2111,9 @@ setHysteriaConfig() {
             if ! command -v pkill >/dev/null 2>&1; then
                 apk add --no-cache procps
             fi
-            pkill -f "/etc/hihy/bin/appS"
+            pkill -f "/etc/hihy/bin/appS" 2>/dev/null || true
+            sleep 1
+            pkill -9 -f "/etc/hihy/bin/appS" 2>/dev/null || true
             echoColor red "$(i18n unknown_error)"
             echoColor yellow "$(i18n unknown_error_incomplete_state)"
             cat ./hihy_debug.info
@@ -2175,7 +2179,7 @@ downloadHysteriaCore() {
     local version
     version=$(getLatestHysteriaVersion)
 
-    echo -e "$(i18n latest_hysteria_version) $(echoColor red "${version}")\n$(i18n download_label)..."
+    echo -e "$(i18n latest_hysteria_version) $(echoColor red "${version}")\n$(i18n core_downloading)"
 
     if [ -z "$version" ]; then
         echoColor red "$(i18n network_error_get_latest_version)"
@@ -2211,7 +2215,14 @@ downloadHysteriaCore() {
             ;;
     esac
 
-    wget -q -O /etc/hihy/bin/appS --no-check-certificate "$download_url"
+    if command -v wget >/dev/null 2>&1; then
+        wget --show-progress -O /etc/hihy/bin/appS --no-check-certificate "$download_url"
+    elif command -v curl >/dev/null 2>&1; then
+        curl -fL# -o /etc/hihy/bin/appS "$download_url"
+    else
+        echoColor red "$(i18n network_error_cannot_connect_github)"
+        exit 1
+    fi
 
     if [ -f "/etc/hihy/bin/appS" ]; then
         chmod 755 /etc/hihy/bin/appS

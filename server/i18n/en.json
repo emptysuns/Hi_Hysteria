@@ -479,5 +479,6 @@
   "install_enter_number": "Enter number:",
   "install_selected_version": "Selected hysteria version: %s",
   "install_downloading_hihy": "Downloading hihy...",
-  "install_hihy_launch_failed": "hihy failed to launch. Please check the download or try again later."
+  "install_hihy_launch_failed": "hihy failed to launch. Please check the download or try again later.",
+  "core_downloading": "Downloading..."
 }

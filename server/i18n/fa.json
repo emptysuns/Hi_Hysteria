@@ -479,5 +479,6 @@
   "install_enter_number": "شماره را وارد کنید:",
   "install_selected_version": "نسخه انتخاب‌شده hysteria: %s",
   "install_downloading_hihy": "در حال دانلود hihy...",
-  "install_hihy_launch_failed": "راه‌اندازی hihy ناموفق بود. لطفاً دانلود را بررسی کنید یا بعداً دوباره تلاش کنید."
+  "install_hihy_launch_failed": "راه‌اندازی hihy ناموفق بود. لطفاً دانلود را بررسی کنید یا بعداً دوباره تلاش کنید.",
+  "core_downloading": "در حال دانلود..."
 }
