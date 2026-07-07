@@ -3,7 +3,7 @@ getLatestHihyVersion() {
     local content
 
     content=$(fetchRemoteBodyFromSources "$HIHY_REMOTE_SCRIPT_URL" "$HIHY_REMOTE_SCRIPT_MIRROR_URL") || return 1
-    printf '%s\n' "$content" | sed -n '2p' | cut -d '"' -f 2 | head -n 1
+    printf '%s\n' "$content" | grep -oP '^hihyV="[^"]*"' | head -n 1 | cut -d '"' -f 2
 }
 
 getLatestHysteriaVersion() {

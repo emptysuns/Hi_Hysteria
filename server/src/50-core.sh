@@ -40,13 +40,29 @@ downloadHysteriaCore() {
     esac
 
     if command -v wget >/dev/null 2>&1; then
-        wget --show-progress -O /etc/hihy/bin/appS --no-check-certificate "$download_url"
+        wget -q -O /etc/hihy/bin/appS --no-check-certificate "$download_url" &
     elif command -v curl >/dev/null 2>&1; then
-        curl -fL# -o /etc/hihy/bin/appS "$download_url"
+        curl -fsSL -o /etc/hihy/bin/appS "$download_url" &
     else
         echoColor red "$(i18n network_error_cannot_connect_github)"
         exit 1
     fi
+
+    local dl_pid=$!
+    local spin='-\|/'
+    local i=0
+    while kill -0 $dl_pid 2>/dev/null; do
+        printf "\r\033[K$(i18n core_downloading) %s" "${spin:i++%4:1}"
+        sleep 0.3
+    done
+    wait $dl_pid
+    local dl_rc=$?
+    if [ $dl_rc -ne 0 ]; then
+        printf "\r\033[K"
+        echoColor red "$(i18n network_error_cannot_connect_github)"
+        exit 1
+    fi
+    printf "\r\033[K"
 
     if [ -f "/etc/hihy/bin/appS" ]; then
         chmod 755 /etc/hihy/bin/appS

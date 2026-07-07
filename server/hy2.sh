@@ -1,9 +1,9 @@
 #!/bin/bash
+hihyV="ver1.12"
 # =============================================================================
 # GENERATED FILE — DO NOT EDIT.
 # Source lives in server/src/*.sh. Edit there and run: bash scripts/build.sh
 # =============================================================================
-hihyV="ver1.12"
 
 # i18n 多语言支持
 HIHY_I18N_SCHEMA=1
@@ -724,7 +724,7 @@ getLatestHihyVersion() {
     local content
 
     content=$(fetchRemoteBodyFromSources "$HIHY_REMOTE_SCRIPT_URL" "$HIHY_REMOTE_SCRIPT_MIRROR_URL") || return 1
-    printf '%s\n' "$content" | sed -n '2p' | cut -d '"' -f 2 | head -n 1
+    printf '%s\n' "$content" | grep -oP '^hihyV="[^"]*"' | head -n 1 | cut -d '"' -f 2
 }
 
 getLatestHysteriaVersion() {
@@ -1058,10 +1058,10 @@ setHysteriaConfig() {
     touch $acl_file
     echoColor yellowBlack "$(i18n config_start_title)"
     echoColor green "$(i18n realm_prompt_title)"
-    echoColor white "$(i18n realm_intro_line1)"
-    echoColor white "$(i18n realm_intro_line2)"
-    echoColor white "$(i18n realm_intro_line3)"
-    echoColor white "$(i18n realm_intro_line4)"
+    echo -e "$(i18n realm_intro_line1)"
+    echo -e "$(i18n realm_intro_line2)"
+    echo -e "$(i18n realm_intro_line3)"
+    echo -e "$(i18n realm_intro_line4)"
     echoColor yellow "$(i18n realm_warning_core_only)"
     echoColor yellow "$(i18n realm_choice_disable_default)"
     echoColor yellow "$(i18n realm_choice_enable)"
@@ -1074,7 +1074,7 @@ setHysteriaConfig() {
         realmName=$(generate_uuid)
         echo -e "\n->$(i18n realm_name_label)"$(echoColor red ${realmName})"\n"
         echoColor green "$(i18n realm_server_prompt)"
-        echoColor white "$(i18n realm_server_official_hint)"
+        echo -e "$(i18n realm_server_official_hint)"
         echoColor yellow "$(i18n realm_server_choice_official)"
         echoColor yellow "$(i18n realm_server_choice_custom)"
         echoColor green "$(i18n prompt_enter_number)"
@@ -2216,13 +2216,29 @@ downloadHysteriaCore() {
     esac
 
     if command -v wget >/dev/null 2>&1; then
-        wget --show-progress -O /etc/hihy/bin/appS --no-check-certificate "$download_url"
+        wget -q -O /etc/hihy/bin/appS --no-check-certificate "$download_url" &
     elif command -v curl >/dev/null 2>&1; then
-        curl -fL# -o /etc/hihy/bin/appS "$download_url"
+        curl -fsSL -o /etc/hihy/bin/appS "$download_url" &
     else
         echoColor red "$(i18n network_error_cannot_connect_github)"
         exit 1
     fi
+
+    local dl_pid=$!
+    local spin='-\|/'
+    local i=0
+    while kill -0 $dl_pid 2>/dev/null; do
+        printf "\r\033[K$(i18n core_downloading) %s" "${spin:i++%4:1}"
+        sleep 0.3
+    done
+    wait $dl_pid
+    local dl_rc=$?
+    if [ $dl_rc -ne 0 ]; then
+        printf "\r\033[K"
+        echoColor red "$(i18n network_error_cannot_connect_github)"
+        exit 1
+    fi
+    printf "\r\033[K"
 
     if [ -f "/etc/hihy/bin/appS" ]; then
         chmod 755 /etc/hihy/bin/appS

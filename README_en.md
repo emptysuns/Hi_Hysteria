@@ -9,7 +9,7 @@ Modular refactor; i18n multi-language (en/zh/fa/ru); mihomo config fixes (conges
 ```
 
 
-[Realm P2P hole-punching — use Hysteria2 behind NAT, even relay through Cloudflare](md/realm.md)
+[Realm P2P hole-punching — use Hysteria2 behind NAT, even relay through Cloudflare](md/en/realm.md)
 
 
 
@@ -84,21 +84,21 @@ There may be bugs — please file an issue if you find any. Stars welcome! Your 
 
 ### First Time?
 
-#### 1. [Firewall Guide](md/firewall.md)
+#### 1. [Firewall Guide](md/en/firewall.md)
 
-#### 2. [Self-Signed Certificates](md/certificate.md)
+#### 2. [Self-Signed Certificates](md/en/certificate.md)
 
-#### 3. [UDP-Throttling ISP Blacklist (Updated 2025/01/07)](md/blacklist.md)
+#### 3. [UDP-Throttling ISP Blacklist (Updated 2025/01/07)](md/en/blacklist.md)
 
-#### 4. [How to Set Latency / Upload / Download Speed](md/speed.md)
+#### 4. [How to Set Latency / Upload / Download Speed](md/en/speed.md)
 
-#### 5. [Supported Clients](md/client.md)
+#### 5. [Supported Clients](md/en/client.md)
 
-#### 6. [FAQ / Troubleshooting](md/issues.md)
+#### 6. [FAQ / Troubleshooting](md/en/issues.md)
 
-#### 7. [Enable a Masquerade Website](md/masquerade.md)
+#### 7. [Enable a Masquerade Website](md/en/masquerade.md)
 
-#### 8. [Realm Mode — P2P Hole-Punching](md/realm.md)
+#### 8. [Realm Mode — P2P Hole-Punching](md/en/realm.md)
 
 ### Quick Install
 

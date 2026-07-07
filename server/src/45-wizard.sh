@@ -15,10 +15,10 @@ setHysteriaConfig() {
     touch $acl_file
     echoColor yellowBlack "$(i18n config_start_title)"
     echoColor green "$(i18n realm_prompt_title)"
-    echoColor white "$(i18n realm_intro_line1)"
-    echoColor white "$(i18n realm_intro_line2)"
-    echoColor white "$(i18n realm_intro_line3)"
-    echoColor white "$(i18n realm_intro_line4)"
+    echo -e "$(i18n realm_intro_line1)"
+    echo -e "$(i18n realm_intro_line2)"
+    echo -e "$(i18n realm_intro_line3)"
+    echo -e "$(i18n realm_intro_line4)"
     echoColor yellow "$(i18n realm_warning_core_only)"
     echoColor yellow "$(i18n realm_choice_disable_default)"
     echoColor yellow "$(i18n realm_choice_enable)"
@@ -31,7 +31,7 @@ setHysteriaConfig() {
         realmName=$(generate_uuid)
         echo -e "\n->$(i18n realm_name_label)"$(echoColor red ${realmName})"\n"
         echoColor green "$(i18n realm_server_prompt)"
-        echoColor white "$(i18n realm_server_official_hint)"
+        echo -e "$(i18n realm_server_official_hint)"
         echoColor yellow "$(i18n realm_server_choice_official)"
         echoColor yellow "$(i18n realm_server_choice_custom)"
         echoColor green "$(i18n prompt_enter_number)"
