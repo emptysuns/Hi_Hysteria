@@ -110,16 +110,14 @@ uninstall() {
     # 删除相关目录和文件
     rm -rf /etc/hihy
     rm -f /var/run/hihy.pid
+    rm -f /usr/bin/yq
+    rm -f "$HIHY_BIN_LINK"
 
     if [ -f "/etc/rc.local" ]; then
         sed -i '/\/etc\/rc.d\/hihy start/d' /etc/rc.local
         if grep -q "/etc/rc.d/allow-port" /etc/rc.local; then
             sed -i '/\/etc\/rc.d\/allow-port start/d' /etc/rc.local
         fi
-    fi
-
-    if [ -f "$HIHY_BIN_LINK" ]; then
-        rm "$HIHY_BIN_LINK"
     fi
 
     # 检测并提示卸载WARP/WireProxy

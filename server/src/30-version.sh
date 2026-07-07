@@ -187,11 +187,11 @@ displayCachedVersionNotifications() {
     core_remote=$(readVersionCheckValue "$HIHY_VERSION_STATUS_FILE" "core_remote")
 
     if [ "$hihy_status" = "update" ] && [ -n "$hihy_remote" ]; then
-        echoColor purple "$(i18n notify_hihy_update ${hihy_remote})"
+        echoColor purple "$(i18n notify_hihy_update "${hihy_remote}")"
     fi
 
     if [ "$core_status" = "update" ] && [ -n "$core_remote" ]; then
-        echoColor purple "$(i18n notify_core_update ${core_remote})"
+        echoColor purple "$(i18n notify_core_update "${core_remote}")"
     fi
 }
 
