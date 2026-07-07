@@ -468,5 +468,7 @@
   "warp_uninstall_choice": "1、卸载\\n2、保留",
   "warp_uninstall_done": "\\n->WARP/WireProxy卸载完成",
   "warp_uninstalling": "\\n->正在卸载WARP/WireProxy...",
-  "warp_uninstall_prompt": "是否卸载WARP/WireProxy?"
+  "warp_uninstall_prompt": "是否卸载WARP/WireProxy?",
+  "client_mihomo_file_hint": "📱 [Clash Verge Rev / FlClash / ClashMeta安卓版 / OpenClash] mihomo 配置文件: %s",
+  "client_mihomo_gecko_skip": "提示: mihomo 不支持 gecko 混淆，请使用原生配置或 sing-box，已跳过 mihomo 配置。"
 }

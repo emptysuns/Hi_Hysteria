@@ -185,7 +185,6 @@ generate_client_config() {
         echo -e "\n"
         generate_qr "${url}"
         echo -e "\n"
-        echoColor yellow "$(i18n client_config_realm_no_clashmeta_hint)"
     else
         echoColor purple "\n$(i18n client_config_share_link_title)"
         echoColor green "${url}"
@@ -202,8 +201,11 @@ generate_client_config() {
     echoColor green "↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓$(i18n client_config_copy_marker)↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓"
     cat ${client_configfile}
     echoColor green "↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑$(i18n client_config_copy_marker)↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑"
-    if [ "${realmMode}" != "true" ]; then
-        generateMetaYaml
+    # mihomo: gecko 混淆时跳过(realm 模式现在也支持了)
+    if [ "${HIHY_CP_obfsType}" = "gecko" ]; then
+        echoColor yellow "$(i18n client_mihomo_gecko_skip)"
+    else
+        generateMihomoYaml
     fi
 
     echo -e "\n$(i18n client_config_done)"

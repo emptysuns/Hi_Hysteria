@@ -468,5 +468,7 @@
   "warp_uninstall_choice": "1. Удалить\\n2. Оставить",
   "warp_uninstall_done": "\\n-> WARP/WireProxy удалён.",
   "warp_uninstalling": "\\n-> Удаление WARP/WireProxy...",
-  "warp_uninstall_prompt": "Удалить WARP/WireProxy?"
+  "warp_uninstall_prompt": "Удалить WARP/WireProxy?",
+  "client_mihomo_file_hint": "📱 [Clash Verge Rev / FlClash / ClashMeta for Android / OpenClash] Файл конфигурации mihomo: %s",
+  "client_mihomo_gecko_skip": "Примечание: mihomo не поддерживает gecko-обфускацию; используйте родную конфигурацию или sing-box. Конфигурация mihomo пропущена."
 }

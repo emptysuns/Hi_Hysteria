@@ -76,4 +76,65 @@ teardown_fixture() { rm -rf "$HIHY_ROOT_DIR"; }
     exit $FAIL
 ) || FAIL=1
 
+# ---------- mihomo: BBR omits up/down (regression 5.2#1) ----------
+(
+    setup_fixture
+    sed -i 's/congestionMode: brutal/congestionMode: bbr/' "$HIHY_ROOT_DIR/conf/backup.yaml"
+    printf 'congestionType: bbr\ncongestionBbrProfile: aggressive\n' >> "$HIHY_ROOT_DIR/conf/backup.yaml"
+    load_funcs
+    cd "$HIHY_ROOT_DIR"
+    loadClientParams; generateMihomoYaml 2>/dev/null
+    mf="./Hy2-testnode-mihomo.yaml"
+    if [ -f "$mf" ] && ! grep -qE '^\s+up:|^\s+down:' "$mf"; then pass "mihomo bbr omits up/down"
+    else fail "mihomo bbr has up/down (should be omitted for BBR)"
+    fi
+    if grep -q 'bbr-profile: aggressive' "$mf"; then pass "mihomo bbr aggressive profile"
+    else fail "mihomo bbr-profile aggressive missing"
+    fi
+    teardown_fixture
+    exit $FAIL
+) || FAIL=1
+
+# ---------- mihomo: brutal outputs up/down ----------
+(
+    setup_fixture
+    load_funcs
+    cd "$HIHY_ROOT_DIR"
+    loadClientParams; generateMihomoYaml 2>/dev/null
+    mf="./Hy2-testnode-mihomo.yaml"
+    if grep -qE '^\s+up:' "$mf" && grep -qE '^\s+down:' "$mf"; then pass "mihomo brutal has up/down"
+    else fail "mihomo brutal missing up/down"
+    fi
+    teardown_fixture
+    exit $FAIL
+) || FAIL=1
+
+# ---------- mihomo: yq-parseable ----------
+(
+    setup_fixture
+    load_funcs
+    cd "$HIHY_ROOT_DIR"
+    loadClientParams; generateMihomoYaml 2>/dev/null
+    mf="./Hy2-testnode-mihomo.yaml"
+    if yq eval '.' "$mf" >/dev/null 2>&1; then pass "mihomo yq-parseable"
+    else fail "mihomo yq parse failed"
+    fi
+    teardown_fixture
+    exit $FAIL
+) || FAIL=1
+
+# ---------- mihomo: filename renamed to mihomo (not ClashMeta) ----------
+(
+    setup_fixture
+    load_funcs
+    cd "$HIHY_ROOT_DIR"
+    loadClientParams; generateMihomoYaml 2>/dev/null
+    mf="./Hy2-testnode-mihomo.yaml"
+    if [ -f "$mf" ]; then pass "mihomo filename uses -mihomo suffix"
+    else fail "mihomo filename wrong (expected Hy2-testnode-mihomo.yaml)"
+    fi
+    teardown_fixture
+    exit $FAIL
+) || FAIL=1
+
 if [ "$FAIL" -eq 0 ]; then echo "ALL client_config TESTS PASSED"; else echo "SOME client_config TESTS FAILED" >&2; exit 1; fi
