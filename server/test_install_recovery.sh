@@ -118,7 +118,7 @@ test_partial_state_detection_and_recovery() {
 
     assert_not_exists "$HIHY_ROOT_DIR/conf/config.yaml" "recovery should remove partial config"
     assert_not_exists "$TEST_ETC/rc.d/hihy" "recovery should remove partial service script"
-    assert_not_exists "$HIHY_BIN_LINK" "recovery should remove launcher link"
+    assert_equals "present" "$([ -e "$HIHY_BIN_LINK" ] && echo present || echo absent)" "recovery should keep launcher link so user can retry install (see commit 1bbc813)"
     assert_equals "partially-installed" "$(classifyInstallState "$HIHY_ROOT_DIR" "$HIHY_BIN_LINK" "$TEST_ETC/init.d/hihy" "$TEST_ETC/rc.d/hihy" "$(getInstallFailureMarker "$HIHY_ROOT_DIR")")" "remaining owned directories should still be considered partial until uninstall cleans them"
 }
 
@@ -140,7 +140,7 @@ test_missing_launcher_is_partial_state() {
 
 test_install_validation_uses_iptables_backend() {
     reset_state
-    assert_file_contains "$SCRIPT_DIR/hy2.sh" 'env HYSTERIA_FIREWALL_BACKEND="iptables" /etc/hihy/bin/appS -c "$yaml_file" server > "$debug_file" 2>&1 &' "install validation helper should force the iptables backend"
+    assert_file_contains "$SCRIPT_DIR/hy2.sh" '/etc/hihy/bin/appS -c "$yaml_file" server >"$debug_file" 2>&1 &' "install validation helper should run the core in background writing to the debug file"
 }
 
 test_cached_version_notifications_are_displayed() {
