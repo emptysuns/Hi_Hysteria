@@ -6,7 +6,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SRC_DIR="$REPO_ROOT/server/src"
-OUT="$REPO_ROOT/server/hy2.sh"
+# HIHY_BUILD_OUT 允许把产物写到别处(test_build.sh 用它做无副作用比对)
+OUT="${HIHY_BUILD_OUT:-$REPO_ROOT/server/hy2.sh}"
 TMP="$(mktemp)"
 trap 'rm -f "$TMP"' EXIT
 
