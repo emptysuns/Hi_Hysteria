@@ -8,7 +8,49 @@ HIHY_I18N_DIR="${HIHY_I18N_DIR:-/etc/hihy/i18n}"
 HIHY_I18N_CONF="${HIHY_I18N_CONF:-/etc/hihy/conf/i18n.conf}"
 HIHY_DEFAULT_LANG="${HIHY_DEFAULT_LANG:-en}"
 HIHY_SUPPORTED_LANGUAGES="en zh fa ru"
+HIHY_LANG="${HIHY_LANG:-}"
 
+# ---------- minimal i18n: 按 key 从已下载的 JSON 文件读值;找不到则显示 key 本身 ----------
+i18nValueFromFile() {
+    local file="$1"
+    local key="$2"
+    [ ! -f "$file" ] && return
+    local line
+    line=$(grep -E "^\s*\"${key}\":\s*\"" "$file" | head -n 1)
+    [ -z "$line" ] && return
+    line="${line#*: \"}"
+    line="${line%\"*}"
+    printf '%s' "$line"
+}
+
+i18nLookup() {
+    local key="$1"
+    local lang_file="${HIHY_I18N_DIR}/hy2.sh.${HIHY_LANG}.json"
+    local en_file="${HIHY_I18N_DIR}/hy2.sh.en.json"
+    local value
+
+    if [ -f "$lang_file" ]; then
+        value=$(i18nValueFromFile "$lang_file" "$key")
+        [ -n "$value" ] && printf '%s' "$value" && return 0
+    fi
+
+    if [ "$HIHY_LANG" != "en" ] && [ -f "$en_file" ]; then
+        value=$(i18nValueFromFile "$en_file" "$key")
+        [ -n "$value" ] && printf '%s' "$value" && return 0
+    fi
+
+    printf '%s' "$key"
+}
+
+i18n() {
+    local key="$1"
+    shift
+    local template
+    template=$(i18nLookup "$key")
+    printf "$template" "$@"
+}
+
+# ---------- download helpers ----------
 downloadHihyScript() {
     local url="$1"
     local output_path="${2:-$HIHY_BIN_LINK}"
@@ -32,7 +74,7 @@ downloadHihyScript() {
             return 1
         }
     else
-        echo -e "\033[31m未找到 curl 或 wget，无法下载 hihy，请先安装其中之一后重试\033[0m" >&2
+        echo -e "\033[31mcurl/wget not found — cannot download hihy. Please install curl or wget and try again.\033[0m" >&2
         return 1
     fi
 
@@ -42,6 +84,22 @@ downloadHihyScript() {
     }
 }
 
+downloadI18nFile() {
+    local lang="$1"
+    local base_url="$2"
+    mkdir -p "$HIHY_I18N_DIR"
+    local url="${base_url}/server/i18n/${lang}.json"
+    local out="${HIHY_I18N_DIR}/hy2.sh.${lang}.json"
+    if command -v wget >/dev/null 2>&1; then
+        wget -q --no-check-certificate -O "$out" "$url" 2>/dev/null
+    elif command -v curl >/dev/null 2>&1; then
+        curl -fsSL -o "$out" "$url" 2>/dev/null
+    else
+        return 1
+    fi
+}
+
+# ---------- hysteria version ----------
 resolveHysteriaVersion() {
     local selected_version="$1"
 
@@ -54,6 +112,7 @@ resolveHysteriaVersion() {
     fi
 }
 
+# ---------- language selection / persistence ----------
 parseLanguageOption() {
     while [ $# -gt 0 ]; do
         case "$1" in
@@ -73,21 +132,6 @@ parseLanguageOption() {
     done
 }
 
-downloadI18nFile() {
-    local lang="$1"
-    local base_url="$2"
-    mkdir -p "$HIHY_I18N_DIR"
-    local url="${base_url}/server/i18n/${lang}.json"
-    local out="${HIHY_I18N_DIR}/hy2.sh.${lang}.json"
-    if command -v wget >/dev/null 2>&1; then
-        wget -q --no-check-certificate -O "$out" "$url" 2>/dev/null
-    elif command -v curl >/dev/null 2>&1; then
-        curl -fsSL -o "$out" "$url" 2>/dev/null
-    else
-        return 1
-    fi
-}
-
 promptLanguageSelection() {
     local default_index=1
     case "$HIHY_DEFAULT_LANG" in
@@ -95,12 +139,12 @@ promptLanguageSelection() {
         fa) default_index=3 ;;
         ru) default_index=4 ;;
     esac
-    echo -e "\033[32mPlease select installation language / 请选择安装语言:"
+    echo -e "\033[32mPlease select language / 请选择语言 / لطفاً زبان را انتخاب کنید / Выберите язык:"
     echo -e "\033[33m 1) English"
     echo -e " 2) 中文"
     echo -e " 3) فارسی"
     echo -e " 4) Русский"
-    echo -ne "\033[32mLanguage (default: ${default_index}): \033[0m"
+    echo -ne "\033[32mLanguage (default ${default_index}): \033[0m"
     read -r lang_choice
     case "${lang_choice:-$default_index}" in
         2) HIHY_LANG="zh" ;;
@@ -129,6 +173,7 @@ validateLanguage() {
     fi
 }
 
+# ---------- main ----------
 main() {
     local hysteria_version
     local download_url
@@ -142,10 +187,17 @@ main() {
 
     persistLanguage
 
-    echo -e "\033[32m请选择安装的hysteria版本:\n\n\033[0m\033[33m\033[01m1、hysteria2(推荐,LTS性能更好)\n2、hysteria1(NLTS,未来无功能更新,但支持faketcp.被UDP QoS可以选择)\033[0m\033[32m\n\n输入序号:\033[0m"
+    # 尽早下载 i18n 语言文件，后续提示使用所选语言
+    downloadI18nFile "$HIHY_LANG" "$HIHY_I18N_BASE_URL" || true
+    if [ "$HIHY_LANG" != "en" ]; then
+        downloadI18nFile "en" "$HIHY_I18N_BASE_URL" >/dev/null 2>&1 || true
+    fi
+
+    # hysteria 版本选择（现在可以用所选语言显示了）
+    echo -e "\033[32m$(i18n install_select_hysteria_version)\n\n\033[0m\033[33m\033[01m$(i18n install_hysteria2_option)\n$(i18n install_hysteria1_option)\033[0m\033[32m\n\n$(i18n install_enter_number)\033[0m"
     read hysteria_version
     hysteria_version="$(resolveHysteriaVersion "$hysteria_version")" || {
-        echo -e "\033[31m输入错误,请重新运行脚本\033[0m"
+        echo -e "\033[31m$(i18n error_input_error)\033[0m"
         exit 1
     }
 
@@ -155,22 +207,15 @@ main() {
         download_url="$HIHY_HYSTERIA1_URL"
     fi
 
-    echo -e "-> 您选择的hysteria版本为: \033[32m$hysteria_version\033[0m"
-    echo -e "Downloading hihy..."
+    echo -e "-> $(i18n install_selected_version "$(printf '\033[32m%s\033[0m' "$hysteria_version")")"
+    echo -e "$(i18n install_downloading_hihy)"
 
     if ! downloadHihyScript "$download_url" "$HIHY_BIN_LINK"; then
         exit 1
     fi
 
-    if ! downloadI18nFile "$HIHY_LANG" "$HIHY_I18N_BASE_URL"; then
-        echo -e "\033[33mWarning: failed to download language file, English fallback embedded.\033[0m" >&2
-    fi
-    if [ "$HIHY_LANG" != "en" ]; then
-        downloadI18nFile "en" "$HIHY_I18N_BASE_URL" >/dev/null 2>&1 || true
-    fi
-
     if ! "$HIHY_BIN_LINK"; then
-        echo -e "\033[31mhihy 启动失败，请检查下载结果或稍后重试\033[0m" >&2
+        echo -e "\033[31m$(i18n install_hihy_launch_failed)\033[0m" >&2
         exit 1
     fi
 }

@@ -472,5 +472,12 @@
   "client_mihomo_file_hint": "📱 [Clash Verge Rev / FlClash / ClashMeta for Android / OpenClash] فایل پیکربندی mihomo: %s",
   "client_mihomo_gecko_skip": "توجه: mihomo از رمزگذاری gecko پشتیبانی نمی‌کند؛ از پیکربندی اصلی یا sing-box استفاده کنید. پیکربندی mihomo رد شد.",
   "client_singbox_file_hint": "📦 [sing-box / SFA / SFI / SFM / SFT] فایل پیکربندی sing-box: %s",
-  "client_singbox_version_hint": "توجه: نیاز به sing-box 1.11+ (حالت realm / رمزگذاری gecko / bbr_profile نیاز به 1.14+ دارند)."
+  "client_singbox_version_hint": "توجه: نیاز به sing-box 1.11+ (حالت realm / رمزگذاری gecko / bbr_profile نیاز به 1.14+ دارند).",
+  "install_select_hysteria_version": "لطفاً نسخه hysteria را انتخاب کنید:",
+  "install_hysteria2_option": "۱. hysteria2 (توصیه می‌شود، LTS، عملکرد بهتر)",
+  "install_hysteria1_option": "۲. hysteria1 (NLTS، بدون ویژگی جدید، اما پشتیبانی از faketcp — اگر UDP QoS مشکل است انتخاب کنید)",
+  "install_enter_number": "شماره را وارد کنید:",
+  "install_selected_version": "-> نسخه انتخاب‌شده hysteria: %s",
+  "install_downloading_hihy": "در حال دانلود hihy...",
+  "install_hihy_launch_failed": "راه‌اندازی hihy ناموفق بود. لطفاً دانلود را بررسی کنید یا بعداً دوباره تلاش کنید."
 }

@@ -472,5 +472,12 @@
   "client_mihomo_file_hint": "📱 [Clash Verge Rev / FlClash / ClashMeta for Android / OpenClash] mihomo config file: %s",
   "client_mihomo_gecko_skip": "Note: mihomo does not support gecko obfuscation; use the native config or sing-box instead. Skipping mihomo config.",
   "client_singbox_file_hint": "📦 [sing-box / SFA / SFI / SFM / SFT] sing-box config file: %s",
-  "client_singbox_version_hint": "Note: requires sing-box 1.11+ (realm / gecko obfs / bbr_profile need 1.14+)."
+  "client_singbox_version_hint": "Note: requires sing-box 1.11+ (realm / gecko obfs / bbr_profile need 1.14+).",
+  "install_select_hysteria_version": "Please select hysteria version:",
+  "install_hysteria2_option": "1. hysteria2 (recommended, LTS, better performance)",
+  "install_hysteria1_option": "2. hysteria1 (NLTS, no new features, but supports faketcp — choose if UDP QoS is an issue)",
+  "install_enter_number": "Enter number:",
+  "install_selected_version": "-> Selected hysteria version: %s",
+  "install_downloading_hihy": "Downloading hihy...",
+  "install_hihy_launch_failed": "hihy failed to launch. Please check the download or try again later."
 }

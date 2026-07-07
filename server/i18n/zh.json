@@ -472,5 +472,12 @@
   "client_mihomo_file_hint": "📱 [Clash Verge Rev / FlClash / ClashMeta安卓版 / OpenClash] mihomo 配置文件: %s",
   "client_mihomo_gecko_skip": "提示: mihomo 不支持 gecko 混淆，请使用原生配置或 sing-box，已跳过 mihomo 配置。",
   "client_singbox_file_hint": "📦 [sing-box / SFA / SFI / SFM / SFT] sing-box 配置文件: %s",
-  "client_singbox_version_hint": "提示: 需 sing-box 1.11+ (realm / gecko 混淆 / bbr_profile 需 1.14+)。"
+  "client_singbox_version_hint": "提示: 需 sing-box 1.11+ (realm / gecko 混淆 / bbr_profile 需 1.14+)。",
+  "install_select_hysteria_version": "请选择安装的hysteria版本:",
+  "install_hysteria2_option": "1、hysteria2(推荐,LTS性能更好)",
+  "install_hysteria1_option": "2、hysteria1(NLTS,未来无功能更新,但支持faketcp.被UDP QoS可以选择)",
+  "install_enter_number": "输入序号:",
+  "install_selected_version": "-> 您选择的hysteria版本为: %s",
+  "install_downloading_hihy": "正在下载 hihy...",
+  "install_hihy_launch_failed": "hihy 启动失败，请检查下载结果或稍后重试"
 }
