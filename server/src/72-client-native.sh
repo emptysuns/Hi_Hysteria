@@ -4,71 +4,24 @@ generate_client_config() {
         echoColor red "$(i18n client_config_hysteria_not_installed)"
         exit 1
     fi
-    remarks=$(getYamlValue "/etc/hihy/conf/backup.yaml" "remarks")
-    serverAddress=$(getYamlValue "/etc/hihy/conf/backup.yaml" "serverAddress")
-    realmMode=$(getBackupValueOrDefault "/etc/hihy/conf/backup.yaml" "realmMode" "false")
-    if [ "${realmMode}" == "true" ]; then
-        realmURI=$(getYamlValue "/etc/hihy/conf/backup.yaml" "realmURI")
-    fi
-    listen_value=$(getYamlValue "/etc/hihy/conf/config.yaml" "listen")
-    port=$(getListenPrimaryPort "${listen_value}")
-    auth_secret=$(getYamlValue "/etc/hihy/conf/config.yaml" "auth.password")
-    tls_sni=$(getYamlValue "/etc/hihy/conf/backup.yaml" "domain")
-    insecure=$(getYamlValue "/etc/hihy/conf/backup.yaml" "insecure")
-    pinSHA256=$(getBackupValueOrDefault "/etc/hihy/conf/backup.yaml" "pinSHA256" "")
-    if [ -z "${pinSHA256}" ] || [ "${pinSHA256}" == "null" ]; then
-        pinSHA256=""
-        # 向后兼容: 旧版自签安装只记录了 insecure 而未保存指纹,这里从证书文件实时计算,自动升级为 pinSHA256 校验
-        cert_path=$(getYamlValue "/etc/hihy/conf/config.yaml" "tls.cert")
-        if [ "${insecure}" == "true" ] && [ -n "${cert_path}" ] && [ "${cert_path}" != "null" ] && [ -f "${cert_path}" ]; then
-            pinSHA256=$(openssl x509 -noout -fingerprint -sha256 -in "${cert_path}" 2>/dev/null | sed 's/^.*=//')
-        fi
-    fi
-    masquerade_tcp=$(getYamlValue "/etc/hihy/conf/backup.yaml" "masquerade_tcp")
-    obfs_type=$(getYamlValue "/etc/hihy/conf/config.yaml" "obfs.type")
-    if [ "${obfs_type}" == "salamander" ] || [ "${obfs_type}" == "gecko" ]; then
-        obfs_status="true"
-        obfs_pass=$(getYamlValue "/etc/hihy/conf/config.yaml" "obfs.${obfs_type}.password")
-    else
-        obfs_status="false"
-        obfs_type=""
-        obfs_pass=""
-    fi
-    SRW=$(getYamlValue "/etc/hihy/conf/config.yaml" "quic.initStreamReceiveWindow")
-    CRW=$(getYamlValue "/etc/hihy/conf/config.yaml" "quic.initConnReceiveWindow")
-    max_CRW=$(getYamlValue "/etc/hihy/conf/config.yaml" "quic.maxConnReceiveWindow")
-    max_SRW=$(getYamlValue "/etc/hihy/conf/config.yaml" "quic.maxStreamReceiveWindow")
-    if [ "${SRW}" = "null" ]; then
-        SRW=""
-    fi
-    if [ "${CRW}" = "null" ]; then
-        CRW=""
-    fi
-    if [ "${max_CRW}" = "null" ]; then
-        max_CRW=""
-    fi
-    if [ "${max_SRW}" = "null" ]; then
-        max_SRW=""
-    fi
-    congestion_mode=$(getBackupValueOrDefault "/etc/hihy/conf/backup.yaml" "congestionMode" "brutal")
-    congestion_type=$(getBackupValueOrDefault "/etc/hihy/conf/backup.yaml" "congestionType" "")
-    congestion_bbr_profile=$(getBackupValueOrDefault "/etc/hihy/conf/backup.yaml" "congestionBbrProfile" "standard")
-    download=$(getYamlValue "/etc/hihy/conf/config.yaml" "bandwidth.up")
-    upload=$(getYamlValue "/etc/hihy/conf/config.yaml" "bandwidth.down")
-    if [ "${download}" = "null" ]; then
-        download=""
-    fi
-    if [ "${upload}" = "null" ]; then
-        upload=""
-    fi
-    portHoppingStatus=$(getYamlValue "/etc/hihy/conf/backup.yaml" "portHoppingStatus")
+    # 统一从公共层读取所有参数(消除三个生成器的重复读取)
+    loadClientParams
+    local remarks="$HIHY_CP_remarks" serverAddress="$HIHY_CP_serverAddress"
+    local realmMode="$HIHY_CP_realmMode" realmURI="$HIHY_CP_realmURI"
+    local port="$HIHY_CP_port" auth_secret="$HIHY_CP_auth" tls_sni="$HIHY_CP_sni"
+    local insecure="$HIHY_CP_insecure" pinSHA256="$HIHY_CP_pinSHA256"
+    local obfs_status="$HIHY_CP_obfsStatus" obfs_type="$HIHY_CP_obfsType" obfs_pass="$HIHY_CP_obfsPass"
+    local SRW="$HIHY_CP_srw" CRW="$HIHY_CP_crw" max_CRW="$HIHY_CP_maxCrw" max_SRW="$HIHY_CP_maxSrw"
+    local congestion_mode="$HIHY_CP_congestionMode" congestion_type="$HIHY_CP_congestionType" congestion_bbr_profile="$HIHY_CP_bbrProfile"
+    local download="$HIHY_CP_down" upload="$HIHY_CP_up"
+    local portHoppingStatus="$HIHY_CP_phStatus"
+    local portHoppingStart="$HIHY_CP_phStart" portHoppingEnd="$HIHY_CP_phEnd"
+    local portHoppingIntervalMode="$HIHY_CP_phIntervalMode"
+    local portHoppingHopInterval="$HIHY_CP_phHopInterval"
+    local portHoppingMinHopInterval="$HIHY_CP_phMinHopInterval"
+    local portHoppingMaxHopInterval="$HIHY_CP_phMaxHopInterval"
+    local serverPortRange=""
     if [ "${portHoppingStatus}" == "true" ]; then
-        portHoppingStart=$(getBackupValueOrDefault "/etc/hihy/conf/backup.yaml" "portHoppingStart" "${port}")
-        portHoppingEnd=$(getBackupValueOrDefault "/etc/hihy/conf/backup.yaml" "portHoppingEnd" "${port}")
-        portHoppingIntervalMode=$(getBackupValueOrDefault "/etc/hihy/conf/backup.yaml" "portHoppingIntervalMode" "fixed")
-        portHoppingHopInterval=$(getBackupValueOrDefault "/etc/hihy/conf/backup.yaml" "portHoppingHopInterval" "30s")
-        portHoppingMinHopInterval=$(getBackupValueOrDefault "/etc/hihy/conf/backup.yaml" "portHoppingMinHopInterval" "10s")
-        portHoppingMaxHopInterval=$(getBackupValueOrDefault "/etc/hihy/conf/backup.yaml" "portHoppingMaxHopInterval" "30s")
         serverPortRange="${portHoppingStart}-${portHoppingEnd}"
     fi
     client_configfile="./Hy2-${remarks}-v2rayN.yaml"
