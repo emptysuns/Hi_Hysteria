@@ -47,7 +47,7 @@ i18n() {
     shift
     local template
     template=$(i18nLookup "$key")
-    printf "$template" "$@"
+    printf -- "$template" "$@"
 }
 
 # ---------- download helpers ----------
@@ -180,7 +180,10 @@ main() {
 
     parseLanguageOption "$@"
 
-    if ! validateLanguage "$HIHY_LANG"; then
+    if [ -z "${HIHY_LANG:-}" ]; then
+        # 未指定语言 → 交互式选择
+        promptLanguageSelection
+    elif ! validateLanguage "$HIHY_LANG"; then
         unset HIHY_LANG
         promptLanguageSelection
     fi

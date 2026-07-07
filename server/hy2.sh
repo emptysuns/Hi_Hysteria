@@ -126,7 +126,7 @@ i18n() {
     local template
     template=$(i18nLookup "$key")
     # 简单模板插值：%s, %d, %%, 依次用 bash printf 填充
-    printf "$template" "$@"
+    printf -- "$template" "$@"
 }
 
 # ----- 15-ui.sh -----

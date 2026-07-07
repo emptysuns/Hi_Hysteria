@@ -477,7 +477,7 @@
   "install_hysteria2_option": "۱. hysteria2 (توصیه می‌شود، LTS، عملکرد بهتر)",
   "install_hysteria1_option": "۲. hysteria1 (NLTS، بدون ویژگی جدید، اما پشتیبانی از faketcp — اگر UDP QoS مشکل است انتخاب کنید)",
   "install_enter_number": "شماره را وارد کنید:",
-  "install_selected_version": "-> نسخه انتخاب‌شده hysteria: %s",
+  "install_selected_version": "نسخه انتخاب‌شده hysteria: %s",
   "install_downloading_hihy": "در حال دانلود hihy...",
   "install_hihy_launch_failed": "راه‌اندازی hihy ناموفق بود. لطفاً دانلود را بررسی کنید یا بعداً دوباره تلاش کنید."
 }

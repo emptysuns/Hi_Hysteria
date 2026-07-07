@@ -477,7 +477,7 @@
   "install_hysteria2_option": "1. hysteria2 (рекомендуется, LTS, лучшая производительность)",
   "install_hysteria1_option": "2. hysteria1 (NLTS, без новых функций, но поддерживает faketcp — выбирайте при проблемах с UDP QoS)",
   "install_enter_number": "Введите номер:",
-  "install_selected_version": "-> Выбранная версия hysteria: %s",
+  "install_selected_version": "Выбранная версия hysteria: %s",
   "install_downloading_hihy": "Загрузка hihy...",
   "install_hihy_launch_failed": "Не удалось запустить hihy. Проверьте загрузку или попробуйте позже."
 }
