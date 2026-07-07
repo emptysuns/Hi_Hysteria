@@ -1,13 +1,8 @@
 # Hi Hysteria
-##### (2026/06/27) ver1.09
+##### (2026/07/07) ver1.12
 
 ```
-Realm 新增 UPnP/NAT-PMP 端口映射与 ipMode 支持，客户端默认关闭 lazy 连接。
-
-1、Realm 模式新增 UPnP/NAT-PMP 端口映射支持，默认开启，加强 NAT 穿透能力
-2、Realm 模式新增 ipMode 选项 (dual/ipv4/ipv6)，默认 dual 双栈模式
-3、客户端 lazy 默认值改为 false（启动即建立连接，提高首次响应速度）
-4、Realm 服务端与客户端配置均同步适配新字段
+脚本模块化重构；i18n 多语言支持(en/zh/fa/ru)；mihomo 配置修复(拥塞控制/gecko 拦截/hop-interval/Realm)并改名；新增 sing-box 客户端配置生成
 ```
 
 
@@ -119,7 +114,7 @@ bash <(curl -fsSL https://git.io/hysteria.sh)
  -------------------------------------------
 |**********      Hi Hysteria       **********|
 |**********    Author: emptysuns   **********|
-|**********   Version: ver1.09     **********|
+|**********   Version: ver1.12     **********|
  -------------------------------------------
 Tips: hihy  命令再次运行本脚本.
 ............................................. 

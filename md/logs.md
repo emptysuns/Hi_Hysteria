@@ -1,4 +1,10 @@
 # Hi Hysteria
+##### (2026/07/07) ver1.12
+
+```
+脚本模块化重构(hy2.sh → server/src/ + build.sh)；i18n 多语言支持(en/zh/fa/ru, 合并自 feature/i18n-support)；mihomo(ClashMeta) 配置修复: 拥塞控制模式区分(仅 Brutal 输出 up/down)、gecko 混淆拦截、BBR profile 输出、端口跳跃 hop-interval、Realm realm-opts；新增 sing-box 客户端配置生成器(1.11+, 含 Realm/自签 CA 嵌入)；规则集镜像统一为 jsDelivr(HIHY_RULESET_MIRROR 可覆盖)
+```
+
 ##### (2026/06/27) ver1.09
 
 ```

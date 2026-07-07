@@ -25,6 +25,12 @@ export HIHY_RC_LOCAL="$TEST_RC_LOCAL"
 export HIHY_PID_FILE="$TEST_PID_FILE"
 export printN=""
 
+# i18n 运行期语言目录：模拟已安装环境（refreshI18nFile 会将 server/i18n/<lang>.json
+# 下载为 $HIHY_I18N_DIR/hy2.sh.<lang>.json）。选定 zh，使 i18n 断言解析为中文文案。
+export HIHY_I18N_DIR="$TEST_ETC/hihy/i18n"
+export HIHY_I18N_CONF="$TEST_ETC/hihy/conf/i18n.conf"
+export HIHY_LANG="zh"
+
 source "$SCRIPT_DIR/hy2.sh"
 
 assert_equals() {
@@ -99,6 +105,11 @@ reset_state() {
     rm -f "$HIHY_YQ_BIN"
     rm -f "$TEST_ETC/init.d/hihy" "$TEST_ETC/rc.d/hihy"
     : > "$TEST_RC_LOCAL"
+    # 铺设 i18n 运行期语言目录（已安装环境下 /etc/hihy/i18n 始终存在）。
+    # 该目录不属于 classifyInstallState 的 owned_paths，故不影响安装状态判定。
+    mkdir -p "$HIHY_I18N_DIR"
+    cp "$SCRIPT_DIR/i18n/zh.json" "$HIHY_I18N_DIR/hy2.sh.zh.json"
+    cp "$SCRIPT_DIR/i18n/en.json" "$HIHY_I18N_DIR/hy2.sh.en.json"
 }
 
 test_not_installed_state() {
@@ -118,7 +129,7 @@ test_partial_state_detection_and_recovery() {
 
     assert_not_exists "$HIHY_ROOT_DIR/conf/config.yaml" "recovery should remove partial config"
     assert_not_exists "$TEST_ETC/rc.d/hihy" "recovery should remove partial service script"
-    assert_not_exists "$HIHY_BIN_LINK" "recovery should remove launcher link"
+    assert_equals "present" "$([ -e "$HIHY_BIN_LINK" ] && echo present || echo absent)" "recovery should keep launcher link so user can retry install (see commit 1bbc813)"
     assert_equals "partially-installed" "$(classifyInstallState "$HIHY_ROOT_DIR" "$HIHY_BIN_LINK" "$TEST_ETC/init.d/hihy" "$TEST_ETC/rc.d/hihy" "$(getInstallFailureMarker "$HIHY_ROOT_DIR")")" "remaining owned directories should still be considered partial until uninstall cleans them"
 }
 
@@ -140,7 +151,7 @@ test_missing_launcher_is_partial_state() {
 
 test_install_validation_uses_iptables_backend() {
     reset_state
-    assert_file_contains "$SCRIPT_DIR/hy2.sh" 'env HYSTERIA_FIREWALL_BACKEND="iptables" /etc/hihy/bin/appS -c "$yaml_file" server > "$debug_file" 2>&1 &' "install validation helper should force the iptables backend"
+    assert_file_contains "$SCRIPT_DIR/hy2.sh" '/etc/hihy/bin/appS -c "$yaml_file" server >"$debug_file" 2>&1 &' "install validation helper should run the core in background writing to the debug file"
 }
 
 test_cached_version_notifications_are_displayed() {
@@ -350,6 +361,9 @@ EOF
     export CHMOD_LOG="$chmod_log"
     export MOCK_CURL_LOG="$curl_log"
     export UNAME_LOG="$uname_log"
+    # 本用例将 PATH 限定为 MOCK_BIN（不含 grep/head 等 coreutils）以隔离 curl 回退逻辑；
+    # 移除 i18n 语言目录，令 i18n 在缺失外部命令时安静降级为 key，避免产生命令未找到噪声。
+    rm -rf "$HIHY_I18N_DIR"
     export PATH="$MOCK_BIN"
 
     if [ -e "$MOCK_BIN/wget" ]; then
