@@ -3,7 +3,7 @@
 # GENERATED FILE — DO NOT EDIT.
 # Source lives in server/src/*.sh. Edit there and run: bash scripts/build.sh
 # =============================================================================
-hihyV="ver1.11"
+hihyV="ver1.12"
 
 # i18n 多语言支持
 HIHY_I18N_SCHEMA=1
