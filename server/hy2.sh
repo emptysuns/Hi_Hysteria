@@ -1,4 +1,8 @@
 #!/bin/bash
+# =============================================================================
+# GENERATED FILE — DO NOT EDIT.
+# Source lives in server/src/*.sh. Edit there and run: bash scripts/build.sh
+# =============================================================================
 hihyV="ver1.11"
 
 # i18n 多语言支持
@@ -7,6 +11,20 @@ HIHY_I18N_DIR="${HIHY_I18N_DIR:-/etc/hihy/i18n}"
 HIHY_I18N_CONF="${HIHY_I18N_CONF:-/etc/hihy/conf/i18n.conf}"
 HIHY_LANG="${HIHY_LANG:-}"
 
+HIHY_ROOT_DIR="${HIHY_ROOT_DIR:-/etc/hihy}"
+HIHY_BIN_LINK="${HIHY_BIN_LINK:-/usr/bin/hihy}"
+HIHY_YQ_BIN="${HIHY_YQ_BIN:-/usr/bin/yq}"
+HIHY_PID_FILE="${HIHY_PID_FILE:-/var/run/hihy.pid}"
+HIHY_RC_LOCAL="${HIHY_RC_LOCAL:-/etc/rc.local}"
+HIHY_REMOTE_SCRIPT_URL="${HIHY_REMOTE_SCRIPT_URL:-https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/refs/heads/main/server/hy2.sh}"
+HIHY_REMOTE_SCRIPT_MIRROR_URL="${HIHY_REMOTE_SCRIPT_MIRROR_URL:-https://cdn.jsdelivr.net/gh/emptysuns/Hi_Hysteria@main/server/hy2.sh}"
+HIHY_VERSION_STATUS_FILE="${HIHY_VERSION_STATUS_FILE:-$HIHY_ROOT_DIR/result/version-check.state}"
+HIHY_VERSION_CHECK_LOCK_FILE="${HIHY_VERSION_CHECK_LOCK_FILE:-$HIHY_ROOT_DIR/result/version-check.lock}"
+HIHY_VERSION_CHECK_TTL="${HIHY_VERSION_CHECK_TTL:-21600}"
+HIHY_REMOTE_CONNECT_TIMEOUT="${HIHY_REMOTE_CONNECT_TIMEOUT:-2}"
+HIHY_REMOTE_MAX_TIME="${HIHY_REMOTE_MAX_TIME:-5}"
+
+# ----- 10-i18n.sh -----
 loadPersistedLanguage() {
     if [ -f "$HIHY_I18N_CONF" ] && [ -z "$HIHY_LANG" ]; then
         HIHY_LANG=$(grep -E '^HIHY_LANG=' "$HIHY_I18N_CONF" | tail -n 1 | cut -d'=' -f2-)
@@ -109,18 +127,194 @@ i18n() {
     # 简单模板插值：%s, %d, %%, 依次用 bash printf 填充
     printf "$template" "$@"
 }
-HIHY_ROOT_DIR="${HIHY_ROOT_DIR:-/etc/hihy}"
-HIHY_BIN_LINK="${HIHY_BIN_LINK:-/usr/bin/hihy}"
-HIHY_YQ_BIN="${HIHY_YQ_BIN:-/usr/bin/yq}"
-HIHY_PID_FILE="${HIHY_PID_FILE:-/var/run/hihy.pid}"
-HIHY_RC_LOCAL="${HIHY_RC_LOCAL:-/etc/rc.local}"
-HIHY_REMOTE_SCRIPT_URL="${HIHY_REMOTE_SCRIPT_URL:-https://raw.githubusercontent.com/emptysuns/Hi_Hysteria/refs/heads/main/server/hy2.sh}"
-HIHY_REMOTE_SCRIPT_MIRROR_URL="${HIHY_REMOTE_SCRIPT_MIRROR_URL:-https://cdn.jsdelivr.net/gh/emptysuns/Hi_Hysteria@main/server/hy2.sh}"
-HIHY_VERSION_STATUS_FILE="${HIHY_VERSION_STATUS_FILE:-$HIHY_ROOT_DIR/result/version-check.state}"
-HIHY_VERSION_CHECK_LOCK_FILE="${HIHY_VERSION_CHECK_LOCK_FILE:-$HIHY_ROOT_DIR/result/version-check.lock}"
-HIHY_VERSION_CHECK_TTL="${HIHY_VERSION_CHECK_TTL:-21600}"
-HIHY_REMOTE_CONNECT_TIMEOUT="${HIHY_REMOTE_CONNECT_TIMEOUT:-2}"
-HIHY_REMOTE_MAX_TIME="${HIHY_REMOTE_MAX_TIME:-5}"
+
+# ----- 15-ui.sh -----
+echoColor() {
+    local printN="${printN:-}"
+    case $1 in
+        # 红色
+        "red") echo -e "\033[31m${printN}$2 \033[0m" ;;
+        # 天蓝色
+        "skyBlue") echo -e "\033[1;36m${printN}$2 \033[0m" ;;
+        # 绿色
+        "green") echo -e "\033[32m${printN}$2 \033[0m" ;;
+        # 白色
+        "white") echo -e "\033[37m${printN}$2 \033[0m" ;;
+        # 洋红色
+        "magenta") echo -e "\033[35m${printN}$2 \033[0m" ;;
+        # 黄色
+        "yellow") echo -e "\033[33m${printN}$2 \033[0m" ;;
+        # 紫色
+        "purple") echo -e "\033[1;35m${printN}$2 \033[0m" ;;
+        # 黑底黄字
+        "yellowBlack") echo -e "\033[1;33;40m${printN}$2 \033[0m" ;;
+        # 绿底白字
+        "greenWhite") echo -e "\033[42;37m${printN}$2 \033[0m" ;;
+        # 蓝色
+        "blue") echo -e "\033[34m${printN}$2 \033[0m" ;;
+        # 青色
+        "cyan") echo -e "\033[36m${printN}$2 \033[0m" ;;
+        # 黑色
+        "black") echo -e "\033[30m${printN}$2 \033[0m" ;;
+        # 灰色
+        "gray") echo -e "\033[90m${printN}$2 \033[0m" ;;
+        # 亮红色
+        "lightRed") echo -e "\033[91m${printN}$2 \033[0m" ;;
+        # 亮绿色
+        "lightGreen") echo -e "\033[92m${printN}$2 \033[0m" ;;
+        # 亮黄色
+        "lightYellow") echo -e "\033[93m${printN}$2 \033[0m" ;;
+        # 亮蓝色
+        "lightBlue") echo -e "\033[94m${printN}$2 \033[0m" ;;
+        # 亮洋红色
+        "lightMagenta") echo -e "\033[95m${printN}$2 \033[0m" ;;
+        # 亮青色
+        "lightCyan") echo -e "\033[96m${printN}$2 \033[0m" ;;
+        # 亮白色
+        "lightWhite") echo -e "\033[97m${printN}$2 \033[0m" ;;
+    esac
+}
+
+# 检测系统架构的函数
+getPortBindMsg() {
+    # $1 type UDP or TCP
+    # $2 port
+    local msg
+    if [ "$1" == "UDP" ]; then
+        msg=$(lsof -i "${1}:${2}")
+    else
+        msg=$(lsof -i "${1}:${2}" | grep LISTEN)
+    fi
+
+    if [ -z "$msg" ]; then
+        return
+    fi
+
+    local command pid name
+    command=$(echo "$msg" | awk '{print $1}')
+    pid=$(echo "$msg" | awk '{print $2}')
+    name=$(echo "$msg" | awk '{print $9}')
+    echoColor purple "$(i18n port_bind_in_use ${1} ${2} ${command} ${name} ${pid})"
+    echoColor green "$(i18n port_bind_auto_close_prompt)"
+    read -r bindP
+
+    if [ -z "$bindP" ] || [[ ! "$bindP" =~ ^[yY]$ ]]; then
+        echoColor red "$(i18n port_bind_exit)"
+        if [ "$1" == "TCP" ] && [ "$2" == "80" ]; then
+            echoColor "$(i18n port_bind_alternative_cert_for_80 ${1} ${2})"
+        fi
+        exit
+    fi
+
+    pkill -f "/etc/hihy/bin/appS"
+    echoColor purple "$(i18n port_bind_unbinding)"
+    sleep 3
+
+    if [ "$1" == "TCP" ]; then
+        msg=$(lsof -i "${1}:${2}" | grep LISTEN)
+    else
+        msg=$(lsof -i "${1}:${2}")
+    fi
+
+    if [ -n "$msg" ]; then
+        echoColor red "$(i18n port_bind_close_failed)"
+        exit
+    else
+        echoColor green "$(i18n port_bind_unbound)"
+    fi
+}
+
+countdown() {
+    local seconds=$1
+    echo -ne "\033[32m$(i18n countdown_prefix)\033[0m "
+
+    while [ $seconds -gt 0 ]; do
+        # 打印当前数字
+        echo -ne "\033[31m$seconds\033[0m"
+        sleep 1
+
+        # 计算退格数量
+        local digits=${#seconds}
+        for ((i = 0; i < digits; i++)); do
+            echo -ne "\b \b"
+        done
+
+        ((seconds--))
+    done
+
+    # 清除最后一个数字并显示完成消息
+    echo -ne " " # 清除最后显示的数字
+    echo -e "\n\033[32m$(i18n countdown_done)\033[0m"
+}
+
+generate_qr() {
+    local url=$1
+
+    # 使用最小合法尺寸 1
+    local qr_size=1
+    local margin=1
+    local level="L" # 使用最低纠错级别以减小大小
+    # 生成并显示 QR 码
+    # -l L: 使用最低级别的纠错
+    # -m margin: 设置边距
+    # -s 1: 使用最小合法尺寸
+    qrencode -t ANSIUTF8 -o - -l "$level" -m "$margin" -s 1 "${url}"
+
+    if [ $? -eq 0 ]; then
+        echoColor green "\n$(i18n qr_code_generated_success)"
+    else
+        echoColor red "\n$(i18n qr_code_generated_failure)"
+        return 1
+    fi
+}
+
+show_menu() {
+    clear
+    echo -e " -------------------------------------------"
+    echo -e "|**********      $(i18n menu_title)       **********|"
+    echo -e "|**********    Author: emptysuns   **********|"
+    echo -e "|**********     $(i18n menu_version "$(echoColor red "${hihyV}")")    **********|"
+    echo -e " -------------------------------------------"
+    echo -e "$(i18n menu_hint_hihy_cmd "$(echoColor green "hihy")")"
+    echo -e "$(echoColor skyBlue ".............................................")"
+    echo -e "$(echoColor purple "###############################")"
+
+    echo -e "$(echoColor skyBlue ".....................")"
+    echo -e "$(echoColor yellow "$(i18n menu_option_install)")"
+    echo -e "$(echoColor magenta "$(i18n menu_option_uninstall)")"
+    echo -e "$(echoColor skyBlue ".....................")"
+    echo -e "$(echoColor yellow "$(i18n menu_option_start)")"
+    echo -e "$(echoColor magenta "$(i18n menu_option_stop)")"
+    echo -e "$(echoColor yellow "$(i18n menu_option_restart)")"
+    echo -e "$(echoColor yellow "$(i18n menu_option_status)")"
+    echo -e "$(echoColor skyBlue ".....................")"
+    echo -e "$(echoColor yellow "$(i18n menu_option_update_core)")"
+    echo -e "$(echoColor yellow "$(i18n menu_option_view_config)")"
+    echo -e "$(echoColor red "$(i18n menu_option_reconfigure)")"
+    echo -e "$(echoColor yellow "$(i18n menu_option_switch_ip_priority)")"
+    echo -e "$(echoColor yellow "$(i18n menu_option_update_hihy)")"
+    echo -e "$(echoColor lightMagenta "$(i18n menu_option_acl)")"
+    echo -e "$(echoColor skyBlue "$(i18n menu_option_traffic_stats)")"
+    echo -e "$(echoColor yellow "$(i18n menu_option_logs)")"
+    echo -e "$(echoColor yellow "$(i18n menu_option_socks5)")"
+
+    echo -e "$(echoColor purple "###############################")"
+
+    echo -e "$(echoColor magenta "$(i18n menu_option_exit)")"
+    echo -e "$(echoColor skyBlue ".............................................")"
+    echo -e ""
+    hihy_update_notifycation
+    echo -e "\n"
+    startBackgroundVersionCheck
+}
+
+wait_for_continue() {
+    echo -e "\n$(echoColor green "$(i18n menu_wait_continue)")"
+    read -r -n 1 -s
+}
+
+
+# ----- 20-net-yaml.sh -----
 
 installHihyLauncher() {
     local source_path="${1:-${BASH_SOURCE[0]}}"
@@ -157,13 +351,6 @@ downloadToFile() {
     fi
 }
 
-startInstallValidationProcess() {
-    local yaml_file="$1"
-    local debug_file="${2:-./hihy_debug.info}"
-
-    /etc/hihy/bin/appS -c "$yaml_file" server >"$debug_file" 2>&1 &
-}
-
 fetchRemoteBodyFromSources() {
     local url
     local response
@@ -192,6 +379,346 @@ fetchRemoteHeadersFromSources() {
     return 1
 }
 
+generate_uuid() {
+    if command -v uuidgen >/dev/null 2>&1; then
+        uuid=$(uuidgen)
+    elif [ -f /proc/sys/kernel/random/uuid ]; then
+        uuid=$(cat /proc/sys/kernel/random/uuid)
+    else
+        uuid=$(cat /dev/urandom | tr -dc 'a-f0-9' | head -c 32 | sed 's/\(.\{8\}\)/\1-/g;s/-$//')
+    fi
+    echo "$uuid"
+}
+
+getListenPrimaryPort() {
+    local listen_value="$1"
+
+    if [ -z "$listen_value" ] || [ "$listen_value" = "null" ]; then
+        echo ""
+        return
+    fi
+
+    listen_value=${listen_value#*:}
+    listen_value=$(echo "$listen_value" | awk -F',' '{print $1}')
+    echo "$listen_value" | awk -F'-' '{print $1}'
+}
+
+getListenRangePart() {
+    local listen_value="$1"
+
+    if [ -z "$listen_value" ] || [ "$listen_value" = "null" ]; then
+        echo ""
+        return
+    fi
+
+    listen_value=${listen_value#*:}
+    if echo "$listen_value" | grep -q ','; then
+        echo "$listen_value" | awk -F',' '{print $2}'
+    else
+        echo ""
+    fi
+}
+
+addOrUpdateYaml() {
+    local file=$1
+    local keyPath=$2
+    local value=$3
+    local valueType=${4:-"auto"} # auto, string, number, bool
+
+    # 检查文件是否存在，如果不存在则创建一个空文件
+    if [[ ! -f "$file" ]]; then
+        touch "$file"
+    fi
+
+    # 将值转换为 JSON 格式以避免解析错误
+    local jsonValue
+    if [[ $valueType == "auto" ]]; then
+        jsonValue=$(echo "$value" | yq eval -o=json)
+    elif [[ $valueType == "string" ]]; then
+        jsonValue=$(echo "\"$value\"" | yq eval -o=json)
+    elif [[ $valueType == "number" ]]; then
+        jsonValue=$(echo "$value" | yq eval -o=json)
+    elif [[ $valueType == "bool" ]]; then
+        jsonValue=$(echo "$value" | yq eval -o=json)
+    else
+        echo "Unsupported value type: $valueType"
+        return 1
+    fi
+
+    # 使用 yq 修改 YAML 文件
+    yq eval ".${keyPath} = ${jsonValue}" -i "$file"
+}
+
+getYamlValue() {
+    local file=$1    # YAML文件路径
+    local keyPath=$2 # 键路径，用点号分隔
+
+    # 检查文件是否存在
+    if [[ ! -f "$file" ]]; then
+        echo "错误: 文件不存在"
+        return 1
+    fi
+
+    # 使用 yq 读取 YAML 文件中的值
+    value=$(yq eval ".${keyPath}" "$file")
+
+    # 检查 yq 命令是否成功执行
+    if [[ $? -ne 0 ]]; then
+        echo "错误: 读取 YAML 文件失败"
+        return 1
+    fi
+
+    echo "$value"
+}
+
+
+# ----- 25-system.sh -----
+detectVirtualization() {
+    local virt_type=""
+
+    # 检查是否为 OpenVZ
+    if [ -f "/proc/user_beancounters" ]; then
+        virt_type="openvz"
+    # 检查是否为 LXC
+    elif [ -f "/proc/1/environ" ] && grep -q "container=lxc" /proc/1/environ 2>/dev/null; then
+        virt_type="lxc"
+    # 检查 systemd-detect-virt（如果可用）
+    elif command -v systemd-detect-virt >/dev/null 2>&1; then
+        local detected=$(systemd-detect-virt 2>/dev/null)
+        case "$detected" in
+            "openvz") virt_type="openvz" ;;
+            "lxc") virt_type="lxc" ;;
+            "lxc-libvirt") virt_type="lxc" ;;
+            *) virt_type="other" ;;
+        esac
+    # 检查 /proc/cpuinfo 中的虚拟化标识
+    elif grep -q "flags.*hypervisor" /proc/cpuinfo 2>/dev/null; then
+        virt_type="other"
+    # 检查 cgroup 中的容器标识
+    elif [ -f "/proc/1/cgroup" ]; then
+        if grep -q ":/lxc/" /proc/1/cgroup 2>/dev/null; then
+            virt_type="lxc"
+        elif grep -q ":/docker/" /proc/1/cgroup 2>/dev/null; then
+            virt_type="docker"
+        else
+            virt_type="unknown"
+        fi
+    else
+        virt_type="unknown"
+    fi
+
+    echo "$virt_type"
+}
+
+# 获取启动命令前缀（是否使用 chrt）
+getStartCommand() {
+    local virt_type=$(detectVirtualization)
+    local command_prefix=""
+
+    case "$virt_type" in
+        "openvz" | "lxc" | "docker")
+            # OpenVZ、LXC 和 Docker 容器中不使用 chrt
+            command_prefix=""
+            ;;
+        *)
+            # 其他环境检查是否支持 chrt
+            if command -v chrt >/dev/null 2>&1; then
+                # 测试 chrt 是否可用
+                if chrt -r 1 echo "test" >/dev/null 2>&1; then
+                    command_prefix="chrt -r 99"
+                else
+                    command_prefix=""
+                fi
+            else
+                command_prefix=""
+            fi
+            ;;
+    esac
+
+    echo "$command_prefix"
+}
+
+cronTask() {
+    if [ -f "/etc/hihy/logs/hihy.log" ]; then
+        echo "" >/etc/hihy/logs/hihy.log
+    fi
+}
+getArchitecture() {
+    local arch=$(uname -m)
+    case "$arch" in
+        x86_64)
+            echo "amd64"
+            ;;
+        i386 | i686)
+            echo "386"
+            ;;
+        aarch64 | arm64)
+            echo "arm64"
+            ;;
+        armv7*)
+            echo "arm"
+            ;;
+        s390x)
+            echo "s390x"
+            ;;
+        ppc64le)
+            echo "ppc64le"
+            ;;
+        loongarch64)
+            echo "loong64"
+            ;;
+        *)
+            echo "unknown"
+            ;;
+    esac
+}
+
+checkSystemForUpdate() {
+    local release=""
+    local installType=""
+    local updateNeeded=false
+    local packageManager=""
+    local requiredPackages=("wget" "curl" "lsof" "bash" "iptables" "bc")
+
+    # 检测包管理器
+    if command -v apt >/dev/null; then
+        packageManager="apt"
+        installType="apt -y -q install"
+        upgrade="apt update"
+    elif command -v yum >/dev/null; then
+        packageManager="yum"
+        installType="yum -y -q install"
+        upgrade="yum update -y --skip-broken"
+    elif command -v dnf >/dev/null; then
+        packageManager="dnf"
+        installType="dnf -y install"
+        upgrade="dnf update -y"
+    elif command -v pacman >/dev/null; then
+        packageManager="pacman"
+        installType="pacman -Sy --noconfirm"
+        upgrade="pacman -Syy"
+    elif command -v apk >/dev/null; then
+        packageManager="apk"
+        installType="apk add --no-cache"
+        upgrade="apk update"
+    else
+        echoColor red "\n$(i18n package_manager_not_supported)"
+        echoColor yellow "$(cat /etc/issue 2>/dev/null)"
+        echoColor yellow "$(cat /proc/version 2>/dev/null)"
+        exit 1
+    fi
+
+    # 检查必需的包
+    for package in "${requiredPackages[@]}"; do
+        if ! command -v "$package" >/dev/null; then
+            echoColor green "*$package"
+            updateNeeded=true
+        fi
+    done
+
+    # 检查 dig 命令
+    if ! command -v dig >/dev/null; then
+        echoColor green "*dnsutils"
+        updateNeeded=true
+    fi
+
+    # 检查 qrencode 包
+    if ! command -v qrencode >/dev/null; then
+        echoColor green "*qrencode"
+        updateNeeded=true
+    fi
+
+    # 检查 qrencode 包
+    if ! command -v crontab >/dev/null; then
+        echoColor green "*crontab"
+        updateNeeded=true
+    fi
+
+    # 检查 chrt 命令
+    if ! command -v chrt >/dev/null; then
+        echoColor green "*util-linux"
+        updateNeeded=true
+    fi
+
+    # 仅在需要安装包时更新软件源
+    if [ "$updateNeeded" = true ]; then
+        echoColor purple "\n$(i18n package_manager_update_sources)"
+        ${upgrade}
+
+        # 安装必需的包
+        for package in "${requiredPackages[@]}"; do
+            if ! command -v "$package" >/dev/null; then
+                ${installType} "$package"
+            fi
+        done
+
+        # 安装 dig
+        if ! command -v dig >/dev/null; then
+            case $packageManager in
+                "apt") ${installType} "dnsutils" ;;
+                "yum" | "dnf") ${installType} "bind-utils" ;;
+                "pacman") ${installType} "bind-tools" ;;
+                "apk") ${installType} "bind-tools" ;;
+            esac
+        fi
+
+        # 安装 qrencode
+        if ! command -v qrencode >/dev/null; then
+            case $packageManager in
+                "apt") ${installType} "qrencode" ;;
+                "yum" | "dnf") ${installType} "qrencode" ;;
+                "pacman") ${installType} "qrencode" ;;
+                "apk") ${installType} "libqrencode-tools" ;;
+            esac
+        fi
+
+        # 安装 util-linux
+        if ! command -v chrt >/dev/null; then
+            ${installType} "util-linux"
+        fi
+
+        # 确保有 pkill 命令
+        if ! command -v pkill >/dev/null 2>&1; then
+            case $packageManager in
+                "apt") ${installType} "procps" ;;
+                "yum" | "dnf") ${installType} "procps" ;;
+                "pacman") ${installType} "procps" ;;
+                "apk") ${installType} "procps" ;;
+            esac
+        fi
+
+        # 确保有 crontab 命令
+        if ! command -v crontab >/dev/null 2>&1; then
+            case $packageManager in
+                "apt") ${installType} "cron" ;;
+                "yum" | "dnf") ${installType} "cron" ;;
+                "pacman") ${installType} "cronie" ;;
+                "apk") ${installType} "cronie" ;;
+            esac
+        fi
+
+        echoColor purple "\n$(i18n package_install_complete)"
+    fi
+
+    # 检查 yq 命令
+    # 安装 yq
+    if ! command -v yq >/dev/null; then
+        arch=$(getArchitecture)
+        echoColor purple "$(i18n downloading_yq ${arch})..."
+        if ! downloadToFile "https://github.com/mikefarah/yq/releases/latest/download/yq_linux_${arch}" "$HIHY_YQ_BIN"; then
+            if ! command -v wget >/dev/null 2>&1 && ! command -v curl >/dev/null 2>&1; then
+                echoColor red "$(i18n download_yq_failed_no_tool)"
+            else
+                echoColor red "$(i18n download_yq_failed_network)"
+            fi
+            exit 1
+        fi
+        chmod +x "$HIHY_YQ_BIN"
+    fi
+}
+
+
+# ----- 30-version.sh -----
 getLatestHihyVersion() {
     local content
 
@@ -389,385 +916,16 @@ displayCachedVersionNotifications() {
 }
 
 # 检测虚拟化类型的函数
-detectVirtualization() {
-    local virt_type=""
-
-    # 检查是否为 OpenVZ
-    if [ -f "/proc/user_beancounters" ]; then
-        virt_type="openvz"
-    # 检查是否为 LXC
-    elif [ -f "/proc/1/environ" ] && grep -q "container=lxc" /proc/1/environ 2>/dev/null; then
-        virt_type="lxc"
-    # 检查 systemd-detect-virt（如果可用）
-    elif command -v systemd-detect-virt >/dev/null 2>&1; then
-        local detected=$(systemd-detect-virt 2>/dev/null)
-        case "$detected" in
-            "openvz") virt_type="openvz" ;;
-            "lxc") virt_type="lxc" ;;
-            "lxc-libvirt") virt_type="lxc" ;;
-            *) virt_type="other" ;;
-        esac
-    # 检查 /proc/cpuinfo 中的虚拟化标识
-    elif grep -q "flags.*hypervisor" /proc/cpuinfo 2>/dev/null; then
-        virt_type="other"
-    # 检查 cgroup 中的容器标识
-    elif [ -f "/proc/1/cgroup" ]; then
-        if grep -q ":/lxc/" /proc/1/cgroup 2>/dev/null; then
-            virt_type="lxc"
-        elif grep -q ":/docker/" /proc/1/cgroup 2>/dev/null; then
-            virt_type="docker"
-        else
-            virt_type="unknown"
-        fi
-    else
-        virt_type="unknown"
-    fi
-
-    echo "$virt_type"
+hihy_update_notifycation() {
+    displayCachedVersionNotifications
 }
 
-# 获取启动命令前缀（是否使用 chrt）
-getStartCommand() {
-    local virt_type=$(detectVirtualization)
-    local command_prefix=""
-
-    case "$virt_type" in
-        "openvz" | "lxc" | "docker")
-            # OpenVZ、LXC 和 Docker 容器中不使用 chrt
-            command_prefix=""
-            ;;
-        *)
-            # 其他环境检查是否支持 chrt
-            if command -v chrt >/dev/null 2>&1; then
-                # 测试 chrt 是否可用
-                if chrt -r 1 echo "test" >/dev/null 2>&1; then
-                    command_prefix="chrt -r 99"
-                else
-                    command_prefix=""
-                fi
-            else
-                command_prefix=""
-            fi
-            ;;
-    esac
-
-    echo "$command_prefix"
+hyCore_update_notifycation() {
+    displayCachedVersionNotifications
 }
 
-cronTask() {
-    if [ -f "/etc/hihy/logs/hihy.log" ]; then
-        echo "" >/etc/hihy/logs/hihy.log
-    fi
-}
-echoColor() {
-    local printN="${printN:-}"
-    case $1 in
-        # 红色
-        "red") echo -e "\033[31m${printN}$2 \033[0m" ;;
-        # 天蓝色
-        "skyBlue") echo -e "\033[1;36m${printN}$2 \033[0m" ;;
-        # 绿色
-        "green") echo -e "\033[32m${printN}$2 \033[0m" ;;
-        # 白色
-        "white") echo -e "\033[37m${printN}$2 \033[0m" ;;
-        # 洋红色
-        "magenta") echo -e "\033[35m${printN}$2 \033[0m" ;;
-        # 黄色
-        "yellow") echo -e "\033[33m${printN}$2 \033[0m" ;;
-        # 紫色
-        "purple") echo -e "\033[1;35m${printN}$2 \033[0m" ;;
-        # 黑底黄字
-        "yellowBlack") echo -e "\033[1;33;40m${printN}$2 \033[0m" ;;
-        # 绿底白字
-        "greenWhite") echo -e "\033[42;37m${printN}$2 \033[0m" ;;
-        # 蓝色
-        "blue") echo -e "\033[34m${printN}$2 \033[0m" ;;
-        # 青色
-        "cyan") echo -e "\033[36m${printN}$2 \033[0m" ;;
-        # 黑色
-        "black") echo -e "\033[30m${printN}$2 \033[0m" ;;
-        # 灰色
-        "gray") echo -e "\033[90m${printN}$2 \033[0m" ;;
-        # 亮红色
-        "lightRed") echo -e "\033[91m${printN}$2 \033[0m" ;;
-        # 亮绿色
-        "lightGreen") echo -e "\033[92m${printN}$2 \033[0m" ;;
-        # 亮黄色
-        "lightYellow") echo -e "\033[93m${printN}$2 \033[0m" ;;
-        # 亮蓝色
-        "lightBlue") echo -e "\033[94m${printN}$2 \033[0m" ;;
-        # 亮洋红色
-        "lightMagenta") echo -e "\033[95m${printN}$2 \033[0m" ;;
-        # 亮青色
-        "lightCyan") echo -e "\033[96m${printN}$2 \033[0m" ;;
-        # 亮白色
-        "lightWhite") echo -e "\033[97m${printN}$2 \033[0m" ;;
-    esac
-}
 
-# 检测系统架构的函数
-getArchitecture() {
-    local arch=$(uname -m)
-    case "$arch" in
-        x86_64)
-            echo "amd64"
-            ;;
-        i386 | i686)
-            echo "386"
-            ;;
-        aarch64 | arm64)
-            echo "arm64"
-            ;;
-        armv7*)
-            echo "arm"
-            ;;
-        s390x)
-            echo "s390x"
-            ;;
-        ppc64le)
-            echo "ppc64le"
-            ;;
-        loongarch64)
-            echo "loong64"
-            ;;
-        *)
-            echo "unknown"
-            ;;
-    esac
-}
-
-checkSystemForUpdate() {
-    local release=""
-    local installType=""
-    local updateNeeded=false
-    local packageManager=""
-    local requiredPackages=("wget" "curl" "lsof" "bash" "iptables" "bc")
-
-    # 检测包管理器
-    if command -v apt >/dev/null; then
-        packageManager="apt"
-        installType="apt -y -q install"
-        upgrade="apt update"
-    elif command -v yum >/dev/null; then
-        packageManager="yum"
-        installType="yum -y -q install"
-        upgrade="yum update -y --skip-broken"
-    elif command -v dnf >/dev/null; then
-        packageManager="dnf"
-        installType="dnf -y install"
-        upgrade="dnf update -y"
-    elif command -v pacman >/dev/null; then
-        packageManager="pacman"
-        installType="pacman -Sy --noconfirm"
-        upgrade="pacman -Syy"
-    elif command -v apk >/dev/null; then
-        packageManager="apk"
-        installType="apk add --no-cache"
-        upgrade="apk update"
-    else
-        echoColor red "\n$(i18n package_manager_not_supported)"
-        echoColor yellow "$(cat /etc/issue 2>/dev/null)"
-        echoColor yellow "$(cat /proc/version 2>/dev/null)"
-        exit 1
-    fi
-
-    # 检查必需的包
-    for package in "${requiredPackages[@]}"; do
-        if ! command -v "$package" >/dev/null; then
-            echoColor green "*$package"
-            updateNeeded=true
-        fi
-    done
-
-    # 检查 dig 命令
-    if ! command -v dig >/dev/null; then
-        echoColor green "*dnsutils"
-        updateNeeded=true
-    fi
-
-    # 检查 qrencode 包
-    if ! command -v qrencode >/dev/null; then
-        echoColor green "*qrencode"
-        updateNeeded=true
-    fi
-
-    # 检查 qrencode 包
-    if ! command -v crontab >/dev/null; then
-        echoColor green "*crontab"
-        updateNeeded=true
-    fi
-
-    # 检查 chrt 命令
-    if ! command -v chrt >/dev/null; then
-        echoColor green "*util-linux"
-        updateNeeded=true
-    fi
-
-    # 仅在需要安装包时更新软件源
-    if [ "$updateNeeded" = true ]; then
-        echoColor purple "\n$(i18n package_manager_update_sources)"
-        ${upgrade}
-
-        # 安装必需的包
-        for package in "${requiredPackages[@]}"; do
-            if ! command -v "$package" >/dev/null; then
-                ${installType} "$package"
-            fi
-        done
-
-        # 安装 dig
-        if ! command -v dig >/dev/null; then
-            case $packageManager in
-                "apt") ${installType} "dnsutils" ;;
-                "yum" | "dnf") ${installType} "bind-utils" ;;
-                "pacman") ${installType} "bind-tools" ;;
-                "apk") ${installType} "bind-tools" ;;
-            esac
-        fi
-
-        # 安装 qrencode
-        if ! command -v qrencode >/dev/null; then
-            case $packageManager in
-                "apt") ${installType} "qrencode" ;;
-                "yum" | "dnf") ${installType} "qrencode" ;;
-                "pacman") ${installType} "qrencode" ;;
-                "apk") ${installType} "libqrencode-tools" ;;
-            esac
-        fi
-
-        # 安装 util-linux
-        if ! command -v chrt >/dev/null; then
-            ${installType} "util-linux"
-        fi
-
-        # 确保有 pkill 命令
-        if ! command -v pkill >/dev/null 2>&1; then
-            case $packageManager in
-                "apt") ${installType} "procps" ;;
-                "yum" | "dnf") ${installType} "procps" ;;
-                "pacman") ${installType} "procps" ;;
-                "apk") ${installType} "procps" ;;
-            esac
-        fi
-
-        # 确保有 crontab 命令
-        if ! command -v crontab >/dev/null 2>&1; then
-            case $packageManager in
-                "apt") ${installType} "cron" ;;
-                "yum" | "dnf") ${installType} "cron" ;;
-                "pacman") ${installType} "cronie" ;;
-                "apk") ${installType} "cronie" ;;
-            esac
-        fi
-
-        echoColor purple "\n$(i18n package_install_complete)"
-    fi
-
-    # 检查 yq 命令
-    # 安装 yq
-    if ! command -v yq >/dev/null; then
-        arch=$(getArchitecture)
-        echoColor purple "$(i18n downloading_yq ${arch})..."
-        if ! downloadToFile "https://github.com/mikefarah/yq/releases/latest/download/yq_linux_${arch}" "$HIHY_YQ_BIN"; then
-            if ! command -v wget >/dev/null 2>&1 && ! command -v curl >/dev/null 2>&1; then
-                echoColor red "$(i18n download_yq_failed_no_tool)"
-            else
-                echoColor red "$(i18n download_yq_failed_network)"
-            fi
-            exit 1
-        fi
-        chmod +x "$HIHY_YQ_BIN"
-    fi
-}
-
-getPortBindMsg() {
-    # $1 type UDP or TCP
-    # $2 port
-    local msg
-    if [ "$1" == "UDP" ]; then
-        msg=$(lsof -i "${1}:${2}")
-    else
-        msg=$(lsof -i "${1}:${2}" | grep LISTEN)
-    fi
-
-    if [ -z "$msg" ]; then
-        return
-    fi
-
-    local command pid name
-    command=$(echo "$msg" | awk '{print $1}')
-    pid=$(echo "$msg" | awk '{print $2}')
-    name=$(echo "$msg" | awk '{print $9}')
-    echoColor purple "$(i18n port_bind_in_use ${1} ${2} ${command} ${name} ${pid})"
-    echoColor green "$(i18n port_bind_auto_close_prompt)"
-    read -r bindP
-
-    if [ -z "$bindP" ] || [[ ! "$bindP" =~ ^[yY]$ ]]; then
-        echoColor red "$(i18n port_bind_exit)"
-        if [ "$1" == "TCP" ] && [ "$2" == "80" ]; then
-            echoColor "$(i18n port_bind_alternative_cert_for_80 ${1} ${2})"
-        fi
-        exit
-    fi
-
-    pkill -f "/etc/hihy/bin/appS"
-    echoColor purple "$(i18n port_bind_unbinding)"
-    sleep 3
-
-    if [ "$1" == "TCP" ]; then
-        msg=$(lsof -i "${1}:${2}" | grep LISTEN)
-    else
-        msg=$(lsof -i "${1}:${2}")
-    fi
-
-    if [ -n "$msg" ]; then
-        echoColor red "$(i18n port_bind_close_failed)"
-        exit
-    else
-        echoColor green "$(i18n port_bind_unbound)"
-    fi
-}
-
-generate_uuid() {
-    if command -v uuidgen >/dev/null 2>&1; then
-        uuid=$(uuidgen)
-    elif [ -f /proc/sys/kernel/random/uuid ]; then
-        uuid=$(cat /proc/sys/kernel/random/uuid)
-    else
-        uuid=$(cat /dev/urandom | tr -dc 'a-f0-9' | head -c 32 | sed 's/\(.\{8\}\)/\1-/g;s/-$//')
-    fi
-    echo "$uuid"
-}
-
-getListenPrimaryPort() {
-    local listen_value="$1"
-
-    if [ -z "$listen_value" ] || [ "$listen_value" = "null" ]; then
-        echo ""
-        return
-    fi
-
-    listen_value=${listen_value#*:}
-    listen_value=$(echo "$listen_value" | awk -F',' '{print $1}')
-    echo "$listen_value" | awk -F'-' '{print $1}'
-}
-
-getListenRangePart() {
-    local listen_value="$1"
-
-    if [ -z "$listen_value" ] || [ "$listen_value" = "null" ]; then
-        echo ""
-        return
-    fi
-
-    listen_value=${listen_value#*:}
-    if echo "$listen_value" | grep -q ','; then
-        echo "$listen_value" | awk -F',' '{print $2}'
-    else
-        echo ""
-    fi
-}
-
+# ----- 35-state.sh -----
 getBackupValueOrDefault() {
     local file=$1
     local key=$2
@@ -881,79 +1039,13 @@ recoverPartialInstallState() {
     fi
 }
 
-addOrUpdateYaml() {
-    local file=$1
-    local keyPath=$2
-    local value=$3
-    local valueType=${4:-"auto"} # auto, string, number, bool
 
-    # 检查文件是否存在，如果不存在则创建一个空文件
-    if [[ ! -f "$file" ]]; then
-        touch "$file"
-    fi
+# ----- 45-wizard.sh -----
+startInstallValidationProcess() {
+    local yaml_file="$1"
+    local debug_file="${2:-./hihy_debug.info}"
 
-    # 将值转换为 JSON 格式以避免解析错误
-    local jsonValue
-    if [[ $valueType == "auto" ]]; then
-        jsonValue=$(echo "$value" | yq eval -o=json)
-    elif [[ $valueType == "string" ]]; then
-        jsonValue=$(echo "\"$value\"" | yq eval -o=json)
-    elif [[ $valueType == "number" ]]; then
-        jsonValue=$(echo "$value" | yq eval -o=json)
-    elif [[ $valueType == "bool" ]]; then
-        jsonValue=$(echo "$value" | yq eval -o=json)
-    else
-        echo "Unsupported value type: $valueType"
-        return 1
-    fi
-
-    # 使用 yq 修改 YAML 文件
-    yq eval ".${keyPath} = ${jsonValue}" -i "$file"
-}
-
-getYamlValue() {
-    local file=$1    # YAML文件路径
-    local keyPath=$2 # 键路径，用点号分隔
-
-    # 检查文件是否存在
-    if [[ ! -f "$file" ]]; then
-        echo "错误: 文件不存在"
-        return 1
-    fi
-
-    # 使用 yq 读取 YAML 文件中的值
-    value=$(yq eval ".${keyPath}" "$file")
-
-    # 检查 yq 命令是否成功执行
-    if [[ $? -ne 0 ]]; then
-        echo "错误: 读取 YAML 文件失败"
-        return 1
-    fi
-
-    echo "$value"
-}
-
-countdown() {
-    local seconds=$1
-    echo -ne "\033[32m$(i18n countdown_prefix)\033[0m "
-
-    while [ $seconds -gt 0 ]; do
-        # 打印当前数字
-        echo -ne "\033[31m$seconds\033[0m"
-        sleep 1
-
-        # 计算退格数量
-        local digits=${#seconds}
-        for ((i = 0; i < digits; i++)); do
-            echo -ne "\b \b"
-        done
-
-        ((seconds--))
-    done
-
-    # 清除最后一个数字并显示完成消息
-    echo -ne " " # 清除最后显示的数字
-    echo -e "\n\033[32m$(i18n countdown_done)\033[0m"
+    /etc/hihy/bin/appS -c "$yaml_file" server >"$debug_file" 2>&1 &
 }
 
 setHysteriaConfig() {
@@ -2076,6 +2168,8 @@ setHysteriaConfig() {
     echoColor greenWhite "$(i18n install_success)"
 }
 
+
+# ----- 50-core.sh -----
 downloadHysteriaCore() {
     local version
     version=$(getLatestHysteriaVersion)
@@ -2166,38 +2260,8 @@ updateHysteriaCore() {
     fi
 }
 
-hihy_update_notifycation() {
-    displayCachedVersionNotifications
-}
 
-hihyUpdate() {
-    localV=${hihyV}
-    remoteV=$(getLatestHihyVersion || true)
-    if [ -z $remoteV ]; then
-        echoColor red "$(i18n network_error_cannot_connect_github)"
-        exit
-    fi
-    if [ "${localV}" = "${remoteV}" ]; then
-        echoColor green "$(i18n already_latest_version)"
-        # 清除版本检查缓存，防止因缓存过期而显示过时的"有新版本"通知
-        rm -f "$HIHY_VERSION_STATUS_FILE"
-    else
-        rm -f "$HIHY_BIN_LINK"
-        if ! installHihyLauncher /dev/null "$HIHY_BIN_LINK"; then
-            echoColor red "$(i18n hihy_cmd_install_fail)"
-            exit 1
-        fi
-        echoColor green "$(i18n hihy_update_complete)"
-        # 清除版本检查缓存，确保下次运行时重新检查并显示正确状态
-        rm -f "$HIHY_VERSION_STATUS_FILE"
-    fi
-
-}
-
-hyCore_update_notifycation() {
-    displayCachedVersionNotifications
-}
-
+# ----- 55-service.sh -----
 setup_rc_local_for_arch() {
     # 检测是否为 Arch Linux
     if grep -q "Arch Linux" /etc/os-release; then
@@ -2462,6 +2526,89 @@ EOF
 }
 
 # 将 listen 中的范围端口格式 47000-48000 转换为防火墙规则使用的 47000:48000
+checkLogs() {
+    if [ -f "/etc/hihy/logs/hihy.log" ]; then
+        tail -f /etc/hihy/logs/hihy.log
+    else
+        echoColor red "$(i18n logs_not_found)"
+    fi
+}
+start() {
+    if [ -f "/etc/rc.d/hihy" ] || [ -f "/etc/init.d/hihy" ]; then
+
+        if [ -f "/etc/rc.d/hihy" ]; then
+            /etc/rc.d/hihy start
+        else
+            /etc/init.d/hihy start
+        fi
+        if [ $? -eq 0 ]; then
+            echoColor green "$(i18n service_start_success)"
+        else
+            echoColor red "$(i18n service_start_failure)"
+        fi
+    else
+        echoColor red "$(i18n service_script_not_found)"
+    fi
+}
+stop() {
+    if [ -f "/etc/rc.d/hihy" ] || [ -f "/etc/init.d/hihy" ]; then
+        if [ -f "/etc/rc.d/hihy" ]; then
+            /etc/rc.d/hihy stop
+        else
+            /etc/init.d/hihy stop
+        fi
+        if [ $? -eq 0 ]; then
+            echoColor green "$(i18n service_stop_success)"
+        else
+            echoColor red "$(i18n service_stop_failure)"
+        fi
+    else
+        echoColor red "$(i18n service_script_not_found)"
+    fi
+}
+restart() {
+    if [ -f "/etc/rc.d/hihy" ] || [ -f "/etc/init.d/hihy" ]; then
+        if [ -f "/etc/rc.d/hihy" ]; then
+            /etc/rc.d/hihy restart
+        else
+            /etc/init.d/hihy restart
+        fi
+        if [ $? -eq 0 ]; then
+            echoColor green "$(i18n service_restart_success)"
+        else
+            echoColor red "$(i18n service_restart_failure)"
+        fi
+    else
+        echoColor red "$(i18n service_script_not_found)"
+    fi
+}
+checkStatus() {
+    if [ -f "/etc/rc.d/hihy" ] || [ -f "/etc/init.d/hihy" ]; then
+        if [ -f "/etc/rc.d/hihy" ]; then
+            msg=$(/etc/rc.d/hihy status)
+        else
+            msg=$(/etc/init.d/hihy status)
+        fi
+        if [ $? -ne 0 ]; then
+            echoColor red "$(i18n service_status_failure)"
+            exit 1
+        fi
+
+        if echo "$msg" | grep -q "is running"; then
+            echoColor green "$(i18n service_running "hysteria")"
+            version=$(/etc/hihy/bin/appS version | grep "^Version" | awk '{print $2}')
+            echoColor purple "$(i18n service_current_version ${version})"
+        else
+            echoColor red "$(i18n service_not_running "hysteria")"
+        fi
+    else
+        echoColor red "$(i18n service_script_not_found)"
+    fi
+}
+
+# 定义格式化字节大小的函数
+
+# ----- 60-firewall.sh -----
 formatFirewallPortSpec() {
     local port_spec="$1"
     echo "${port_spec//-/:}"
@@ -2612,6 +2759,69 @@ EOF
     return 1
 }
 
+delHihyFirewallPort() {
+    # 如果防火墙启动状态则删除之前的规则
+    local listen_value=$(getYamlValue "/etc/hihy/conf/config.yaml" "listen")
+    local port=$(getListenPrimaryPort "${listen_value}")
+    local port_range=$(getListenRangePart "${listen_value}")
+    local firewall_port_range=$(formatFirewallPortSpec "${port_range}")
+    local protocol=$1
+
+    # realm模式下listen值非端口号(为realm URI),跳过防火墙规则删除
+    if [ -z "${port}" ] || ! echo "${port}" | grep -qE '^[0-9]+$'; then
+        return 0
+    fi
+    # 检查并处理不同的防火墙管理工具
+    if command -v ufw >/dev/null && ufw status | hasFirewallToken "active"; then
+        if ufw status | hasFirewallToken "${port}/${protocol}"; then
+            ufw delete allow "${port}/${protocol}" 2>/dev/null
+            echoColor purple "$(i18n firewall_ufw_delete ${port}/${protocol})"
+        # 兼容旧版本未带协议的 ufw 规则
+        elif ufw status | hasFirewallToken "${port}"; then
+            ufw delete allow "${port}" 2>/dev/null
+            echoColor purple "$(i18n firewall_ufw_delete ${port})"
+        fi
+        if [ -n "${firewall_port_range}" ] && ufw status | hasFirewallToken "${firewall_port_range}/${protocol}"; then
+            ufw delete allow "${firewall_port_range}/${protocol}" 2>/dev/null
+            echoColor purple "$(i18n firewall_ufw_delete ${firewall_port_range}/${protocol})"
+        fi
+    elif command -v firewall-cmd >/dev/null && systemctl is-active --quiet firewalld; then
+        if firewall-cmd --list-ports --permanent | hasFirewallToken "${port}/${protocol}"; then
+            firewall-cmd --zone=public --remove-port="${port}/${protocol}" --permanent 2>/dev/null
+            firewall-cmd --reload 2>/dev/null
+            echoColor purple "$(i18n firewall_firewalld_delete ${port}/${protocol})"
+        fi
+        if [ -n "${firewall_port_range}" ] && firewall-cmd --list-ports --permanent | hasFirewallToken "${firewall_port_range}/${protocol}"; then
+            firewall-cmd --zone=public --remove-port="${firewall_port_range}/${protocol}" --permanent 2>/dev/null
+            firewall-cmd --reload 2>/dev/null
+            echoColor purple "$(i18n firewall_firewalld_delete ${firewall_port_range}/${protocol})"
+        fi
+    elif command -v iptables >/dev/null; then
+        iptables-save | sed -e "/hihysteria/d" | iptables-restore
+        ip6tables-save | sed -e "/hihysteria/d" | ip6tables-restore
+        if command -v systemctl >/dev/null 2>&1; then
+            # 检查 netfilter-persistent
+            if systemctl is-active --quiet netfilter-persistent; then
+                netfilter-persistent save
+            fi
+        fi
+        if [ -f "/etc/rc.d/allow-port" ]; then
+            sed -i "/${protocol}\/${port}(hihysteria)/d" /etc/rc.d/allow-port
+            if [ -n "${firewall_port_range}" ]; then
+                local port_range_comment=$(echo "${firewall_port_range}" | sed 's/:/\\:/g')
+                sed -i "/${protocol}\/${port_range_comment}(hihysteria)/d" /etc/rc.d/allow-port
+            fi
+        fi
+
+        echoColor purple "$(i18n firewall_iptables_delete ${port}/${protocol})"
+        if [ -n "${firewall_port_range}" ]; then
+            echoColor purple "$(i18n firewall_iptables_delete ${firewall_port_range}/${protocol})"
+        fi
+    fi
+}
+
+
+# ----- 65-lifecycle.sh -----
 killHysteriaProcess() {
     local signal="${1:-TERM}"
     local pid_file="${2:-/var/run/hihy.pid}"
@@ -2762,27 +2972,12 @@ uninstall() {
     fi
 }
 
-generate_qr() {
-    local url=$1
 
-    # 使用最小合法尺寸 1
-    local qr_size=1
-    local margin=1
-    local level="L" # 使用最低纠错级别以减小大小
-    # 生成并显示 QR 码
-    # -l L: 使用最低级别的纠错
-    # -m margin: 设置边距
-    # -s 1: 使用最小合法尺寸
-    qrencode -t ANSIUTF8 -o - -l "$level" -m "$margin" -s 1 "${url}"
+# ----- 70-client-common.sh -----
+# 客户端配置公共参数层(loadClientParams / parseRealmURI)
+# 由后续任务填充;三个客户端生成器(native/mihomo/singbox)共用。
 
-    if [ $? -eq 0 ]; then
-        echoColor green "\n$(i18n qr_code_generated_success)"
-    else
-        echoColor red "\n$(i18n qr_code_generated_failure)"
-        return 1
-    fi
-}
-
+# ----- 72-client-native.sh -----
 generate_client_config() {
     if [ ! -e "/etc/rc.d/hihy" ] && [ ! -e "/etc/init.d/hihy" ]; then
         echoColor red "$(i18n client_config_hysteria_not_installed)"
@@ -3041,6 +3236,8 @@ generate_client_config() {
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
 }
 
+
+# ----- 74-client-mihomo.sh -----
 generateMetaYaml() {
     remarks=$(getYamlValue "/etc/hihy/conf/backup.yaml" "remarks")
     local metaFile="./Hy2-${remarks}-ClashMeta.yaml"
@@ -3266,87 +3463,8 @@ EOF
 
 }
 
-checkLogs() {
-    if [ -f "/etc/hihy/logs/hihy.log" ]; then
-        tail -f /etc/hihy/logs/hihy.log
-    else
-        echoColor red "$(i18n logs_not_found)"
-    fi
-}
-start() {
-    if [ -f "/etc/rc.d/hihy" ] || [ -f "/etc/init.d/hihy" ]; then
 
-        if [ -f "/etc/rc.d/hihy" ]; then
-            /etc/rc.d/hihy start
-        else
-            /etc/init.d/hihy start
-        fi
-        if [ $? -eq 0 ]; then
-            echoColor green "$(i18n service_start_success)"
-        else
-            echoColor red "$(i18n service_start_failure)"
-        fi
-    else
-        echoColor red "$(i18n service_script_not_found)"
-    fi
-}
-stop() {
-    if [ -f "/etc/rc.d/hihy" ] || [ -f "/etc/init.d/hihy" ]; then
-        if [ -f "/etc/rc.d/hihy" ]; then
-            /etc/rc.d/hihy stop
-        else
-            /etc/init.d/hihy stop
-        fi
-        if [ $? -eq 0 ]; then
-            echoColor green "$(i18n service_stop_success)"
-        else
-            echoColor red "$(i18n service_stop_failure)"
-        fi
-    else
-        echoColor red "$(i18n service_script_not_found)"
-    fi
-}
-restart() {
-    if [ -f "/etc/rc.d/hihy" ] || [ -f "/etc/init.d/hihy" ]; then
-        if [ -f "/etc/rc.d/hihy" ]; then
-            /etc/rc.d/hihy restart
-        else
-            /etc/init.d/hihy restart
-        fi
-        if [ $? -eq 0 ]; then
-            echoColor green "$(i18n service_restart_success)"
-        else
-            echoColor red "$(i18n service_restart_failure)"
-        fi
-    else
-        echoColor red "$(i18n service_script_not_found)"
-    fi
-}
-checkStatus() {
-    if [ -f "/etc/rc.d/hihy" ] || [ -f "/etc/init.d/hihy" ]; then
-        if [ -f "/etc/rc.d/hihy" ]; then
-            msg=$(/etc/rc.d/hihy status)
-        else
-            msg=$(/etc/init.d/hihy status)
-        fi
-        if [ $? -ne 0 ]; then
-            echoColor red "$(i18n service_status_failure)"
-            exit 1
-        fi
-
-        if echo "$msg" | grep -q "is running"; then
-            echoColor green "$(i18n service_running "hysteria")"
-            version=$(/etc/hihy/bin/appS version | grep "^Version" | awk '{print $2}')
-            echoColor purple "$(i18n service_current_version ${version})"
-        else
-            echoColor red "$(i18n service_not_running "hysteria")"
-        fi
-    else
-        echoColor red "$(i18n service_script_not_found)"
-    fi
-}
-
-# 定义格式化字节大小的函数
+# ----- 80-stats.sh -----
 format_bytes() {
     local bytes=$1
     if [ $bytes -lt 1024 ]; then
@@ -3527,65 +3645,30 @@ format_time_display() {
     fi
 }
 
-delHihyFirewallPort() {
-    # 如果防火墙启动状态则删除之前的规则
-    local listen_value=$(getYamlValue "/etc/hihy/conf/config.yaml" "listen")
-    local port=$(getListenPrimaryPort "${listen_value}")
-    local port_range=$(getListenRangePart "${listen_value}")
-    local firewall_port_range=$(formatFirewallPortSpec "${port_range}")
-    local protocol=$1
 
-    # realm模式下listen值非端口号(为realm URI),跳过防火墙规则删除
-    if [ -z "${port}" ] || ! echo "${port}" | grep -qE '^[0-9]+$'; then
-        return 0
+# ----- 85-actions.sh -----
+hihyUpdate() {
+    localV=${hihyV}
+    remoteV=$(getLatestHihyVersion || true)
+    if [ -z $remoteV ]; then
+        echoColor red "$(i18n network_error_cannot_connect_github)"
+        exit
     fi
-    # 检查并处理不同的防火墙管理工具
-    if command -v ufw >/dev/null && ufw status | hasFirewallToken "active"; then
-        if ufw status | hasFirewallToken "${port}/${protocol}"; then
-            ufw delete allow "${port}/${protocol}" 2>/dev/null
-            echoColor purple "$(i18n firewall_ufw_delete ${port}/${protocol})"
-        # 兼容旧版本未带协议的 ufw 规则
-        elif ufw status | hasFirewallToken "${port}"; then
-            ufw delete allow "${port}" 2>/dev/null
-            echoColor purple "$(i18n firewall_ufw_delete ${port})"
+    if [ "${localV}" = "${remoteV}" ]; then
+        echoColor green "$(i18n already_latest_version)"
+        # 清除版本检查缓存，防止因缓存过期而显示过时的"有新版本"通知
+        rm -f "$HIHY_VERSION_STATUS_FILE"
+    else
+        rm -f "$HIHY_BIN_LINK"
+        if ! installHihyLauncher /dev/null "$HIHY_BIN_LINK"; then
+            echoColor red "$(i18n hihy_cmd_install_fail)"
+            exit 1
         fi
-        if [ -n "${firewall_port_range}" ] && ufw status | hasFirewallToken "${firewall_port_range}/${protocol}"; then
-            ufw delete allow "${firewall_port_range}/${protocol}" 2>/dev/null
-            echoColor purple "$(i18n firewall_ufw_delete ${firewall_port_range}/${protocol})"
-        fi
-    elif command -v firewall-cmd >/dev/null && systemctl is-active --quiet firewalld; then
-        if firewall-cmd --list-ports --permanent | hasFirewallToken "${port}/${protocol}"; then
-            firewall-cmd --zone=public --remove-port="${port}/${protocol}" --permanent 2>/dev/null
-            firewall-cmd --reload 2>/dev/null
-            echoColor purple "$(i18n firewall_firewalld_delete ${port}/${protocol})"
-        fi
-        if [ -n "${firewall_port_range}" ] && firewall-cmd --list-ports --permanent | hasFirewallToken "${firewall_port_range}/${protocol}"; then
-            firewall-cmd --zone=public --remove-port="${firewall_port_range}/${protocol}" --permanent 2>/dev/null
-            firewall-cmd --reload 2>/dev/null
-            echoColor purple "$(i18n firewall_firewalld_delete ${firewall_port_range}/${protocol})"
-        fi
-    elif command -v iptables >/dev/null; then
-        iptables-save | sed -e "/hihysteria/d" | iptables-restore
-        ip6tables-save | sed -e "/hihysteria/d" | ip6tables-restore
-        if command -v systemctl >/dev/null 2>&1; then
-            # 检查 netfilter-persistent
-            if systemctl is-active --quiet netfilter-persistent; then
-                netfilter-persistent save
-            fi
-        fi
-        if [ -f "/etc/rc.d/allow-port" ]; then
-            sed -i "/${protocol}\/${port}(hihysteria)/d" /etc/rc.d/allow-port
-            if [ -n "${firewall_port_range}" ]; then
-                local port_range_comment=$(echo "${firewall_port_range}" | sed 's/:/\\:/g')
-                sed -i "/${protocol}\/${port_range_comment}(hihysteria)/d" /etc/rc.d/allow-port
-            fi
-        fi
+        echoColor green "$(i18n hihy_update_complete)"
+        # 清除版本检查缓存，确保下次运行时重新检查并显示正确状态
+        rm -f "$HIHY_VERSION_STATUS_FILE"
+    fi
 
-        echoColor purple "$(i18n firewall_iptables_delete ${port}/${protocol})"
-        if [ -n "${firewall_port_range}" ]; then
-            echoColor purple "$(i18n firewall_iptables_delete ${firewall_port_range}/${protocol})"
-        fi
-    fi
 }
 
 changeIp64() {
@@ -3854,51 +3937,8 @@ addSocks5Outbound() {
 
 }
 
-show_menu() {
-    clear
-    echo -e " -------------------------------------------"
-    echo -e "|**********      $(i18n menu_title)       **********|"
-    echo -e "|**********    Author: emptysuns   **********|"
-    echo -e "|**********     $(i18n menu_version "$(echoColor red "${hihyV}")")    **********|"
-    echo -e " -------------------------------------------"
-    echo -e "$(i18n menu_hint_hihy_cmd "$(echoColor green "hihy")")"
-    echo -e "$(echoColor skyBlue ".............................................")"
-    echo -e "$(echoColor purple "###############################")"
 
-    echo -e "$(echoColor skyBlue ".....................")"
-    echo -e "$(echoColor yellow "$(i18n menu_option_install)")"
-    echo -e "$(echoColor magenta "$(i18n menu_option_uninstall)")"
-    echo -e "$(echoColor skyBlue ".....................")"
-    echo -e "$(echoColor yellow "$(i18n menu_option_start)")"
-    echo -e "$(echoColor magenta "$(i18n menu_option_stop)")"
-    echo -e "$(echoColor yellow "$(i18n menu_option_restart)")"
-    echo -e "$(echoColor yellow "$(i18n menu_option_status)")"
-    echo -e "$(echoColor skyBlue ".....................")"
-    echo -e "$(echoColor yellow "$(i18n menu_option_update_core)")"
-    echo -e "$(echoColor yellow "$(i18n menu_option_view_config)")"
-    echo -e "$(echoColor red "$(i18n menu_option_reconfigure)")"
-    echo -e "$(echoColor yellow "$(i18n menu_option_switch_ip_priority)")"
-    echo -e "$(echoColor yellow "$(i18n menu_option_update_hihy)")"
-    echo -e "$(echoColor lightMagenta "$(i18n menu_option_acl)")"
-    echo -e "$(echoColor skyBlue "$(i18n menu_option_traffic_stats)")"
-    echo -e "$(echoColor yellow "$(i18n menu_option_logs)")"
-    echo -e "$(echoColor yellow "$(i18n menu_option_socks5)")"
-
-    echo -e "$(echoColor purple "###############################")"
-
-    echo -e "$(echoColor magenta "$(i18n menu_option_exit)")"
-    echo -e "$(echoColor skyBlue ".............................................")"
-    echo -e ""
-    hihy_update_notifycation
-    echo -e "\n"
-    startBackgroundVersionCheck
-}
-
-wait_for_continue() {
-    echo -e "\n$(echoColor green "$(i18n menu_wait_continue)")"
-    read -r -n 1 -s
-}
-
+# ----- 90-main.sh -----
 menu() {
     while true; do
         show_menu
