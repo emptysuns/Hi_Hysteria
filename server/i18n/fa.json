@@ -470,5 +470,7 @@
   "warp_uninstalling": "\\n-> در حال حذف نصب WARP/WireProxy...",
   "warp_uninstall_prompt": "آیا WARP/WireProxy حذف نصب شود؟",
   "client_mihomo_file_hint": "📱 [Clash Verge Rev / FlClash / ClashMeta for Android / OpenClash] فایل پیکربندی mihomo: %s",
-  "client_mihomo_gecko_skip": "توجه: mihomo از رمزگذاری gecko پشتیبانی نمی‌کند؛ از پیکربندی اصلی یا sing-box استفاده کنید. پیکربندی mihomo رد شد."
+  "client_mihomo_gecko_skip": "توجه: mihomo از رمزگذاری gecko پشتیبانی نمی‌کند؛ از پیکربندی اصلی یا sing-box استفاده کنید. پیکربندی mihomo رد شد.",
+  "client_singbox_file_hint": "📦 [sing-box / SFA / SFI / SFM / SFT] فایل پیکربندی sing-box: %s",
+  "client_singbox_version_hint": "توجه: نیاز به sing-box 1.11+ (حالت realm / رمزگذاری gecko / bbr_profile نیاز به 1.14+ دارند)."
 }

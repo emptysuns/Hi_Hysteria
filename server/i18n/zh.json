@@ -470,5 +470,7 @@
   "warp_uninstalling": "\\n->正在卸载WARP/WireProxy...",
   "warp_uninstall_prompt": "是否卸载WARP/WireProxy?",
   "client_mihomo_file_hint": "📱 [Clash Verge Rev / FlClash / ClashMeta安卓版 / OpenClash] mihomo 配置文件: %s",
-  "client_mihomo_gecko_skip": "提示: mihomo 不支持 gecko 混淆，请使用原生配置或 sing-box，已跳过 mihomo 配置。"
+  "client_mihomo_gecko_skip": "提示: mihomo 不支持 gecko 混淆，请使用原生配置或 sing-box，已跳过 mihomo 配置。",
+  "client_singbox_file_hint": "📦 [sing-box / SFA / SFI / SFM / SFT] sing-box 配置文件: %s",
+  "client_singbox_version_hint": "提示: 需 sing-box 1.11+ (realm / gecko 混淆 / bbr_profile 需 1.14+)。"
 }

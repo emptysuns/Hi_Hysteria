@@ -137,4 +137,53 @@ teardown_fixture() { rm -rf "$HIHY_ROOT_DIR"; }
     exit $FAIL
 ) || FAIL=1
 
+# ---------- sing-box: JSON parseable ----------
+(
+    setup_fixture
+    load_funcs; loadClientParams
+    cd "$HIHY_ROOT_DIR"
+    generateSingboxJson 2>/dev/null
+    sf="./Hy2-testnode-singbox.json"
+    if python3 -m json.tool "$sf" >/dev/null 2>&1; then pass "singbox valid json"
+    else fail "singbox json invalid"
+    fi
+    if yq -p json eval '.outbounds[0].type' "$sf" 2>/dev/null | grep -q hysteria2; then pass "singbox outbound type hysteria2"
+    else fail "singbox outbound type wrong"
+    fi
+    teardown_fixture
+    exit $FAIL
+) || FAIL=1
+
+# ---------- sing-box: BBR omits up_mbps/down_mbps ----------
+(
+    setup_fixture
+    sed -i 's/congestionMode: brutal/congestionMode: bbr/' "$HIHY_ROOT_DIR/conf/backup.yaml"
+    printf 'congestionType: bbr\n' >> "$HIHY_ROOT_DIR/conf/backup.yaml"
+    load_funcs; loadClientParams
+    cd "$HIHY_ROOT_DIR"
+    generateSingboxJson 2>/dev/null
+    sf="./Hy2-testnode-singbox.json"
+    if ! grep -q 'up_mbps\|down_mbps' "$sf"; then pass "singbox bbr omits mbps"
+    else fail "singbox bbr mbps present"
+    fi
+    teardown_fixture
+    exit $FAIL
+) || FAIL=1
+
+# ---------- sing-box: realm omits server_port ----------
+(
+    setup_fixture
+    sed -i 's/realmMode: false/realmMode: true/' "$HIHY_ROOT_DIR/conf/backup.yaml"
+    printf 'realmURI: realm://public@realm.hy2.io/abc-123\n' >> "$HIHY_ROOT_DIR/conf/backup.yaml"
+    load_funcs; loadClientParams
+    cd "$HIHY_ROOT_DIR"
+    generateSingboxJson 2>/dev/null
+    sf="./Hy2-testnode-singbox.json"
+    if ! grep -q 'server_port' "$sf" && grep -q 'realm' "$sf"; then pass "singbox realm omits server_port, has realm"
+    else fail "singbox realm missing realm block or has server_port"
+    fi
+    teardown_fixture
+    exit $FAIL
+) || FAIL=1
+
 if [ "$FAIL" -eq 0 ]; then echo "ALL client_config TESTS PASSED"; else echo "SOME client_config TESTS FAILED" >&2; exit 1; fi

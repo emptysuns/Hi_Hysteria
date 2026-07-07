@@ -208,6 +208,8 @@ generate_client_config() {
         generateMihomoYaml
     fi
 
+    generateSingboxJson
+
     echo -e "\n$(i18n client_config_done)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
 }
