@@ -4,82 +4,40 @@ menu() {
         show_menu
         read -r -p "$(i18n menu_prompt_choice)" input
         case $input in
-            1)
-                install
-                exit 0
-                ;;
-            2)
-                uninstall
-                exit 0
-                ;;
-            3)
-                start
-                wait_for_continue
-                ;;
-            4)
-                stop
-                wait_for_continue
-                ;;
-            5)
-                restart
-                wait_for_continue
-                ;;
-            6)
-                checkStatus
-                wait_for_continue
-                ;;
-            7)
-                updateHysteriaCore
-                exit 0
-                ;;
-            8)
-                generate_client_config
-                wait_for_continue
-                ;;
-            9)
-                changeServerConfig
-                exit 0
-                ;;
-            10)
-                changeIp64
-                exit 0
-                ;;
-            11)
-                hihyUpdate
-                exit 0
-                ;;
-            12)
-                aclControl
-                exit 0
-                ;;
-            13)
-                getHysteriaTrafic
-                wait_for_continue
-                ;;
-            14)
-                checkLogs
-                exit 0
-                ;;
-            15)
-                addSocks5Outbound
-                exit 0
-                ;;
+            1) install ;;
+            2) uninstall ;;
+            3) start ;;
+            4) stop ;;
+            5) restart ;;
+            6) checkStatus ;;
+            7) updateHysteriaCore ;;
+            8) generate_client_config ;;
+            9) changeServerConfig ;;
+            10) changeIp64 ;;
+            11) hihyUpdate ;;
+            12) aclControl ;;
+            13) getHysteriaTrafic ;;
+            14) checkLogs ;;
+            15) addSocks5Outbound ;;
+            16) install auto ;;
             0) exit 0 ;;
-            *)
-                echoColor red "$(i18n error_input_error)"
-                wait_for_continue
-                ;;
+            *) echoColor red "$(i18n error_input_error)" ;;
         esac
+        wait_for_continue
     done
 }
 
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then
     loadPersistedLanguage
     checkRoot
-    case "$1" in
+    case "${1:-}" in
         install | 1)
             echoColor purple "$(i18n cmd_title_install)"
             install
+            ;;
+        autoinstall | auto | 16)
+            echoColor purple "$(i18n cmd_title_autoinstall)"
+            install auto
             ;;
         uninstall | 2)
             echoColor purple "$(i18n cmd_title_uninstall)"

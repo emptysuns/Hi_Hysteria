@@ -47,12 +47,13 @@ uninstall_rc_local_for_arch() {
 }
 
 install() {
+    local mode="${1:-}"
     local install_state
     install_state=$(classifyInstallState)
 
     if [ "$install_state" = "installed" ]; then
         echoColor green "$(i18n already_installed)"
-        exit 0
+        return 0
     fi
 
     if [ "$install_state" = "partially-installed" ]; then
@@ -77,11 +78,16 @@ install() {
         exit 1
     fi
 
-    # 获取版本并下载核心
-    version=$(getLatestHysteriaVersion || true)
     checkSystemForUpdate
-    downloadHysteriaCore
-    setHysteriaConfig
+    if ! downloadHysteriaCore; then
+        markInstallFailed "core-download" "failed to download hysteria core"
+        exit 1
+    fi
+    if [ "$mode" = "auto" ]; then
+        autoHysteriaConfig
+    else
+        setHysteriaConfig
+    fi
 
     # 获取启动命令前缀
     local start_cmd_prefix=$(getStartCommand)
@@ -187,6 +193,12 @@ start() {
         nohup \$HIHY_PATH/bin/appS --log-level info -c \$HIHY_PATH/conf/config.yaml server > "\$LOG_FILE" 2>&1 &
     fi
     echo \$! > "\$PID_FILE"
+    sleep 1
+    if ! kill -0 \$(cat "\$PID_FILE") 2>/dev/null; then
+        echo "hihy failed to start, check \$LOG_FILE"
+        rm -f "\$PID_FILE"
+        return 1
+    fi
 }
 
 stop() {
@@ -195,18 +207,25 @@ stop() {
         return 1
     fi
 
+    PID=\$(cat "\$PID_FILE")
     echo "Stopping hihy..."
-    kill \$(cat "\$PID_FILE")
+    kill "\$PID" 2>/dev/null
+    n=0
+    while [ \$n -lt 5 ]; do
+        if ! kill -0 "\$PID" 2>/dev/null; then
+            break
+        fi
+        sleep 1
+        n=\$((n + 1))
+    done
+    if kill -0 "\$PID" 2>/dev/null; then
+        kill -9 "\$PID" 2>/dev/null
+    fi
     rm -f "\$PID_FILE"
 }
 
 restart() {
     stop
-    sleep 2
-    if [ -f "\$PID_FILE" ]; then
-        echo "Failed to stop hihy"
-        return 1
-    fi
     start
 }
 
@@ -251,11 +270,13 @@ EOF
         /etc/rc.d/hihy start
     fi
 
-    # 添加定时任务
+    # 添加定时任务(先去重,避免重装时重复堆积)
     crontab -l >./crontab.tmp 2>/dev/null || touch ./crontab.tmp
-    echo "15 4 * * 1 hihy cronTask" >>./crontab.tmp
-    crontab ./crontab.tmp
-    rm ./crontab.tmp
+    if ! grep -q "hihy cronTask" ./crontab.tmp; then
+        echo "15 4 * * 1 hihy cronTask" >>./crontab.tmp
+        crontab ./crontab.tmp
+    fi
+    rm -f ./crontab.tmp
     setup_rc_local_for_arch
 
     generate_client_config
@@ -265,7 +286,12 @@ EOF
 # 将 listen 中的范围端口格式 47000-48000 转换为防火墙规则使用的 47000:48000
 checkLogs() {
     if [ -f "/etc/hihy/logs/hihy.log" ]; then
+        echoColor gray "$(i18n logs_follow_hint)"
+        # 父进程捕获 INT:Ctrl+C 只结束 tail,脚本本身回到菜单
+        trap ':' INT
         tail -f /etc/hihy/logs/hihy.log
+        trap - INT
+        echo ""
     else
         echoColor red "$(i18n logs_not_found)"
     fi

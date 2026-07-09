@@ -71,7 +71,7 @@ getPortBindMsg() {
     if [ -z "$bindP" ] || [[ ! "$bindP" =~ ^[yY]$ ]]; then
         echoColor red "$(i18n port_bind_exit)"
         if [ "$1" == "TCP" ] && [ "$2" == "80" ]; then
-            echoColor "$(i18n port_bind_alternative_cert_for_80 ${1} ${2})"
+            echoColor red "$(i18n port_bind_alternative_cert_for_80 ${1} ${2})"
         fi
         exit
     fi
@@ -92,29 +92,6 @@ getPortBindMsg() {
     else
         echoColor green "$(i18n port_bind_unbound)"
     fi
-}
-
-countdown() {
-    local seconds=$1
-    echo -ne "\033[32m$(i18n countdown_prefix)\033[0m "
-
-    while [ $seconds -gt 0 ]; do
-        # 打印当前数字
-        echo -ne "\033[31m$seconds\033[0m"
-        sleep 1
-
-        # 计算退格数量
-        local digits=${#seconds}
-        for ((i = 0; i < digits; i++)); do
-            echo -ne "\b \b"
-        done
-
-        ((seconds--))
-    done
-
-    # 清除最后一个数字并显示完成消息
-    echo -ne " " # 清除最后显示的数字
-    echo -e "\n\033[32m$(i18n countdown_done)\033[0m"
 }
 
 generate_qr() {
@@ -138,43 +115,97 @@ generate_qr() {
     fi
 }
 
+# 服务运行状态: running / stopped / none(未安装)
+getServiceRunState() {
+    local svc=""
+    if [ -f "/etc/rc.d/hihy" ]; then
+        svc="/etc/rc.d/hihy"
+    elif [ -f "/etc/init.d/hihy" ]; then
+        svc="/etc/init.d/hihy"
+    else
+        echo "none"
+        return
+    fi
+    if "$svc" status 2>/dev/null | grep -q "is running"; then
+        echo "running"
+    else
+        echo "stopped"
+    fi
+}
+
+# 居中打印头部盒子内容行(仅用于 ASCII 文案,宽度按字符数计算)
+menuBoxLine() {
+    local text="$1"
+    local width=43
+    local pad=$(((width - ${#text}) / 2))
+    [ "$pad" -lt 0 ] && pad=0
+    printf " \033[1;36m│\033[0m%*s%s%*s\033[1;36m│\033[0m\n" "$pad" "" "$text" "$((width - pad - ${#text}))" ""
+}
+
+menuSection() {
+    printf "\n \033[1m%s\033[0m \033[90m────────────────────────\033[0m\n" "$1"
+}
+
+menuItem() {
+    printf "  \033[32m%2s\033[0m\033[90m)\033[0m %s\n" "$1" "$2"
+}
+
 show_menu() {
     clear
-    echo -e " -------------------------------------------"
-    echo -e "|**********      $(i18n menu_title)       **********|"
-    echo -e "|**********    Author: emptysuns   **********|"
-    echo -e "|**********     $(i18n menu_version "$(echoColor red "${hihyV}")")    **********|"
-    echo -e " -------------------------------------------"
-    echo -e "$(i18n menu_hint_hihy_cmd "$(echoColor green "hihy")")"
-    echo -e "$(echoColor skyBlue ".............................................")"
-    echo -e "$(echoColor purple "###############################")"
+    local state coreV=""
+    state=$(getServiceRunState)
+    if [ -x "/etc/hihy/bin/appS" ]; then
+        coreV=$(getLocalHysteriaVersion 2>/dev/null || true)
+        coreV="${coreV#app/}"
+    fi
 
-    echo -e "$(echoColor skyBlue ".....................")"
-    echo -e "$(echoColor yellow "$(i18n menu_option_install)")"
-    echo -e "$(echoColor magenta "$(i18n menu_option_uninstall)")"
-    echo -e "$(echoColor skyBlue ".....................")"
-    echo -e "$(echoColor yellow "$(i18n menu_option_start)")"
-    echo -e "$(echoColor magenta "$(i18n menu_option_stop)")"
-    echo -e "$(echoColor yellow "$(i18n menu_option_restart)")"
-    echo -e "$(echoColor yellow "$(i18n menu_option_status)")"
-    echo -e "$(echoColor skyBlue ".....................")"
-    echo -e "$(echoColor yellow "$(i18n menu_option_update_core)")"
-    echo -e "$(echoColor yellow "$(i18n menu_option_view_config)")"
-    echo -e "$(echoColor red "$(i18n menu_option_reconfigure)")"
-    echo -e "$(echoColor yellow "$(i18n menu_option_switch_ip_priority)")"
-    echo -e "$(echoColor yellow "$(i18n menu_option_update_hihy)")"
-    echo -e "$(echoColor lightMagenta "$(i18n menu_option_acl)")"
-    echo -e "$(echoColor skyBlue "$(i18n menu_option_traffic_stats)")"
-    echo -e "$(echoColor yellow "$(i18n menu_option_logs)")"
-    echo -e "$(echoColor yellow "$(i18n menu_option_socks5)")"
+    echo -e " \033[1;36m╭───────────────────────────────────────────╮\033[0m"
+    menuBoxLine "$(i18n menu_title) ${hihyV}"
+    menuBoxLine "https://github.com/emptysuns/Hi_Hysteria"
+    echo -e " \033[1;36m╰───────────────────────────────────────────╯\033[0m"
 
-    echo -e "$(echoColor purple "###############################")"
-
-    echo -e "$(echoColor magenta "$(i18n menu_option_exit)")"
-    echo -e "$(echoColor skyBlue ".............................................")"
-    echo -e ""
+    # 状态行:服务状态 + 内核版本
+    local status_segment
+    case "$state" in
+        running) status_segment="\033[32m●\033[0m $(i18n menu_status_running)" ;;
+        stopped) status_segment="\033[31m●\033[0m $(i18n menu_status_stopped)" ;;
+        *) status_segment="\033[90m○\033[0m $(i18n menu_status_not_installed)" ;;
+    esac
+    if [ -n "$coreV" ]; then
+        echo -e "  ${status_segment} \033[90m│\033[0m $(i18n menu_status_core) ${coreV}"
+    else
+        echo -e "  ${status_segment}"
+    fi
     hihy_update_notifycation
-    echo -e "\n"
+
+    menuSection "$(i18n menu_section_deploy)"
+    menuItem 1 "$(i18n menu_item_install)"
+    menuItem 16 "$(i18n menu_item_autoinstall)"
+    menuItem 2 "$(i18n menu_item_uninstall)"
+
+    menuSection "$(i18n menu_section_service)"
+    menuItem 3 "$(i18n menu_item_start)"
+    menuItem 4 "$(i18n menu_item_stop)"
+    menuItem 5 "$(i18n menu_item_restart)"
+    menuItem 6 "$(i18n menu_item_status)"
+
+    menuSection "$(i18n menu_section_config)"
+    menuItem 8 "$(i18n menu_item_view_config)"
+    menuItem 9 "$(i18n menu_item_reconfigure)"
+    menuItem 10 "$(i18n menu_item_switch_ip)"
+    menuItem 12 "$(i18n menu_item_acl)"
+    menuItem 15 "$(i18n menu_item_socks5)"
+
+    menuSection "$(i18n menu_section_maintain)"
+    menuItem 7 "$(i18n menu_item_update_core)"
+    menuItem 11 "$(i18n menu_item_update_hihy)"
+    menuItem 13 "$(i18n menu_item_traffic)"
+    menuItem 14 "$(i18n menu_item_logs)"
+
+    echo -e "\n \033[90m─────────────────────────────────────────\033[0m"
+    menuItem 0 "$(i18n menu_item_exit)"
+    echo -e " \033[90m$(i18n menu_hint_hihy_cmd "hihy")\033[0m"
+    echo ""
     startBackgroundVersionCheck
 }
 

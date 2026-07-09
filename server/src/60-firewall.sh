@@ -36,7 +36,9 @@ checkFirewalldAllowPort() {
 allowPort() {
     # 如果防火墙启动状态则添加相应的开放端口
     # $1 tcp/udp
-    # $2 port
+    # $2 port 或端口范围(start:end)
+    # 端口范围各后端语法不同:iptables/ufw 用 47000:48000,firewalld/nft 用 47000-48000
+    local dash_port="${2//:/-}"
 
     # 检查是否为 Alpine Linux
     if [ -f /etc/alpine-release ]; then
@@ -60,7 +62,7 @@ allowPort() {
         # 如果没有 iptables，检查 nftables
         if command -v nft >/dev/null 2>&1; then
             if ! nft list ruleset | grep -q "allow ${1}/${2}(hihysteria)"; then
-                nft add rule inet filter input ip protocol ${1} dport ${2} comment "allow ${1}/${2}(hihysteria)" accept
+                nft add rule inet filter input ip protocol ${1} dport ${dash_port} comment "allow ${1}/${2}(hihysteria)" accept
                 echoColor purple "$(i18n firewall_nftables_open ${1} ${2})"
                 nft list ruleset >/etc/nftables.conf
             fi
@@ -82,8 +84,8 @@ allowPort() {
 
             # 检查 firewalld
             if systemctl is-active --quiet firewalld; then
-                if ! firewall-cmd --list-ports --permanent | hasFirewallToken "${2}/${1}"; then
-                    firewall-cmd --zone=public --add-port=${2}/${1} --permanent
+                if ! firewall-cmd --list-ports --permanent | hasFirewallToken "${dash_port}/${1}"; then
+                    firewall-cmd --zone=public --add-port=${dash_port}/${1} --permanent
                     echoColor purple "$(i18n firewall_firewalld_open ${1} ${2})"
                     firewall-cmd --reload
                 fi
@@ -137,7 +139,7 @@ EOF
         # 检查 nftables
         if command -v nft >/dev/null 2>&1; then
             if ! nft list ruleset | grep -q "allow ${1}/${2}(hihysteria)"; then
-                nft add rule inet filter input ip protocol ${1} dport ${2} comment "allow ${1}/${2}(hihysteria)" accept
+                nft add rule inet filter input ip protocol ${1} dport ${dash_port} comment "allow ${1}/${2}(hihysteria)" accept
                 echoColor purple "$(i18n firewall_nftables_open ${1} ${2})"
                 nft list ruleset >/etc/nftables.conf
             fi
@@ -181,10 +183,11 @@ delHihyFirewallPort() {
             firewall-cmd --reload 2>/dev/null
             echoColor purple "$(i18n firewall_firewalld_delete ${port}/${protocol})"
         fi
-        if [ -n "${firewall_port_range}" ] && firewall-cmd --list-ports --permanent | hasFirewallToken "${firewall_port_range}/${protocol}"; then
-            firewall-cmd --zone=public --remove-port="${firewall_port_range}/${protocol}" --permanent 2>/dev/null
+        # firewalld 的范围规则用 47000-48000 语法(listen 字段原生格式,勿转冒号)
+        if [ -n "${port_range}" ] && firewall-cmd --list-ports --permanent | hasFirewallToken "${port_range}/${protocol}"; then
+            firewall-cmd --zone=public --remove-port="${port_range}/${protocol}" --permanent 2>/dev/null
             firewall-cmd --reload 2>/dev/null
-            echoColor purple "$(i18n firewall_firewalld_delete ${firewall_port_range}/${protocol})"
+            echoColor purple "$(i18n firewall_firewalld_delete ${port_range}/${protocol})"
         fi
     elif command -v iptables >/dev/null; then
         iptables-save | sed -e "/hihysteria/d" | iptables-restore

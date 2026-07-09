@@ -1,4 +1,21 @@
 #!/bin/bash
+# hysteria release 资产的架构后缀:复用 getArchitecture 单一映射表,
+# 仅补充 hysteria 特有的差异项(mips64 板卡多为小端,官方只发 mipsle)
+getHysteriaCoreArch() {
+    case "$(uname -m)" in
+        mips64) echo "mipsle" ;;
+        *)
+            local mapped
+            mapped=$(getArchitecture)
+            if [ "$mapped" = "unknown" ]; then
+                echo ""
+            else
+                echo "$mapped"
+            fi
+            ;;
+    esac
+}
+
 downloadHysteriaCore() {
     local version
     version=$(getLatestHysteriaVersion)
@@ -7,45 +24,28 @@ downloadHysteriaCore() {
 
     if [ -z "$version" ]; then
         echoColor red "$(i18n network_error_get_latest_version)"
-        exit 1
+        return 1
     fi
 
-    local arch=$(uname -m)
-    local url_base="https://github.com/apernet/hysteria/releases/download/${version}/hysteria-linux-"
-    local download_url=""
+    local arch
+    arch=$(getHysteriaCoreArch)
+    if [ -z "$arch" ]; then
+        echoColor yellowBlack "$(i18n unsupported_arch "$(uname -m)")"
+        return 1
+    fi
+    local download_url="https://github.com/apernet/hysteria/releases/download/${version}/hysteria-linux-${arch}"
 
-    case "$arch" in
-        "x86_64")
-            download_url="${url_base}amd64"
-            ;;
-        "aarch64")
-            download_url="${url_base}arm64"
-            ;;
-        "mips64")
-            download_url="${url_base}mipsle"
-            ;;
-        "s390x")
-            download_url="${url_base}s390x"
-            ;;
-        "i686" | "i386")
-            download_url="${url_base}386"
-            ;;
-        "loongarch64")
-            download_url="${url_base}loong64"
-            ;;
-        *)
-            echoColor yellowBlack "$(i18n unsupported_arch ${arch})"
-            exit 1
-            ;;
-    esac
+    # 下载到临时文件,校验后原子替换,避免失败时破坏现有可用内核
+    mkdir -p /etc/hihy/bin
+    local temp_bin="/etc/hihy/bin/.appS.tmp.$$"
 
     if command -v wget >/dev/null 2>&1; then
-        wget -q -O /etc/hihy/bin/appS --no-check-certificate "$download_url" &
+        wget -q -O "$temp_bin" --no-check-certificate "$download_url" &
     elif command -v curl >/dev/null 2>&1; then
-        curl -fsSL -o /etc/hihy/bin/appS "$download_url" &
+        curl -fsSL -o "$temp_bin" "$download_url" &
     else
         echoColor red "$(i18n network_error_cannot_connect_github)"
-        exit 1
+        return 1
     fi
 
     local dl_pid=$!
@@ -57,58 +57,68 @@ downloadHysteriaCore() {
     done
     wait $dl_pid
     local dl_rc=$?
-    if [ $dl_rc -ne 0 ]; then
-        printf "\r\033[K"
-        echoColor red "$(i18n network_error_cannot_connect_github)"
-        exit 1
-    fi
     printf "\r\033[K"
-
-    if [ -f "/etc/hihy/bin/appS" ]; then
-        chmod 755 /etc/hihy/bin/appS
-        echoColor purple "\n$(i18n download_completed)"
-    else
+    if [ $dl_rc -ne 0 ] || [ ! -s "$temp_bin" ]; then
+        rm -f "$temp_bin"
         echoColor red "$(i18n network_error_cannot_connect_github)"
-        exit 1
+        return 1
     fi
+
+    # ELF 魔数校验:防止把镜像/网关返回的错误页当成二进制装进去
+    if [ "$(head -c 4 "$temp_bin" | od -An -tx1 | tr -d ' \n')" != "7f454c46" ]; then
+        rm -f "$temp_bin"
+        echoColor red "$(i18n core_download_invalid)"
+        return 1
+    fi
+
+    chmod 755 "$temp_bin"
+    mv "$temp_bin" /etc/hihy/bin/appS
+    echoColor purple "\n$(i18n download_completed)"
 }
 
 updateHysteriaCore() {
-    if [ -f "/etc/hihy/bin/appS" ]; then
-        local localV=$(echo app/$(/etc/hihy/bin/appS version | grep Version: | awk '{print $2}' | head -n 1))
-        local remoteV
-        remoteV=$(getLatestHysteriaVersion || true)
-        echo -e "$(i18n local_core_version) $(echoColor red "${localV}")"
-        echo -e "$(i18n remote_core_version) $(echoColor red "${remoteV}")"
-        if [ "${localV}" = "${remoteV}" ]; then
-            echoColor green "$(i18n already_latest_version)"
-        else
-            local was_running="false"
-            if [ -f "/etc/rc.d/hihy" ] || [ -f "/etc/init.d/hihy" ]; then
-                if [ -f "/etc/rc.d/hihy" ]; then
-                    msg=$(/etc/rc.d/hihy status)
-                else
-                    msg=$(/etc/init.d/hihy status)
-                fi
-                if [ "${msg}" == "hihy is running" ]; then
-                    was_running="true"
-                    stop
-                    killHysteriaProcess TERM
-                fi
-            fi
-
-            downloadHysteriaCore
-            # 清除版本检查缓存，确保下次运行重新检查（避免显示过时的"有新版本"通知）
-            rm -f "$HIHY_VERSION_STATUS_FILE"
-
-            if [ "${was_running}" == "true" ]; then
-                start
-            fi
-            echoColor green "$(i18n hysteria_core_update_done)"
-        fi
-    else
+    if [ ! -f "/etc/hihy/bin/appS" ]; then
         echoColor red "$(i18n hysteria_core_not_found)"
-        exit 1
+        return 1
     fi
-}
 
+    local localV
+    localV=$(getLocalHysteriaVersion || true)
+    local remoteV
+    remoteV=$(getLatestHysteriaVersion || true)
+    echo -e "$(i18n local_core_version) $(echoColor red "${localV}")"
+    echo -e "$(i18n remote_core_version) $(echoColor red "${remoteV}")"
+
+    # 拿不到远端版本时不要盲目重装(旧逻辑会当作"有更新"直接下载,网络故障时半途报废)
+    if [ -z "${remoteV}" ]; then
+        echoColor yellow "$(i18n update_skip_no_remote)"
+        return 1
+    fi
+
+    if [ "${localV}" = "${remoteV}" ]; then
+        echoColor green "$(i18n already_latest_version)"
+        return 0
+    fi
+
+    local was_running="false"
+    if [ "$(getServiceRunState)" = "running" ]; then
+        was_running="true"
+        stop
+        killHysteriaProcess TERM
+    fi
+
+    if ! downloadHysteriaCore; then
+        # 下载失败时旧内核仍完好,恢复服务
+        if [ "${was_running}" == "true" ]; then
+            start
+        fi
+        return 1
+    fi
+    # 清除版本检查缓存，确保下次运行重新检查（避免显示过时的"有新版本"通知）
+    rm -f "$HIHY_VERSION_STATUS_FILE"
+
+    if [ "${was_running}" == "true" ]; then
+        start
+    fi
+    echoColor green "$(i18n hysteria_core_update_done)"
+}

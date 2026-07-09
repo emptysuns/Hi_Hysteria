@@ -125,6 +125,10 @@ parseLanguageOption() {
                 HIHY_LANG="${1:-}"
                 shift
                 ;;
+            --auto | -y)
+                HIHY_AUTO="1"
+                shift
+                ;;
             *)
                 shift
                 ;;
@@ -177,11 +181,16 @@ validateLanguage() {
 main() {
     local hysteria_version
     local download_url
+    local launch_arg=""
 
     parseLanguageOption "$@"
 
-    if [ -z "${HIHY_LANG:-}" ]; then
-        # 未指定语言 → 交互式选择
+    # 语言:--auto 静默取默认值(可用 --lang 覆盖);交互模式弹出选择
+    if [ "${HIHY_AUTO:-0}" = "1" ]; then
+        if [ -z "${HIHY_LANG:-}" ] || ! isSupportedLanguage "${HIHY_LANG:-}"; then
+            HIHY_LANG="$HIHY_DEFAULT_LANG"
+        fi
+    elif [ -z "${HIHY_LANG:-}" ]; then
         promptLanguageSelection
     elif ! validateLanguage "$HIHY_LANG"; then
         unset HIHY_LANG
@@ -196,13 +205,20 @@ main() {
         downloadI18nFile "en" "$HIHY_I18N_BASE_URL" >/dev/null 2>&1 || true
     fi
 
-    # hysteria 版本选择（现在可以用所选语言显示了）
-    echo -e "\033[32m$(i18n install_select_hysteria_version)\n\n\033[0m\033[33m\033[01m$(i18n install_hysteria2_option)\n$(i18n install_hysteria1_option)\033[0m\033[32m\n\n$(i18n install_enter_number)\033[0m"
-    read hysteria_version
-    hysteria_version="$(resolveHysteriaVersion "$hysteria_version")" || {
-        echo -e "\033[31m$(i18n error_input_error)\033[0m"
-        exit 1
-    }
+    # hysteria 版本:--auto 固定 Hysteria2 并追加 autoinstall 参数;交互模式询问
+    if [ "${HIHY_AUTO:-0}" = "1" ]; then
+        echo -e "\033[32m$(i18n install_auto_mode)\033[0m"
+        hysteria_version="hysteria2"
+        launch_arg="autoinstall"
+    else
+        echo -e "\033[32m$(i18n install_select_hysteria_version)\n\n\033[0m\033[33m\033[01m$(i18n install_hysteria2_option)\n$(i18n install_hysteria1_option)\033[0m\033[32m\n\n$(i18n install_enter_number)\033[0m"
+        read -r hysteria_version
+        hysteria_version="$(resolveHysteriaVersion "$hysteria_version")" || {
+            echo -e "\033[31m$(i18n error_input_error)\033[0m"
+            exit 1
+        }
+        echo -e "-> $(i18n install_selected_version "$(printf '\033[32m%s\033[0m' "$hysteria_version")")"
+    fi
 
     if [ "$hysteria_version" = "hysteria2" ]; then
         download_url="$HIHY_HYSTERIA2_URL"
@@ -210,14 +226,13 @@ main() {
         download_url="$HIHY_HYSTERIA1_URL"
     fi
 
-    echo -e "-> $(i18n install_selected_version "$(printf '\033[32m%s\033[0m' "$hysteria_version")")"
     echo -e "$(i18n install_downloading_hihy)"
 
     if ! downloadHihyScript "$download_url" "$HIHY_BIN_LINK"; then
         exit 1
     fi
 
-    if ! "$HIHY_BIN_LINK"; then
+    if ! "$HIHY_BIN_LINK" $launch_arg; then
         echo -e "\033[31m$(i18n install_hihy_launch_failed)\033[0m" >&2
         exit 1
     fi

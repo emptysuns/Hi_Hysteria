@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="ver1.12"
+hihyV="ver1.13"
 # =============================================================================
 # GENERATED FILE — DO NOT EDIT.
 # Source lives in server/src/*.sh. Edit there and run: bash scripts/build.sh
@@ -202,7 +202,7 @@ getPortBindMsg() {
     if [ -z "$bindP" ] || [[ ! "$bindP" =~ ^[yY]$ ]]; then
         echoColor red "$(i18n port_bind_exit)"
         if [ "$1" == "TCP" ] && [ "$2" == "80" ]; then
-            echoColor "$(i18n port_bind_alternative_cert_for_80 ${1} ${2})"
+            echoColor red "$(i18n port_bind_alternative_cert_for_80 ${1} ${2})"
         fi
         exit
     fi
@@ -223,29 +223,6 @@ getPortBindMsg() {
     else
         echoColor green "$(i18n port_bind_unbound)"
     fi
-}
-
-countdown() {
-    local seconds=$1
-    echo -ne "\033[32m$(i18n countdown_prefix)\033[0m "
-
-    while [ $seconds -gt 0 ]; do
-        # 打印当前数字
-        echo -ne "\033[31m$seconds\033[0m"
-        sleep 1
-
-        # 计算退格数量
-        local digits=${#seconds}
-        for ((i = 0; i < digits; i++)); do
-            echo -ne "\b \b"
-        done
-
-        ((seconds--))
-    done
-
-    # 清除最后一个数字并显示完成消息
-    echo -ne " " # 清除最后显示的数字
-    echo -e "\n\033[32m$(i18n countdown_done)\033[0m"
 }
 
 generate_qr() {
@@ -269,43 +246,97 @@ generate_qr() {
     fi
 }
 
+# 服务运行状态: running / stopped / none(未安装)
+getServiceRunState() {
+    local svc=""
+    if [ -f "/etc/rc.d/hihy" ]; then
+        svc="/etc/rc.d/hihy"
+    elif [ -f "/etc/init.d/hihy" ]; then
+        svc="/etc/init.d/hihy"
+    else
+        echo "none"
+        return
+    fi
+    if "$svc" status 2>/dev/null | grep -q "is running"; then
+        echo "running"
+    else
+        echo "stopped"
+    fi
+}
+
+# 居中打印头部盒子内容行(仅用于 ASCII 文案,宽度按字符数计算)
+menuBoxLine() {
+    local text="$1"
+    local width=43
+    local pad=$(((width - ${#text}) / 2))
+    [ "$pad" -lt 0 ] && pad=0
+    printf " \033[1;36m│\033[0m%*s%s%*s\033[1;36m│\033[0m\n" "$pad" "" "$text" "$((width - pad - ${#text}))" ""
+}
+
+menuSection() {
+    printf "\n \033[1m%s\033[0m \033[90m────────────────────────\033[0m\n" "$1"
+}
+
+menuItem() {
+    printf "  \033[32m%2s\033[0m\033[90m)\033[0m %s\n" "$1" "$2"
+}
+
 show_menu() {
     clear
-    echo -e " -------------------------------------------"
-    echo -e "|**********      $(i18n menu_title)       **********|"
-    echo -e "|**********    Author: emptysuns   **********|"
-    echo -e "|**********     $(i18n menu_version "$(echoColor red "${hihyV}")")    **********|"
-    echo -e " -------------------------------------------"
-    echo -e "$(i18n menu_hint_hihy_cmd "$(echoColor green "hihy")")"
-    echo -e "$(echoColor skyBlue ".............................................")"
-    echo -e "$(echoColor purple "###############################")"
+    local state coreV=""
+    state=$(getServiceRunState)
+    if [ -x "/etc/hihy/bin/appS" ]; then
+        coreV=$(getLocalHysteriaVersion 2>/dev/null || true)
+        coreV="${coreV#app/}"
+    fi
 
-    echo -e "$(echoColor skyBlue ".....................")"
-    echo -e "$(echoColor yellow "$(i18n menu_option_install)")"
-    echo -e "$(echoColor magenta "$(i18n menu_option_uninstall)")"
-    echo -e "$(echoColor skyBlue ".....................")"
-    echo -e "$(echoColor yellow "$(i18n menu_option_start)")"
-    echo -e "$(echoColor magenta "$(i18n menu_option_stop)")"
-    echo -e "$(echoColor yellow "$(i18n menu_option_restart)")"
-    echo -e "$(echoColor yellow "$(i18n menu_option_status)")"
-    echo -e "$(echoColor skyBlue ".....................")"
-    echo -e "$(echoColor yellow "$(i18n menu_option_update_core)")"
-    echo -e "$(echoColor yellow "$(i18n menu_option_view_config)")"
-    echo -e "$(echoColor red "$(i18n menu_option_reconfigure)")"
-    echo -e "$(echoColor yellow "$(i18n menu_option_switch_ip_priority)")"
-    echo -e "$(echoColor yellow "$(i18n menu_option_update_hihy)")"
-    echo -e "$(echoColor lightMagenta "$(i18n menu_option_acl)")"
-    echo -e "$(echoColor skyBlue "$(i18n menu_option_traffic_stats)")"
-    echo -e "$(echoColor yellow "$(i18n menu_option_logs)")"
-    echo -e "$(echoColor yellow "$(i18n menu_option_socks5)")"
+    echo -e " \033[1;36m╭───────────────────────────────────────────╮\033[0m"
+    menuBoxLine "$(i18n menu_title) ${hihyV}"
+    menuBoxLine "https://github.com/emptysuns/Hi_Hysteria"
+    echo -e " \033[1;36m╰───────────────────────────────────────────╯\033[0m"
 
-    echo -e "$(echoColor purple "###############################")"
-
-    echo -e "$(echoColor magenta "$(i18n menu_option_exit)")"
-    echo -e "$(echoColor skyBlue ".............................................")"
-    echo -e ""
+    # 状态行:服务状态 + 内核版本
+    local status_segment
+    case "$state" in
+        running) status_segment="\033[32m●\033[0m $(i18n menu_status_running)" ;;
+        stopped) status_segment="\033[31m●\033[0m $(i18n menu_status_stopped)" ;;
+        *) status_segment="\033[90m○\033[0m $(i18n menu_status_not_installed)" ;;
+    esac
+    if [ -n "$coreV" ]; then
+        echo -e "  ${status_segment} \033[90m│\033[0m $(i18n menu_status_core) ${coreV}"
+    else
+        echo -e "  ${status_segment}"
+    fi
     hihy_update_notifycation
-    echo -e "\n"
+
+    menuSection "$(i18n menu_section_deploy)"
+    menuItem 1 "$(i18n menu_item_install)"
+    menuItem 16 "$(i18n menu_item_autoinstall)"
+    menuItem 2 "$(i18n menu_item_uninstall)"
+
+    menuSection "$(i18n menu_section_service)"
+    menuItem 3 "$(i18n menu_item_start)"
+    menuItem 4 "$(i18n menu_item_stop)"
+    menuItem 5 "$(i18n menu_item_restart)"
+    menuItem 6 "$(i18n menu_item_status)"
+
+    menuSection "$(i18n menu_section_config)"
+    menuItem 8 "$(i18n menu_item_view_config)"
+    menuItem 9 "$(i18n menu_item_reconfigure)"
+    menuItem 10 "$(i18n menu_item_switch_ip)"
+    menuItem 12 "$(i18n menu_item_acl)"
+    menuItem 15 "$(i18n menu_item_socks5)"
+
+    menuSection "$(i18n menu_section_maintain)"
+    menuItem 7 "$(i18n menu_item_update_core)"
+    menuItem 11 "$(i18n menu_item_update_hihy)"
+    menuItem 13 "$(i18n menu_item_traffic)"
+    menuItem 14 "$(i18n menu_item_logs)"
+
+    echo -e "\n \033[90m─────────────────────────────────────────\033[0m"
+    menuItem 0 "$(i18n menu_item_exit)"
+    echo -e " \033[90m$(i18n menu_hint_hihy_cmd "hihy")\033[0m"
+    echo ""
     startBackgroundVersionCheck
 }
 
@@ -317,18 +348,56 @@ wait_for_continue() {
 
 # ----- 20-net-yaml.sh -----
 
+# 从远端(主源+镜像)拉取 hihy 脚本到目标路径:临时文件 -> 内容校验(hihyV= 标记) -> 原子 mv。
+# 目标可能正是正在执行的脚本,rename 只换 inode,运行中的进程不受影响。
+installHihyScriptFromRemote() {
+    local dest="$1"
+    local dest_dir temp_path
+
+    dest_dir="$(dirname "$dest")"
+    mkdir -p "$dest_dir" || return 1
+    temp_path="$(mktemp "$dest_dir/.hihy.tmp.XXXXXX")" || return 1
+
+    if ! downloadToFile "$HIHY_REMOTE_SCRIPT_URL" "$temp_path" \
+        && ! downloadToFile "$HIHY_REMOTE_SCRIPT_MIRROR_URL" "$temp_path"; then
+        rm -f "$temp_path"
+        return 1
+    fi
+    # 内容合法性校验:必须是带版本标记的 hihy 脚本,而非镜像返回的错误页
+    if ! grep -q '^hihyV=' "$temp_path"; then
+        rm -f "$temp_path"
+        return 1
+    fi
+    chmod +x "$temp_path"
+    mv "$temp_path" "$dest" || {
+        rm -f "$temp_path"
+        return 1
+    }
+}
+
 installHihyLauncher() {
     local source_path="${1:-${BASH_SOURCE[0]}}"
     local bin_link="${2:-$HIHY_BIN_LINK}"
     local bin_dir
+    local temp_path
 
     bin_dir="$(dirname "$bin_link")"
     mkdir -p "$bin_dir"
 
     if [ -f "$source_path" ] && [ "$source_path" != "$bin_link" ]; then
-        cp "$source_path" "$bin_link"
+        # 本地已有脚本文件:同目录临时文件 + mv(rename)落盘,避免原地截断
+        temp_path="$(mktemp "$bin_dir/.hihy.tmp.XXXXXX")" || return 1
+        if ! cp "$source_path" "$temp_path"; then
+            rm -f "$temp_path"
+            return 1
+        fi
+        chmod +x "$temp_path"
+        mv "$temp_path" "$bin_link" || {
+            rm -f "$temp_path"
+            return 1
+        }
     elif [ ! -f "$bin_link" ]; then
-        wget -q -O "$bin_link" --no-check-certificate "$HIHY_REMOTE_SCRIPT_URL" 2>/dev/null
+        installHihyScriptFromRemote "$bin_link" || return 1
     fi
 
     if [ -f "$bin_link" ]; then
@@ -389,6 +458,25 @@ generate_uuid() {
         uuid=$(cat /dev/urandom | tr -dc 'a-f0-9' | head -c 32 | sed 's/\(.\{8\}\)/\1-/g;s/-$//')
     fi
     echo "$uuid"
+}
+
+# 多源探测公网 IP;$1 为 curl 地址族参数(-4/-6/空)
+getPublicIP() {
+    local family="${1:-}"
+    local source detected
+    for source in "https://ip.sb" "https://api64.ipify.org" "https://ifconfig.me"; do
+        detected=$(curl ${family} -s -m 4 "$source" 2>/dev/null | tr -d '[:space:]')
+        if [ -n "$detected" ]; then
+            printf '%s\n' "$detected"
+            return 0
+        fi
+    done
+    return 1
+}
+
+# 常用探测策略:先 IPv4,失败再不限地址族(唯一实现点,勿在调用处复制回退梯子)
+detectPublicIP() {
+    getPublicIP -4 || getPublicIP ""
 }
 
 getListenPrimaryPort() {
@@ -454,9 +542,9 @@ getYamlValue() {
     local file=$1    # YAML文件路径
     local keyPath=$2 # 键路径，用点号分隔
 
-    # 检查文件是否存在
+    # 检查文件是否存在(错误走 stderr,避免污染调用方捕获的 stdout)
     if [[ ! -f "$file" ]]; then
-        echo "错误: 文件不存在"
+        echo "getYamlValue: file not found: $file" >&2
         return 1
     fi
 
@@ -465,7 +553,7 @@ getYamlValue() {
 
     # 检查 yq 命令是否成功执行
     if [[ $? -ne 0 ]]; then
-        echo "错误: 读取 YAML 文件失败"
+        echo "getYamlValue: failed to read $keyPath from $file" >&2
         return 1
     fi
 
@@ -1049,13 +1137,96 @@ startInstallValidationProcess() {
     /etc/hihy/bin/appS -c "$yaml_file" server >"$debug_file" 2>&1 &
 }
 
-setHysteriaConfig() {
-    mkdir -p /etc/hihy/bin /etc/hihy/conf /etc/hihy/cert /etc/hihy/result /etc/hihy/acl/
-    acl_file="/etc/hihy/acl/acl.txt"
-    if [ -f "${acl_file}" ]; then
-        rm -f "${acl_file}"
-    fi
-    touch $acl_file
+# ---------- 输入校验辅助 ----------
+isPositiveInt() {
+    case "${1:-}" in
+        '' | *[!0-9]*) return 1 ;;
+        *) return 0 ;;
+    esac
+}
+
+isValidPort() {
+    isPositiveInt "$1" && [ "$1" -ge 1 ] && [ "$1" -le 65535 ]
+}
+
+getUdpPortPid() {
+    lsof -i "udp:${1}" 2>/dev/null | grep -v "PID" | awk '{print $2}' | head -n 1
+}
+
+isUdpPortFree() {
+    [ -z "$(getUdpPortPid "$1")" ]
+}
+
+getRandomFreeUdpPort() {
+    local candidate tries=0
+    while [ "$tries" -lt 20 ]; do
+        candidate=$(($(od -An -N2 -i /dev/urandom) % (65534 - 10001) + 10001))
+        if isUdpPortFree "$candidate"; then
+            echo "$candidate"
+            return 0
+        fi
+        tries=$((tries + 1))
+    done
+    return 1
+}
+
+# ---------- 配置默认值:向导/一键共用的唯一基线,保证 write 阶段引用的变量全部有值 ----------
+setConfigDefaults() {
+    realmMode="false"
+    realmName=""
+    realmURI=""
+    useAcme=false
+    useLocalCert=false
+    useDns=false
+    dns=""
+    domain="www.bing.com"
+    ip=""
+    local_cert=""
+    local_key=""
+    cloudflare_api_token=""
+    duckdns_api_token=""
+    duckdns_override_domain=""
+    gandi_api_token=""
+    godaddy_api_token=""
+    namedotcom_api_token=""
+    namedotcom_user=""
+    namedotcom_server=""
+    vultr_api_token=""
+    port=""
+    portHoppingStatus="false"
+    portHoppingStart=""
+    portHoppingEnd=""
+    portHoppingIntervalMode=""
+    portHoppingHopInterval=""
+    portHoppingMinHopInterval=""
+    portHoppingMaxHopInterval=""
+    congestion_mode="bbr"
+    congestion_type="bbr"
+    congestion_bbr_profile="standard"
+    ignore_client_bandwidth="true"
+    delay=""
+    download=""
+    upload=""
+    auth_secret=""
+    obfs_status="false"
+    obfs_type=""
+    obfs_pass=""
+    masquerade_status="false"
+    masquerade_type=""
+    masquerade_string=""
+    masquerade_stuff=""
+    masquerade_proxy=""
+    masquerade_xforwarded="false"
+    masquerade_file=""
+    masquerade_tcp="false"
+    block_http3="false"
+    remarks=""
+    pinSHA256=""
+    insecure="0"
+}
+
+# ---------- 交互式配置收集(原 setHysteriaConfig 前半段,只读输入、只设变量) ----------
+collectHysteriaConfig() {
     echoColor yellowBlack "$(i18n config_start_title)"
     echoColor green "$(i18n realm_prompt_title)"
     echo -e "$(i18n realm_intro_line1)"
@@ -1072,7 +1243,7 @@ setHysteriaConfig() {
     else
         realmMode="true"
         realmName=$(generate_uuid)
-        echo -e "\n->$(i18n realm_name_label)"$(echoColor red ${realmName})"\n"
+        echo -e "\n->$(i18n realm_name_label)$(echoColor red "${realmName}")\n"
         echoColor green "$(i18n realm_server_prompt)"
         echo -e "$(i18n realm_server_official_hint)"
         echoColor yellow "$(i18n realm_server_choice_official)"
@@ -1099,7 +1270,7 @@ setHysteriaConfig() {
             fi
         fi
         realmURI="realm://${realmPassword}@${realmAddress}/${realmName}"
-        echo -e "\n->$(i18n realm_uri_label)"$(echoColor red ${realmURI})"\n"
+        echo -e "\n->$(i18n realm_uri_label)$(echoColor red "${realmURI}")\n"
         if command -v warp >/dev/null 2>&1 && [ -f "/etc/wireguard/warp.conf" ]; then
             echoColor purple "$(i18n warp_installed_hint)"
         fi
@@ -1130,7 +1301,6 @@ setHysteriaConfig() {
                 sleep 3
                 echoColor purple "$(i18n warp_reenabling)"
                 warp o
-                warpEnabled="true"
                 echoColor purple "$(i18n warp_install_done)"
             else
                 echoColor red "$(i18n warp_install_fail)"
@@ -1139,7 +1309,6 @@ setHysteriaConfig() {
                 exit 1
             fi
         else
-            warpEnabled="false"
             echoColor purple "$(i18n warp_skip)"
         fi
     fi
@@ -1152,11 +1321,6 @@ setHysteriaConfig() {
     read -r certNum
     useAcme=false
     useLocalCert=false
-    yaml_file="/etc/hihy/conf/config.yaml"
-    if [ -f "${yaml_file}" ]; then
-        rm -f ${yaml_file}
-    fi
-    touch $yaml_file
 
     if [ -z "${certNum}" ] || [ "${certNum}" == "3" ]; then
         echoColor green "$(i18n selfsigned_domain_prompt)"
@@ -1164,16 +1328,13 @@ setHysteriaConfig() {
         if [ -z "${domain}" ]; then
             domain="helloworld.com"
         fi
-        echo -e "->$(i18n selfsigned_domain_label)"$(echoColor red ${domain})"\n"
+        echo -e "->$(i18n selfsigned_domain_label)$(echoColor red "${domain}")\n"
         if [ "${realmMode}" == "true" ]; then
             ip=""
-            echo -e "\n->$(i18n realm_uri_label_with_cert)"$(echoColor red ${realmURI})"\n"
+            echo -e "\n->$(i18n realm_uri_label_with_cert)$(echoColor red "${realmURI}")\n"
         else
-            ip=$(curl -4 -s -m 8 ip.sb)
-            if [ -z "${ip}" ]; then
-                ip=$(curl -s -m 8 ip.sb)
-            fi
-            echoColor green "$(i18n public_ip_check)"$(echoColor red ${ip})"\n"
+            ip=$(detectPublicIP || true)
+            echoColor green "$(i18n public_ip_check)$(echoColor red "${ip}")\n"
             while true; do
                 echoColor green "$(i18n prompt_choose)"
                 echoColor yellow "$(i18n ip_correct_default)"
@@ -1195,13 +1356,11 @@ setHysteriaConfig() {
                 fi
             done
         fi
-        cert="/etc/hihy/cert/${domain}.crt"
-        key="/etc/hihy/cert/${domain}.key"
         useAcme=false
         if [ "${realmMode}" == "true" ]; then
-            echoColor purple "\n\n->$(i18n selfsigned_cert_summary_realm ${domain})"$(echoColor red ${realmURI})"\n"
+            echoColor purple "\n\n->$(i18n selfsigned_cert_summary_realm ${domain})$(echoColor red "${realmURI}")\n"
         else
-            echoColor purple "\n\n->$(i18n selfsigned_cert_summary_ip ${domain})"$(echoColor red ${ip})"\n"
+            echoColor purple "\n\n->$(i18n selfsigned_cert_summary_ip ${domain})$(echoColor red "${ip}")\n"
         fi
         echo -e "\n"
 
@@ -1217,7 +1376,7 @@ setHysteriaConfig() {
                 break
             fi
         done
-        echo -e "\n\n->$(i18n local_cert_label)"$(echoColor red ${local_cert})"\n"
+        echo -e "\n\n->$(i18n local_cert_label)$(echoColor red "${local_cert}")\n"
         echoColor green "$(i18n local_key_path_prompt)"
         read -r local_key
         while :; do
@@ -1229,7 +1388,7 @@ setHysteriaConfig() {
                 break
             fi
         done
-        echo -e "\n\n->$(i18n local_key_label)"$(echoColor red ${local_key})"\n"
+        echo -e "\n\n->$(i18n local_key_label)$(echoColor red "${local_key}")\n"
         echoColor green "$(i18n local_cert_domain_prompt)"
         read -r domain
         while :; do
@@ -1243,7 +1402,7 @@ setHysteriaConfig() {
         done
         useAcme=false
         useLocalCert=true
-        echoColor purple "\n\n->$(i18n local_cert_summary)"$(echoColor red ${domain})"\n"
+        echoColor purple "\n\n->$(i18n local_cert_summary)$(echoColor red "${domain}")\n"
     elif [ "${certNum}" == "4" ]; then
         echoColor green "$(i18n domain_prompt) $(i18n domain_requirement)"
         read -r domain
@@ -1256,7 +1415,7 @@ setHysteriaConfig() {
                 break
             fi
         done
-        echo -e "\n\n->$(i18n domain_label)"$(echoColor red ${domain})"\n"
+        echo -e "\n\n->$(i18n domain_label)$(echoColor red "${domain}")\n"
         echoColor green "$(i18n dns_provider_prompt)"
         echoColor yellow "$(i18n dns_choice_cloudflare)"
         echoColor yellow "$(i18n dns_choice_duckdns)"
@@ -1377,11 +1536,8 @@ setHysteriaConfig() {
         else
             echoColor red "$(i18n input_error_please_retry)"
         fi
-        ip=$(curl -4 -s -m 8 ip.sb)
-        if [ -z "${ip}" ]; then
-            ip=$(curl -s -m 8 ip.sb)
-        fi
-        echoColor green "$(i18n public_ip_check)"$(echoColor red ${ip})"\n"
+        ip=$(detectPublicIP || true)
+        echoColor green "$(i18n public_ip_check)$(echoColor red "${ip}")\n"
         while true; do
             echoColor green "$(i18n prompt_choose)"
             echoColor yellow "$(i18n ip_correct_default)"
@@ -1402,9 +1558,9 @@ setHysteriaConfig() {
                 echoColor red "$(i18n input_error_please_retry)"
             fi
         done
-        echo -e "\n\n->$(i18n dns_acme_summary)"$(echoColor red ${domain})"\n"
-        echo -e "\n ->$(i18n dns_method_label)"$(echoColor red ${dns})"\n"
-        echo -e "\n ->$(i18n public_ip_label)"$(echoColor red ${ip})"\n"
+        echo -e "\n\n->$(i18n dns_acme_summary)$(echoColor red "${domain}")\n"
+        echo -e "\n ->$(i18n dns_method_label)$(echoColor red "${dns}")\n"
+        echo -e "\n ->$(i18n public_ip_label)$(echoColor red "${ip}")\n"
         useAcme=true
         useDns=true
     else
@@ -1435,19 +1591,19 @@ setHysteriaConfig() {
             v6str=":"
             result=$(echo ${remoteip} | grep ${v6str})
             if [ "${result}" != "" ]; then
-                localip=$(curl -6 -s -m 8 ip.sb)
+                localip=$(getPublicIP -6 || true)
             else
-                localip=$(curl -4 -s -m 8 ip.sb)
+                localip=$(getPublicIP -4 || true)
             fi
             if [ -z "${localip}" ]; then
-                localip=$(curl -s -m 8 ip.sb)
+                localip=$(getPublicIP "" || true)
                 if [ -z "${localip}" ]; then
                     echoColor red "\n\n->$(i18n local_ip_fetch_failed)"
                     exit 1
                 fi
             fi
             if [ "${localip}" != "${remoteip}" ]; then
-                echo -e " \n\n->$(i18n local_ip_label)"$(echoColor red ${localip})" \n\n->$(i18n domain_ip_label)"$(echoColor red ${remoteip})"\n"
+                echo -e " \n\n->$(i18n local_ip_label)$(echoColor red "${localip}") \n\n->$(i18n domain_ip_label)$(echoColor red "${remoteip}")\n"
                 echoColor green "$(i18n self_assign_ip_prompt)"
                 read -r isLocalip
                 if [ "${isLocalip}" == "y" ]; then
@@ -1477,7 +1633,7 @@ setHysteriaConfig() {
         done
         useAcme=true
         useDns=false
-        echoColor purple "\n\n->$(i18n acme_summary)"$(echoColor red ${domain})"\n"
+        echoColor purple "\n\n->$(i18n acme_summary)$(echoColor red "${domain}")\n"
     fi
 
     if [ "${realmMode}" == "true" ]; then
@@ -1489,16 +1645,20 @@ setHysteriaConfig() {
             echo "$(i18n port_hint)"
             read -r port
             if [ -z "${port}" ]; then
-                port=$(($(od -An -N2 -i /dev/urandom) % (65534 - 10001) + 10001))
-                echo -e "\n->$(i18n random_port_label)"$(echoColor red udp/${port})"\n"
-            else
-                echo -e "\n->$(i18n entered_port_label)"$(echoColor red udp/${port})"\n"
+                port=$(getRandomFreeUdpPort)
+                if [ -z "${port}" ]; then
+                    echoColor red "$(i18n auto_port_busy)"
+                    continue
+                fi
+                echo -e "\n->$(i18n random_port_label)$(echoColor red "udp/${port}")\n"
+                break
             fi
-            if [ "${port}" -gt 65535 ]; then
-                echoColor red "$(i18n port_range_error)"
+            if ! isValidPort "${port}"; then
+                echoColor red "$(i18n port_invalid_error)"
                 continue
             fi
-            pIDa=$(lsof -i udp:${port} | grep -v "PID" | awk '{print $2}')
+            echo -e "\n->$(i18n entered_port_label)$(echoColor red "udp/${port}")\n"
+            pIDa=$(getUdpPortPid "${port}")
             if [ "$pIDa" != "" ]; then
                 echoColor red "\n->$(i18n port_in_use ${port} ${pIDa} ${pIDa})"
             else
@@ -1526,21 +1686,21 @@ setHysteriaConfig() {
                 if [ -z "${portHoppingStart}" ]; then
                     portHoppingStart=47000
                 fi
-                if [ ${portHoppingStart} -gt 65535 ]; then
-                    echoColor red "$(i18n port_range_error)"
+                if ! isValidPort "${portHoppingStart}"; then
+                    echoColor red "$(i18n port_invalid_error)"
                     continue
                 fi
-                echo -e "\n->$(i18n start_port_label)"$(echoColor red ${portHoppingStart})"\n"
+                echo -e "\n->$(i18n start_port_label)$(echoColor red "${portHoppingStart}")\n"
                 echoColor green "$(i18n port_hopping_end)"
                 read -r portHoppingEnd
                 if [ -z "${portHoppingEnd}" ]; then
                     portHoppingEnd=48000
                 fi
-                if [ ${portHoppingEnd} -gt 65535 ]; then
-                    echoColor red "$(i18n port_range_error)"
+                if ! isValidPort "${portHoppingEnd}"; then
+                    echoColor red "$(i18n port_invalid_error)"
                     continue
                 fi
-                echo -e "\n->$(i18n end_port_label)"$(echoColor red ${portHoppingEnd})"\n"
+                echo -e "\n->$(i18n end_port_label)$(echoColor red "${portHoppingEnd}")\n"
                 if [ ${portHoppingStart} -ge ${portHoppingEnd} ]; then
                     echoColor red "$(i18n start_port_greater_error)"
                 else
@@ -1560,12 +1720,13 @@ setHysteriaConfig() {
                     if [ -z "${portHoppingHopInterval}" ]; then
                         portHoppingHopInterval="30s"
                     fi
-                    echo -e "\n->$(i18n fixed_hop_interval_label)"$(echoColor red ${portHoppingHopInterval})"\n"
+                    echo -e "\n->$(i18n fixed_hop_interval_label)$(echoColor red "${portHoppingHopInterval}")\n"
                     hopSeconds=$(echo "${portHoppingHopInterval}" | sed 's/s$//')
-                    if ! echo "${hopSeconds}" | grep -Eq '^[0-9]+$' || [ "${hopSeconds}" -lt 5 ]; then
+                    if ! isPositiveInt "${hopSeconds}" || [ "${hopSeconds}" -lt 5 ]; then
                         echoColor red "$(i18n fixed_hop_interval_error)"
                         continue
                     fi
+                    portHoppingHopInterval="${hopSeconds}s"
                     break
                 done
                 portHoppingMinHopInterval=""
@@ -1579,32 +1740,33 @@ setHysteriaConfig() {
                     if [ -z "${portHoppingMinHopInterval}" ]; then
                         portHoppingMinHopInterval="10s"
                     fi
-                    echo -e "\n->$(i18n min_hop_interval_label)"$(echoColor red ${portHoppingMinHopInterval})"\n"
+                    echo -e "\n->$(i18n min_hop_interval_label)$(echoColor red "${portHoppingMinHopInterval}")\n"
                     minHopSeconds=$(echo "${portHoppingMinHopInterval}" | sed 's/s$//')
-                    if ! echo "${minHopSeconds}" | grep -Eq '^[0-9]+$' || [ "${minHopSeconds}" -lt 5 ]; then
+                    if ! isPositiveInt "${minHopSeconds}" || [ "${minHopSeconds}" -lt 5 ]; then
                         echoColor red "$(i18n min_hop_interval_error)"
                         continue
                     fi
+                    portHoppingMinHopInterval="${minHopSeconds}s"
                     echoColor green "$(i18n max_hop_interval_prompt)"
                     read -r portHoppingMaxHopInterval
                     if [ -z "${portHoppingMaxHopInterval}" ]; then
                         portHoppingMaxHopInterval="30s"
                     fi
-                    echo -e "\n->$(i18n max_hop_interval_label)"$(echoColor red ${portHoppingMaxHopInterval})"\n"
+                    echo -e "\n->$(i18n max_hop_interval_label)$(echoColor red "${portHoppingMaxHopInterval}")\n"
                     maxHopSeconds=$(echo "${portHoppingMaxHopInterval}" | sed 's/s$//')
-                    if ! echo "${maxHopSeconds}" | grep -Eq '^[0-9]+$' || [ "${maxHopSeconds}" -lt "${minHopSeconds}" ]; then
+                    if ! isPositiveInt "${maxHopSeconds}" || [ "${maxHopSeconds}" -lt "${minHopSeconds}" ]; then
                         echoColor red "$(i18n max_hop_interval_error)"
                         continue
                     fi
+                    portHoppingMaxHopInterval="${maxHopSeconds}s"
                     break
                 done
             fi
-            clientPort="${portHoppingStart}-${portHoppingEnd}"
-            echo -e "\n->$(i18n port_hopping_range_label)"$(echoColor red ${portHoppingStart}-${portHoppingEnd})"\n"
+            echo -e "\n->$(i18n port_hopping_range_label)$(echoColor red "${portHoppingStart}-${portHoppingEnd}")\n"
             if [ "${portHoppingIntervalMode}" == "fixed" ]; then
-                echo -e "\n->$(i18n fixed_hop_interval_summary)"$(echoColor red ${portHoppingHopInterval})"\n"
+                echo -e "\n->$(i18n fixed_hop_interval_summary)$(echoColor red "${portHoppingHopInterval}")\n"
             else
-                echo -e "\n->$(i18n random_hop_interval_summary)"$(echoColor red ${portHoppingMinHopInterval}~${portHoppingMaxHopInterval})"\n"
+                echo -e "\n->$(i18n random_hop_interval_summary)$(echoColor red "${portHoppingMinHopInterval}~${portHoppingMaxHopInterval}")\n"
             fi
         else
             portHoppingStatus="false"
@@ -1654,7 +1816,7 @@ setHysteriaConfig() {
             3) congestion_bbr_profile="aggressive" ;;
             *) congestion_bbr_profile="standard" ;;
         esac
-        echo -e "\n->$(i18n congestion_selected_bbr)"$(echoColor red ${congestion_bbr_profile})"\n"
+        echo -e "\n->$(i18n congestion_selected_bbr)$(echoColor red "${congestion_bbr_profile}")\n"
     else
         congestion_mode="brutal"
         congestion_type=""
@@ -1664,25 +1826,46 @@ setHysteriaConfig() {
     fi
 
     if [ "${congestion_mode}" == "brutal" ]; then
-        echoColor green "$(i18n delay_prompt)"
-        read -r delay
-        if [ -z "${delay}" ]; then
-            delay=200
-        fi
-        echo -e "\n->$(i18n delay_label)"$(echoColor red ${delay})"ms\n"
-        echo -e "\n$(i18n bandwidth_expectation)"$(echoColor red "Tips:")
-        echoColor green "$(i18n download_prompt)"
-        read -r download
-        if [ -z "${download}" ]; then
-            download=50
-        fi
-        echo -e "\n->$(i18n download_label)"$(echoColor red ${download})"mbps\n"
-        echoColor green "$(i18n upload_prompt)"
-        read -r upload
-        if [ -z "${upload}" ]; then
-            upload=10
-        fi
-        echo -e "\n->$(i18n upload_label)"$(echoColor red ${upload})"mbps\n"
+        while :; do
+            echoColor green "$(i18n delay_prompt)"
+            read -r delay
+            if [ -z "${delay}" ]; then
+                delay=200
+            fi
+            if ! isPositiveInt "${delay}" || [ "${delay}" -eq 0 ]; then
+                echoColor red "$(i18n bandwidth_invalid_error)"
+                continue
+            fi
+            break
+        done
+        echo -e "\n->$(i18n delay_label)$(echoColor red "${delay}")ms\n"
+        echo -e "\n$(i18n bandwidth_expectation)$(echoColor red "Tips:")"
+        while :; do
+            echoColor green "$(i18n download_prompt)"
+            read -r download
+            if [ -z "${download}" ]; then
+                download=50
+            fi
+            if ! isPositiveInt "${download}" || [ "${download}" -eq 0 ]; then
+                echoColor red "$(i18n bandwidth_invalid_error)"
+                continue
+            fi
+            break
+        done
+        echo -e "\n->$(i18n download_label)$(echoColor red "${download}")mbps\n"
+        while :; do
+            echoColor green "$(i18n upload_prompt)"
+            read -r upload
+            if [ -z "${upload}" ]; then
+                upload=10
+            fi
+            if ! isPositiveInt "${upload}" || [ "${upload}" -eq 0 ]; then
+                echoColor red "$(i18n bandwidth_invalid_error)"
+                continue
+            fi
+            break
+        done
+        echo -e "\n->$(i18n upload_label)$(echoColor red "${upload}")mbps\n"
     else
         delay=""
         download=""
@@ -1694,7 +1877,7 @@ setHysteriaConfig() {
     if [ -z "${auth_secret}" ]; then
         auth_secret=$(generate_uuid)
     fi
-    echo -e "\n->$(i18n auth_secret_label)"$(echoColor red ${auth_secret})"\n"
+    echo -e "\n->$(i18n auth_secret_label)$(echoColor red "${auth_secret}")\n"
     echoColor white "$(i18n obfs_hint)"
     echoColor green "$(i18n obfs_prompt)"
     echoColor yellow "$(i18n obfs_choice_disable)"
@@ -1702,10 +1885,10 @@ setHysteriaConfig() {
     echoColor yellow "$(i18n obfs_choice_gecko)"
     echoColor green "$(i18n prompt_enter_number)"
     read -r obfs_num
-    if [ -z "${obfs_num}" ] || [ ${obfs_num} == "1" ]; then
+    if [ -z "${obfs_num}" ] || [ "${obfs_num}" == "1" ]; then
         obfs_status="false"
         obfs_type=""
-    elif [ ${obfs_num} == "2" ]; then
+    elif [ "${obfs_num}" == "2" ]; then
         obfs_status="true"
         obfs_type="salamander"
         obfs_pass=${auth_secret}
@@ -1721,63 +1904,72 @@ setHysteriaConfig() {
     fi
     if [ "${realmMode}" != "true" ]; then
         echoColor green "$(i18n masquerade_prompt)"
+        echoColor yellow "$(i18n masquerade_choice_disable)"
         echoColor yellow "$(i18n masquerade_choice_string)"
         echoColor yellow "$(i18n masquerade_choice_proxy)"
         echoColor yellow "$(i18n masquerade_choice_file)"
-        echoColor green "$(i18n prompt_enter_number)"
-        read -r masquerade_type
-        if [ -z "${masquerade_type}" ] || [ ${masquerade_type} == "1" ]; then
-            masquerade_type="string"
-            echoColor green "$(i18n masquerade_string_prompt)"
-            read -r masquerade_string
-            if [ -z "${masquerade_string}" ]; then
-                masquerade_string="HelloWorld"
-            fi
-            echo -e "\n->$(i18n masquerade_string_label)"$(echoColor red ${masquerade_string})"\n"
-            echoColor green "$(i18n masquerade_stuff_prompt)"
-            read -r masquerade_stuff
-            if [ -z "${masquerade_stuff}" ]; then
-                masquerade_stuff="HelloWorld"
-            fi
-            echo -e "\n->$(i18n masquerade_stuff_label)"$(echoColor red ${masquerade_stuff})"\n"
-        elif [ ${masquerade_type} == "2" ]; then
-            masquerade_type="proxy"
-            echoColor green "$(i18n masquerade_proxy_prompt)"
-            echoColor white "$(i18n masquerade_proxy_hint)"
-            read -r masquerade_proxy
-            if [ -z "${masquerade_proxy}" ]; then
-                masquerade_proxy="https://www.helloworld.org"
-            fi
-            echo -e "\n->$(i18n masquerade_proxy_label)"$(echoColor red ${masquerade_proxy})"\n"
-            echoColor green "$(i18n xforwarded_prompt)"
-            echoColor yellow "$(i18n xforwarded_choice_enable)"
-            echoColor yellow "$(i18n xforwarded_choice_disable)"
-            echoColor green "$(i18n prompt_enter_number)"
-            read -r masquerade_xforwarded
-            if [ -z "${masquerade_xforwarded}" ] || [ "${masquerade_xforwarded}" == "1" ]; then
-                masquerade_xforwarded="true"
-            else
-                masquerade_xforwarded="false"
-            fi
-            echo -e "\n->$(i18n xforwarded_label)"$(echoColor red ${masquerade_xforwarded})"\n"
-        else
-            masquerade_type="file"
-            masquerade_xforwarded="false"
-            echoColor green "$(i18n masquerade_file_prompt)"
-            echoColor white "$(i18n masquerade_file_hint)"
-            read -r masquerade_file
-            if [ -z "${masquerade_file}" ]; then
-                masquerade_file="/etc/hihy/file"
-            fi
-            echo -e "\n->$(i18n masquerade_file_label)"$(echoColor red ${masquerade_file})"\n"
-        fi
+        echoColor green "$(i18n prompt_enter_number_or_default)"
+        read -r masquerade_choice
+        case "${masquerade_choice}" in
+            2)
+                masquerade_status="true"
+                masquerade_type="string"
+                echoColor green "$(i18n masquerade_string_prompt)"
+                read -r masquerade_string
+                if [ -z "${masquerade_string}" ]; then
+                    masquerade_string="HelloWorld"
+                fi
+                echo -e "\n->$(i18n masquerade_string_label)$(echoColor red "${masquerade_string}")\n"
+                echoColor green "$(i18n masquerade_stuff_prompt)"
+                read -r masquerade_stuff
+                if [ -z "${masquerade_stuff}" ]; then
+                    masquerade_stuff="HelloWorld"
+                fi
+                echo -e "\n->$(i18n masquerade_stuff_label)$(echoColor red "${masquerade_stuff}")\n"
+                ;;
+            3)
+                masquerade_status="true"
+                masquerade_type="proxy"
+                echoColor green "$(i18n masquerade_proxy_prompt)"
+                echoColor white "$(i18n masquerade_proxy_hint)"
+                read -r masquerade_proxy
+                if [ -z "${masquerade_proxy}" ]; then
+                    masquerade_proxy="https://www.helloworld.org"
+                fi
+                echo -e "\n->$(i18n masquerade_proxy_label)$(echoColor red "${masquerade_proxy}")\n"
+                echoColor green "$(i18n xforwarded_prompt)"
+                echoColor yellow "$(i18n xforwarded_choice_enable)"
+                echoColor yellow "$(i18n xforwarded_choice_disable)"
+                echoColor green "$(i18n prompt_enter_number)"
+                read -r masquerade_xforwarded
+                if [ -z "${masquerade_xforwarded}" ] || [ "${masquerade_xforwarded}" == "1" ]; then
+                    masquerade_xforwarded="true"
+                else
+                    masquerade_xforwarded="false"
+                fi
+                echo -e "\n->$(i18n xforwarded_label)$(echoColor red "${masquerade_xforwarded}")\n"
+                ;;
+            4)
+                masquerade_status="true"
+                masquerade_type="file"
+                echoColor green "$(i18n masquerade_file_prompt)"
+                echoColor white "$(i18n masquerade_file_hint)"
+                read -r masquerade_file
+                if [ -z "${masquerade_file}" ]; then
+                    masquerade_file="/etc/hihy/file"
+                fi
+                echo -e "\n->$(i18n masquerade_file_label)$(echoColor red "${masquerade_file}")\n"
+                ;;
+            *)
+                masquerade_status="false"
+                masquerade_type=""
+                echo -e "\n->$(i18n masquerade_disabled_selected)\n"
+                ;;
+        esac
         if [ "${masquerade_type}" != "proxy" ]; then
             masquerade_xforwarded="false"
         fi
-        if [ "${realmMode}" == "true" ]; then
-            masquerade_tcp="false"
-            echoColor purple "$(i18n realm_skip_masquerade_tcp)"
-        else
+        if [ "${masquerade_status}" == "true" ]; then
             echoColor green "$(i18n masquerade_tcp_prompt ${port})"
             echoColor lightYellow "$(i18n masquerade_tcp_hint1)"
             echoColor white "$(i18n masquerade_tcp_hint2)"
@@ -1786,13 +1978,15 @@ setHysteriaConfig() {
             echoColor yellow "$(i18n masquerade_tcp_choice_skip)"
             echoColor green "$(i18n prompt_enter_number)"
             read -r masquerade_tcp
-            if [ -z "${masquerade_tcp}" ] || [ ${masquerade_tcp} == "1" ]; then
+            if [ -z "${masquerade_tcp}" ] || [ "${masquerade_tcp}" == "1" ]; then
                 masquerade_tcp="true"
                 echo -e "\n->$(i18n masquerade_tcp_enabled ${port})\n"
             else
                 masquerade_tcp="false"
                 echo -e "\n->$(i18n masquerade_tcp_disabled ${port})\n"
             fi
+        else
+            masquerade_tcp="false"
         fi
     fi
     echoColor green "$(i18n block_http3_prompt)"
@@ -1803,7 +1997,7 @@ setHysteriaConfig() {
     echoColor yellow "$(i18n block_http3_choice_skip)"
     echoColor green "$(i18n prompt_enter_number)"
     read -r block_http3
-    if [ -z "${block_http3}" ] || [ ${block_http3} == "2" ]; then
+    if [ -z "${block_http3}" ] || [ "${block_http3}" == "2" ]; then
         block_http3="false"
         echo -e "\n->$(i18n block_http3_disabled)\n"
         echoColor lightYellow "$(i18n client_only_block_http3_tip)"
@@ -1814,6 +2008,145 @@ setHysteriaConfig() {
     echoColor green "$(i18n remarks_prompt)"
     read -r remarks
     echoColor green "$(i18n config_input_done)"
+}
+
+# ---------- 一键模式:环境变量覆盖默认值 ----------
+applyAutoOverrides() {
+    if [ -n "${HIHY_AUTO_PORT:-}" ]; then
+        if ! isValidPort "${HIHY_AUTO_PORT}"; then
+            echoColor red "$(i18n auto_port_invalid "${HIHY_AUTO_PORT}")"
+            return 1
+        fi
+        port="${HIHY_AUTO_PORT}"
+    fi
+    [ -n "${HIHY_AUTO_PASSWORD:-}" ] && auth_secret="${HIHY_AUTO_PASSWORD}"
+    [ -n "${HIHY_AUTO_DOMAIN:-}" ] && domain="${HIHY_AUTO_DOMAIN}"
+    [ -n "${HIHY_AUTO_IP:-}" ] && ip="${HIHY_AUTO_IP}"
+    [ -n "${HIHY_AUTO_REMARKS:-}" ] && remarks="${HIHY_AUTO_REMARKS}"
+    if [ -n "${HIHY_AUTO_MASQUERADE:-}" ]; then
+        masquerade_status="true"
+        masquerade_type="proxy"
+        masquerade_proxy="${HIHY_AUTO_MASQUERADE}"
+        masquerade_xforwarded="true"
+    fi
+    if [ "${HIHY_AUTO_PORT_HOPPING:-}" = "true" ] || [ "${HIHY_AUTO_PORT_HOPPING:-}" = "1" ]; then
+        portHoppingStatus="true"
+        portHoppingStart="${HIHY_AUTO_HOP_START:-47000}"
+        portHoppingEnd="${HIHY_AUTO_HOP_END:-48000}"
+        portHoppingIntervalMode="fixed"
+        portHoppingHopInterval="30s"
+        if ! isValidPort "${portHoppingStart}" || ! isValidPort "${portHoppingEnd}" \
+            || [ "${portHoppingStart}" -ge "${portHoppingEnd}" ]; then
+            echoColor red "$(i18n auto_hop_invalid "${portHoppingStart}" "${portHoppingEnd}")"
+            return 1
+        fi
+    fi
+    return 0
+}
+
+# ---------- 一键模式:零交互收集(默认值 + 环境变量 + 自动探测) ----------
+autoHysteriaConfig() {
+    setConfigDefaults
+    echoColor yellowBlack "$(i18n auto_install_title)"
+    echoColor gray "$(i18n auto_env_hint)"
+    if ! applyAutoOverrides; then
+        exit 1
+    fi
+
+    if [ -z "${ip}" ]; then
+        ip=$(detectPublicIP || true)
+        if [ -z "${ip}" ]; then
+            echoColor red "$(i18n auto_ip_detect_failed)"
+            exit 1
+        fi
+    fi
+
+    if [ -z "${port}" ]; then
+        port=$(getRandomFreeUdpPort)
+        if [ -z "${port}" ]; then
+            echoColor red "$(i18n auto_port_busy "random")"
+            exit 1
+        fi
+    elif ! isUdpPortFree "${port}"; then
+        echoColor red "$(i18n auto_port_busy "${port}")"
+        exit 1
+    fi
+
+    [ -z "${auth_secret}" ] && auth_secret=$(generate_uuid)
+    [ -z "${remarks}" ] && remarks="auto-${port}"
+
+    echo -e ""
+    echoColor purple "$(i18n auto_summary_title)"
+    echo -e "  $(i18n auto_summary_port "$(echoColor red "udp/${port}")")"
+    echo -e "  $(i18n auto_summary_password "$(echoColor red "${auth_secret}")")"
+    echo -e "  $(i18n auto_summary_sni "$(echoColor red "${domain}")")"
+    echo -e "  $(i18n auto_summary_cert)"
+    echo -e "  $(i18n auto_summary_congestion)"
+    if [ "${masquerade_status}" == "true" ]; then
+        echo -e "  $(i18n auto_summary_masquerade_on "$(echoColor red "${masquerade_proxy}")")"
+    else
+        echo -e "  $(i18n auto_summary_masquerade_off)"
+    fi
+    if [ "${portHoppingStatus}" == "true" ]; then
+        echo -e "  $(i18n auto_summary_hopping_on "$(echoColor red "${portHoppingStart}-${portHoppingEnd}")")"
+    else
+        echo -e "  $(i18n auto_summary_hopping_off)"
+    fi
+    echo -e ""
+
+    writeHysteriaConfig
+}
+
+# ---------- 配置校验:轮询 debug 文件,返回 0=成功 1=超时 2=ACME失败 3=端口占用 ----------
+waitForValidationOutcome() {
+    local debug_file="$1"
+    local timeout="$2"
+    local elapsed=0
+    local marker
+
+    while [ "$elapsed" -lt "$timeout" ]; do
+        marker=$(grep -m1 -oE "server up and running|failed to get a certificate with ACME|bind: address already in use" "$debug_file" 2>/dev/null)
+        case "$marker" in
+            "server up and running") return 0 ;;
+            "failed to get a certificate with ACME") return 2 ;;
+            "bind: address already in use") return 3 ;;
+        esac
+        sleep 1
+        elapsed=$((elapsed + 1))
+    done
+    return 1
+}
+
+stopValidationProcess() {
+    if ! command -v pkill >/dev/null 2>&1 && command -v apk >/dev/null 2>&1; then
+        apk add --no-cache procps >/dev/null 2>&1
+    fi
+    killHysteriaProcess TERM
+}
+
+# 校验失败的统一善后:杀掉测试进程 -> 撤销防火墙 -> 清理本次生成的配置
+cleanupFailedValidation() {
+    local phase="$1"
+    local details="$2"
+
+    markInstallFailed "$phase" "$details"
+    stopValidationProcess
+    delHihyFirewallPort udp >/dev/null 2>&1 || true
+    delHihyFirewallPort tcp >/dev/null 2>&1 || true
+    rm -f /etc/hihy/conf/config.yaml /etc/hihy/conf/backup.yaml
+    rm -f ./hihy_debug.info
+}
+
+# ---------- 配置写入 + 校验 + 收尾(原 setHysteriaConfig 后半段,向导/一键共用) ----------
+writeHysteriaConfig() {
+    mkdir -p /etc/hihy/bin /etc/hihy/conf /etc/hihy/cert /etc/hihy/result /etc/hihy/acl/
+    acl_file="/etc/hihy/acl/acl.txt"
+    rm -f "${acl_file}"
+    touch "${acl_file}"
+    yaml_file="/etc/hihy/conf/config.yaml"
+    rm -f "${yaml_file}"
+    touch "${yaml_file}"
+
     echoColor yellowBlack "$(i18n config_executing)"
     max_CRW=0
     if [ "${congestion_mode}" == "brutal" ]; then
@@ -1845,16 +2178,12 @@ setHysteriaConfig() {
         addOrUpdateYaml "$yaml_file" "realm.portMapping.enabled" "true"
         addOrUpdateYaml "$yaml_file" "realm.portMapping.timeout" "30s"
         addOrUpdateYaml "$yaml_file" "realm.portMapping.lifetime" "10m"
-    else
-        yq eval 'del(.realm)' -i "$yaml_file"
     fi
     addOrUpdateYaml "$yaml_file" "auth.type" "password"
     addOrUpdateYaml "$yaml_file" "auth.password" "${auth_secret}"
     addOrUpdateYaml "$yaml_file" "ignoreClientBandwidth" "${ignore_client_bandwidth}"
     if [ "${congestion_mode}" != "brutal" ]; then
         addOrUpdateYaml "$yaml_file" "congestion.type" "${congestion_type}"
-    else
-        yq eval 'del(.congestion)' -i "$yaml_file"
     fi
     if [ "${congestion_type}" == "bbr" ]; then
         addOrUpdateYaml "$yaml_file" "congestion.bbrProfile" "${congestion_bbr_profile}"
@@ -1862,16 +2191,12 @@ setHysteriaConfig() {
     if [ "${obfs_status}" == "true" ]; then
         addOrUpdateYaml "$yaml_file" "obfs.type" "${obfs_type}"
         addOrUpdateYaml "$yaml_file" "obfs.${obfs_type}.password" "${obfs_pass}"
-    else
-        yq eval 'del(.obfs)' -i "$yaml_file"
     fi
     if [ "${congestion_mode}" == "brutal" ]; then
         addOrUpdateYaml "$yaml_file" "quic.initStreamReceiveWindow" "${SRW}"
         addOrUpdateYaml "$yaml_file" "quic.maxStreamReceiveWindow" "${max_SRW}"
         addOrUpdateYaml "$yaml_file" "quic.initConnReceiveWindow" "${CRW}"
         addOrUpdateYaml "$yaml_file" "quic.maxConnReceiveWindow" "${max_CRW}"
-    else
-        yq eval 'del(.quic.initStreamReceiveWindow, .quic.maxStreamReceiveWindow, .quic.initConnReceiveWindow, .quic.maxConnReceiveWindow)' -i "$yaml_file"
     fi
     addOrUpdateYaml "$yaml_file" "quic.maxIdleTimeout" "30s"
     addOrUpdateYaml "$yaml_file" "quic.maxIncomingStreams" "1024"
@@ -1879,38 +2204,38 @@ setHysteriaConfig() {
     if [ "${congestion_mode}" == "brutal" ]; then
         addOrUpdateYaml "$yaml_file" "bandwidth.up" "${server_upload}mbps"
         addOrUpdateYaml "$yaml_file" "bandwidth.down" "${server_download}mbps"
-    else
-        yq eval 'del(.bandwidth)' -i "$yaml_file"
     fi
     addOrUpdateYaml "$yaml_file" "acl.file" "${acl_file}"
-    case ${masquerade_type} in
-        "string")
-            addOrUpdateYaml "$yaml_file" "masquerade.type" "string"
-            addOrUpdateYaml "$yaml_file" "masquerade.string.content" "${masquerade_string}"
-            addOrUpdateYaml "$yaml_file" "masquerade.string.headers.content-type" "text/plain"
-            addOrUpdateYaml "$yaml_file" "masquerade.string.headers.custom-stuff" "${masquerade_stuff}"
-            addOrUpdateYaml "$yaml_file" "masquerade.string.statusCode" "200"
-            ;;
-        "proxy")
-            addOrUpdateYaml "$yaml_file" "masquerade.type" "proxy"
-            addOrUpdateYaml "$yaml_file" "masquerade.proxy.url" "${masquerade_proxy}"
-            addOrUpdateYaml "$yaml_file" "masquerade.proxy.rewriteHost" "true"
-            addOrUpdateYaml "$yaml_file" "masquerade.proxy.insecure" "true"
-            addOrUpdateYaml "$yaml_file" "masquerade.proxy.xForwarded" "${masquerade_xforwarded}"
-            ;;
-        "file")
-            addOrUpdateYaml "$yaml_file" "masquerade.type" "file"
-            addOrUpdateYaml "$yaml_file" "masquerade.file.dir" "${masquerade_file}"
-            if [ ! -d "${masquerade_file}" ]; then
-                mkdir -p ${masquerade_file}
-                wget -q -O ./mikutap.tar.gz https://github.com/HFIProgramming/mikutap/archive/refs/tags/2.0.0.tar.gz
-                tar -xzf ./mikutap.tar.gz -C ${masquerade_file} --strip-components=1
-                rm -r ./mikutap.tar.gz
-            fi
-            ;;
-    esac
-    if [ "${realmMode}" != "true" ] && [ "${masquerade_tcp}" == "true" ]; then
-        addOrUpdateYaml "$yaml_file" "masquerade.listenHTTPS" ":${port}"
+    if [ "${masquerade_status}" == "true" ]; then
+        case ${masquerade_type} in
+            "string")
+                addOrUpdateYaml "$yaml_file" "masquerade.type" "string"
+                addOrUpdateYaml "$yaml_file" "masquerade.string.content" "${masquerade_string}"
+                addOrUpdateYaml "$yaml_file" "masquerade.string.headers.content-type" "text/plain"
+                addOrUpdateYaml "$yaml_file" "masquerade.string.headers.custom-stuff" "${masquerade_stuff}"
+                addOrUpdateYaml "$yaml_file" "masquerade.string.statusCode" "200"
+                ;;
+            "proxy")
+                addOrUpdateYaml "$yaml_file" "masquerade.type" "proxy"
+                addOrUpdateYaml "$yaml_file" "masquerade.proxy.url" "${masquerade_proxy}"
+                addOrUpdateYaml "$yaml_file" "masquerade.proxy.rewriteHost" "true"
+                addOrUpdateYaml "$yaml_file" "masquerade.proxy.insecure" "true"
+                addOrUpdateYaml "$yaml_file" "masquerade.proxy.xForwarded" "${masquerade_xforwarded}"
+                ;;
+            "file")
+                addOrUpdateYaml "$yaml_file" "masquerade.type" "file"
+                addOrUpdateYaml "$yaml_file" "masquerade.file.dir" "${masquerade_file}"
+                if [ ! -d "${masquerade_file}" ]; then
+                    mkdir -p "${masquerade_file}"
+                    wget -q -O ./mikutap.tar.gz https://github.com/HFIProgramming/mikutap/archive/refs/tags/2.0.0.tar.gz
+                    tar -xzf ./mikutap.tar.gz -C "${masquerade_file}" --strip-components=1
+                    rm -r ./mikutap.tar.gz
+                fi
+                ;;
+        esac
+        if [ "${realmMode}" != "true" ] && [ "${masquerade_tcp}" == "true" ]; then
+            addOrUpdateYaml "$yaml_file" "masquerade.listenHTTPS" ":${port}"
+        fi
     fi
     addOrUpdateYaml "$yaml_file" "speedTest" "true"
     pinSHA256=""
@@ -1939,13 +2264,13 @@ setHysteriaConfig() {
             echoColor green "$(i18n cert_sign_server)"
             openssl x509 -req -extfile <(printf "subjectAltName=DNS:${domain},DNS:${domain}") -days ${days} -in /etc/hihy/cert/${domain}.csr -CA /etc/hihy/cert/${domain}.ca.crt -CAkey /etc/hihy/cert/${domain}.ca.key -CAcreateserial -out /etc/hihy/cert/${domain}.crt
             echoColor green "$(i18n cert_cleanup)"
-            rm /etc/hihy/cert/${domain}.ca.key /etc/hihy/cert/${domain}.ca.srl /etc/hihy/cert/${domain}.csr
+            rm -f /etc/hihy/cert/${domain}.ca.key /etc/hihy/cert/${domain}.ca.srl /etc/hihy/cert/${domain}.csr
             echoColor green "$(i18n cert_move_ca)"
             mv /etc/hihy/cert/${domain}.ca.crt /etc/hihy/result
             echoColor purple "$(i18n cert_success)"
             pinSHA256=$(openssl x509 -noout -fingerprint -sha256 -in /etc/hihy/cert/${domain}.crt 2>/dev/null | sed 's/^.*=//')
             if [ -n "${pinSHA256}" ]; then
-                echoColor green "$(i18n cert_sha256_label)"$(echoColor red ${pinSHA256})
+                echoColor green "$(i18n cert_sha256_label)$(echoColor red "${pinSHA256}")"
                 echoColor purple "$(i18n cert_pinsha256_hint)"
             else
                 echoColor yellow "$(i18n cert_fingerprint_fail)"
@@ -2050,55 +2375,40 @@ setHysteriaConfig() {
     fi
     addOrUpdateYaml "$yaml_file" "trafficStats.listen" "127.0.0.1:${trafficPort}"
     addOrUpdateYaml "$yaml_file" "trafficStats.secret" "${auth_secret}"
-    if [ ${block_http3} == "true" ]; then
+    if [ "${block_http3}" == "true" ]; then
         echo -e "reject(all, udp/443)" >${acl_file}
     fi
     if [ ${max_CRW} -gt 0 ]; then
-        sysctl -w net.core.rmem_max=${max_CRW}
-        sysctl -w net.core.wmem_max=${max_CRW}
+        if sysctl -w net.core.rmem_max=${max_CRW} >/dev/null 2>&1 \
+            && sysctl -w net.core.wmem_max=${max_CRW} >/dev/null 2>&1; then
+            # 持久化,重启后依然生效(容器环境可能只读,失败仅提示)
+            if mkdir -p /etc/sysctl.d 2>/dev/null; then
+                printf 'net.core.rmem_max=%s\nnet.core.wmem_max=%s\n' "${max_CRW}" "${max_CRW}" \
+                    >/etc/sysctl.d/99-hihy.conf 2>/dev/null || true
+            fi
+        else
+            echoColor yellow "$(i18n sysctl_apply_failed)"
+        fi
     fi
-    if [ ! -f "/etc/sysctl.conf" ]; then
-        touch /etc/sysctl.conf
-    fi
-    sysctl -p
-    echoColor purple "\n$(i18n test_config)\n"
-    startInstallValidationProcess "${yaml_file}" "./hihy_debug.info"
+    local validation_timeout=15
     if [ "${useAcme}" == "true" ]; then
-        countdown 20
-    else
-        countdown 10
+        validation_timeout=60
     fi
-    msg=$(cat ./hihy_debug.info)
-    case ${msg} in
-        *"failed to get a certificate with ACME"*)
-            markInstallFailed "certificate" "failed to get a certificate with ACME"
-            echoColor red "$(i18n acme_cert_fail ${u_host})"
-            rm /etc/hihy/conf/config.yaml
-            rm /etc/hihy/result/backup.yaml
-            delHihyFirewallPort
-            rm ./hihy_debug.info
-            echoColor yellow "$(i18n acme_incomplete_state)"
-            exit
-            ;;
-        *"bind: address already in use"*)
-            markInstallFailed "port-bind" "bind: address already in use"
-            rm /etc/hihy/conf/config.yaml
-            rm /etc/hihy/result/backup.yaml
-            delHihyFirewallPort
-            echoColor red "$(i18n port_bind_fail)"
-            rm ./hihy_debug.info
-            echoColor yellow "$(i18n acme_incomplete_state)"
-            exit
-            ;;
-        *"server up and running"*)
+    echoColor purple "\n$(i18n test_config)\n"
+    echoColor gray "$(i18n validation_waiting "${validation_timeout}")"
+    startInstallValidationProcess "${yaml_file}" "./hihy_debug.info"
+    waitForValidationOutcome "./hihy_debug.info" "${validation_timeout}"
+    case $? in
+        0)
             echoColor green "$(i18n test_success)"
             echoColor purple "$(i18n stop_test_program)"
-            pkill -f "/etc/hihy/bin/appS" 2>/dev/null || true
-            sleep 1
-            pkill -9 -f "/etc/hihy/bin/appS" 2>/dev/null || true
-            rm ./hihy_debug.info
+            stopValidationProcess
+            rm -f ./hihy_debug.info
             if [ "${realmMode}" != "true" ]; then
                 allowPort udp ${port}
+                if [ "${portHoppingStatus}" == "true" ]; then
+                    allowPort udp "${portHoppingStart}:${portHoppingEnd}"
+                fi
                 if [ "${masquerade_tcp}" == "true" ]; then
                     getPortBindMsg TCP ${port}
                     allowPort tcp ${port}
@@ -2106,26 +2416,29 @@ setHysteriaConfig() {
             fi
             echoColor purple "$(i18n generating_config)"
             ;;
+        2)
+            echoColor red "$(i18n acme_cert_fail ${u_host})"
+            cleanupFailedValidation "certificate" "failed to get a certificate with ACME"
+            echoColor yellow "$(i18n acme_incomplete_state)"
+            exit 1
+            ;;
+        3)
+            cleanupFailedValidation "port-bind" "bind: address already in use"
+            echoColor red "$(i18n port_bind_fail)"
+            echoColor yellow "$(i18n acme_incomplete_state)"
+            exit 1
+            ;;
         *)
-            markInstallFailed "config-test" "unknown error while validating generated config"
-            if ! command -v pkill >/dev/null 2>&1; then
-                apk add --no-cache procps
-            fi
-            pkill -f "/etc/hihy/bin/appS" 2>/dev/null || true
-            sleep 1
-            pkill -9 -f "/etc/hihy/bin/appS" 2>/dev/null || true
             echoColor red "$(i18n unknown_error)"
             echoColor yellow "$(i18n unknown_error_incomplete_state)"
             cat ./hihy_debug.info
-            rm ./hihy_debug.info
-            exit
+            cleanupFailedValidation "config-test" "unknown error while validating generated config"
+            exit 1
             ;;
     esac
-    if [ -f "/etc/hihy/conf/backup.yaml" ]; then
-        rm /etc/hihy/conf/backup.yaml
-    fi
     backup_file="/etc/hihy/conf/backup.yaml"
-    touch ${backup_file}
+    rm -f "${backup_file}"
+    touch "${backup_file}"
     addOrUpdateYaml ${backup_file} "remarks" "${remarks}"
     addOrUpdateYaml ${backup_file} "serverAddress" "${u_host}" "string"
     addOrUpdateYaml ${backup_file} "serverPort" "${port}"
@@ -2150,13 +2463,10 @@ setHysteriaConfig() {
         addOrUpdateYaml ${backup_file} "realmURI" "${realmURI}"
         addOrUpdateYaml ${backup_file} "realmName" "${realmName}"
     fi
+    addOrUpdateYaml ${backup_file} "masquerade_status" "${masquerade_status}"
     addOrUpdateYaml ${backup_file} "masquerade_xforwarded" "${masquerade_xforwarded}"
-    if [ "$masquerade_tcp" == "true" ]; then
-        addOrUpdateYaml ${backup_file} "masquerade_tcp" "true"
-    else
-        addOrUpdateYaml ${backup_file} "masquerade_tcp" "false"
-    fi
-    if [ ${insecure} == "1" ]; then
+    addOrUpdateYaml ${backup_file} "masquerade_tcp" "${masquerade_tcp}"
+    if [ "${insecure}" == "1" ]; then
         addOrUpdateYaml ${backup_file} "insecure" "true"
     else
         addOrUpdateYaml ${backup_file} "insecure" "false"
@@ -2173,8 +2483,30 @@ setHysteriaConfig() {
     echoColor greenWhite "$(i18n install_success)"
 }
 
+setHysteriaConfig() {
+    setConfigDefaults
+    collectHysteriaConfig
+    writeHysteriaConfig
+}
 
 # ----- 50-core.sh -----
+# hysteria release 资产的架构后缀:复用 getArchitecture 单一映射表,
+# 仅补充 hysteria 特有的差异项(mips64 板卡多为小端,官方只发 mipsle)
+getHysteriaCoreArch() {
+    case "$(uname -m)" in
+        mips64) echo "mipsle" ;;
+        *)
+            local mapped
+            mapped=$(getArchitecture)
+            if [ "$mapped" = "unknown" ]; then
+                echo ""
+            else
+                echo "$mapped"
+            fi
+            ;;
+    esac
+}
+
 downloadHysteriaCore() {
     local version
     version=$(getLatestHysteriaVersion)
@@ -2183,45 +2515,28 @@ downloadHysteriaCore() {
 
     if [ -z "$version" ]; then
         echoColor red "$(i18n network_error_get_latest_version)"
-        exit 1
+        return 1
     fi
 
-    local arch=$(uname -m)
-    local url_base="https://github.com/apernet/hysteria/releases/download/${version}/hysteria-linux-"
-    local download_url=""
+    local arch
+    arch=$(getHysteriaCoreArch)
+    if [ -z "$arch" ]; then
+        echoColor yellowBlack "$(i18n unsupported_arch "$(uname -m)")"
+        return 1
+    fi
+    local download_url="https://github.com/apernet/hysteria/releases/download/${version}/hysteria-linux-${arch}"
 
-    case "$arch" in
-        "x86_64")
-            download_url="${url_base}amd64"
-            ;;
-        "aarch64")
-            download_url="${url_base}arm64"
-            ;;
-        "mips64")
-            download_url="${url_base}mipsle"
-            ;;
-        "s390x")
-            download_url="${url_base}s390x"
-            ;;
-        "i686" | "i386")
-            download_url="${url_base}386"
-            ;;
-        "loongarch64")
-            download_url="${url_base}loong64"
-            ;;
-        *)
-            echoColor yellowBlack "$(i18n unsupported_arch ${arch})"
-            exit 1
-            ;;
-    esac
+    # 下载到临时文件,校验后原子替换,避免失败时破坏现有可用内核
+    mkdir -p /etc/hihy/bin
+    local temp_bin="/etc/hihy/bin/.appS.tmp.$$"
 
     if command -v wget >/dev/null 2>&1; then
-        wget -q -O /etc/hihy/bin/appS --no-check-certificate "$download_url" &
+        wget -q -O "$temp_bin" --no-check-certificate "$download_url" &
     elif command -v curl >/dev/null 2>&1; then
-        curl -fsSL -o /etc/hihy/bin/appS "$download_url" &
+        curl -fsSL -o "$temp_bin" "$download_url" &
     else
         echoColor red "$(i18n network_error_cannot_connect_github)"
-        exit 1
+        return 1
     fi
 
     local dl_pid=$!
@@ -2233,61 +2548,71 @@ downloadHysteriaCore() {
     done
     wait $dl_pid
     local dl_rc=$?
-    if [ $dl_rc -ne 0 ]; then
-        printf "\r\033[K"
-        echoColor red "$(i18n network_error_cannot_connect_github)"
-        exit 1
-    fi
     printf "\r\033[K"
-
-    if [ -f "/etc/hihy/bin/appS" ]; then
-        chmod 755 /etc/hihy/bin/appS
-        echoColor purple "\n$(i18n download_completed)"
-    else
+    if [ $dl_rc -ne 0 ] || [ ! -s "$temp_bin" ]; then
+        rm -f "$temp_bin"
         echoColor red "$(i18n network_error_cannot_connect_github)"
-        exit 1
+        return 1
     fi
+
+    # ELF 魔数校验:防止把镜像/网关返回的错误页当成二进制装进去
+    if [ "$(head -c 4 "$temp_bin" | od -An -tx1 | tr -d ' \n')" != "7f454c46" ]; then
+        rm -f "$temp_bin"
+        echoColor red "$(i18n core_download_invalid)"
+        return 1
+    fi
+
+    chmod 755 "$temp_bin"
+    mv "$temp_bin" /etc/hihy/bin/appS
+    echoColor purple "\n$(i18n download_completed)"
 }
 
 updateHysteriaCore() {
-    if [ -f "/etc/hihy/bin/appS" ]; then
-        local localV=$(echo app/$(/etc/hihy/bin/appS version | grep Version: | awk '{print $2}' | head -n 1))
-        local remoteV
-        remoteV=$(getLatestHysteriaVersion || true)
-        echo -e "$(i18n local_core_version) $(echoColor red "${localV}")"
-        echo -e "$(i18n remote_core_version) $(echoColor red "${remoteV}")"
-        if [ "${localV}" = "${remoteV}" ]; then
-            echoColor green "$(i18n already_latest_version)"
-        else
-            local was_running="false"
-            if [ -f "/etc/rc.d/hihy" ] || [ -f "/etc/init.d/hihy" ]; then
-                if [ -f "/etc/rc.d/hihy" ]; then
-                    msg=$(/etc/rc.d/hihy status)
-                else
-                    msg=$(/etc/init.d/hihy status)
-                fi
-                if [ "${msg}" == "hihy is running" ]; then
-                    was_running="true"
-                    stop
-                    killHysteriaProcess TERM
-                fi
-            fi
-
-            downloadHysteriaCore
-            # 清除版本检查缓存，确保下次运行重新检查（避免显示过时的"有新版本"通知）
-            rm -f "$HIHY_VERSION_STATUS_FILE"
-
-            if [ "${was_running}" == "true" ]; then
-                start
-            fi
-            echoColor green "$(i18n hysteria_core_update_done)"
-        fi
-    else
+    if [ ! -f "/etc/hihy/bin/appS" ]; then
         echoColor red "$(i18n hysteria_core_not_found)"
-        exit 1
+        return 1
     fi
-}
 
+    local localV
+    localV=$(getLocalHysteriaVersion || true)
+    local remoteV
+    remoteV=$(getLatestHysteriaVersion || true)
+    echo -e "$(i18n local_core_version) $(echoColor red "${localV}")"
+    echo -e "$(i18n remote_core_version) $(echoColor red "${remoteV}")"
+
+    # 拿不到远端版本时不要盲目重装(旧逻辑会当作"有更新"直接下载,网络故障时半途报废)
+    if [ -z "${remoteV}" ]; then
+        echoColor yellow "$(i18n update_skip_no_remote)"
+        return 1
+    fi
+
+    if [ "${localV}" = "${remoteV}" ]; then
+        echoColor green "$(i18n already_latest_version)"
+        return 0
+    fi
+
+    local was_running="false"
+    if [ "$(getServiceRunState)" = "running" ]; then
+        was_running="true"
+        stop
+        killHysteriaProcess TERM
+    fi
+
+    if ! downloadHysteriaCore; then
+        # 下载失败时旧内核仍完好,恢复服务
+        if [ "${was_running}" == "true" ]; then
+            start
+        fi
+        return 1
+    fi
+    # 清除版本检查缓存，确保下次运行重新检查（避免显示过时的"有新版本"通知）
+    rm -f "$HIHY_VERSION_STATUS_FILE"
+
+    if [ "${was_running}" == "true" ]; then
+        start
+    fi
+    echoColor green "$(i18n hysteria_core_update_done)"
+}
 
 # ----- 55-service.sh -----
 setup_rc_local_for_arch() {
@@ -2338,12 +2663,13 @@ uninstall_rc_local_for_arch() {
 }
 
 install() {
+    local mode="${1:-}"
     local install_state
     install_state=$(classifyInstallState)
 
     if [ "$install_state" = "installed" ]; then
         echoColor green "$(i18n already_installed)"
-        exit 0
+        return 0
     fi
 
     if [ "$install_state" = "partially-installed" ]; then
@@ -2368,11 +2694,16 @@ install() {
         exit 1
     fi
 
-    # 获取版本并下载核心
-    version=$(getLatestHysteriaVersion || true)
     checkSystemForUpdate
-    downloadHysteriaCore
-    setHysteriaConfig
+    if ! downloadHysteriaCore; then
+        markInstallFailed "core-download" "failed to download hysteria core"
+        exit 1
+    fi
+    if [ "$mode" = "auto" ]; then
+        autoHysteriaConfig
+    else
+        setHysteriaConfig
+    fi
 
     # 获取启动命令前缀
     local start_cmd_prefix=$(getStartCommand)
@@ -2478,6 +2809,12 @@ start() {
         nohup \$HIHY_PATH/bin/appS --log-level info -c \$HIHY_PATH/conf/config.yaml server > "\$LOG_FILE" 2>&1 &
     fi
     echo \$! > "\$PID_FILE"
+    sleep 1
+    if ! kill -0 \$(cat "\$PID_FILE") 2>/dev/null; then
+        echo "hihy failed to start, check \$LOG_FILE"
+        rm -f "\$PID_FILE"
+        return 1
+    fi
 }
 
 stop() {
@@ -2486,18 +2823,25 @@ stop() {
         return 1
     fi
 
+    PID=\$(cat "\$PID_FILE")
     echo "Stopping hihy..."
-    kill \$(cat "\$PID_FILE")
+    kill "\$PID" 2>/dev/null
+    n=0
+    while [ \$n -lt 5 ]; do
+        if ! kill -0 "\$PID" 2>/dev/null; then
+            break
+        fi
+        sleep 1
+        n=\$((n + 1))
+    done
+    if kill -0 "\$PID" 2>/dev/null; then
+        kill -9 "\$PID" 2>/dev/null
+    fi
     rm -f "\$PID_FILE"
 }
 
 restart() {
     stop
-    sleep 2
-    if [ -f "\$PID_FILE" ]; then
-        echo "Failed to stop hihy"
-        return 1
-    fi
     start
 }
 
@@ -2542,11 +2886,13 @@ EOF
         /etc/rc.d/hihy start
     fi
 
-    # 添加定时任务
+    # 添加定时任务(先去重,避免重装时重复堆积)
     crontab -l >./crontab.tmp 2>/dev/null || touch ./crontab.tmp
-    echo "15 4 * * 1 hihy cronTask" >>./crontab.tmp
-    crontab ./crontab.tmp
-    rm ./crontab.tmp
+    if ! grep -q "hihy cronTask" ./crontab.tmp; then
+        echo "15 4 * * 1 hihy cronTask" >>./crontab.tmp
+        crontab ./crontab.tmp
+    fi
+    rm -f ./crontab.tmp
     setup_rc_local_for_arch
 
     generate_client_config
@@ -2556,7 +2902,12 @@ EOF
 # 将 listen 中的范围端口格式 47000-48000 转换为防火墙规则使用的 47000:48000
 checkLogs() {
     if [ -f "/etc/hihy/logs/hihy.log" ]; then
+        echoColor gray "$(i18n logs_follow_hint)"
+        # 父进程捕获 INT:Ctrl+C 只结束 tail,脚本本身回到菜单
+        trap ':' INT
         tail -f /etc/hihy/logs/hihy.log
+        trap - INT
+        echo ""
     else
         echoColor red "$(i18n logs_not_found)"
     fi
@@ -2674,7 +3025,9 @@ checkFirewalldAllowPort() {
 allowPort() {
     # 如果防火墙启动状态则添加相应的开放端口
     # $1 tcp/udp
-    # $2 port
+    # $2 port 或端口范围(start:end)
+    # 端口范围各后端语法不同:iptables/ufw 用 47000:48000,firewalld/nft 用 47000-48000
+    local dash_port="${2//:/-}"
 
     # 检查是否为 Alpine Linux
     if [ -f /etc/alpine-release ]; then
@@ -2698,7 +3051,7 @@ allowPort() {
         # 如果没有 iptables，检查 nftables
         if command -v nft >/dev/null 2>&1; then
             if ! nft list ruleset | grep -q "allow ${1}/${2}(hihysteria)"; then
-                nft add rule inet filter input ip protocol ${1} dport ${2} comment "allow ${1}/${2}(hihysteria)" accept
+                nft add rule inet filter input ip protocol ${1} dport ${dash_port} comment "allow ${1}/${2}(hihysteria)" accept
                 echoColor purple "$(i18n firewall_nftables_open ${1} ${2})"
                 nft list ruleset >/etc/nftables.conf
             fi
@@ -2720,8 +3073,8 @@ allowPort() {
 
             # 检查 firewalld
             if systemctl is-active --quiet firewalld; then
-                if ! firewall-cmd --list-ports --permanent | hasFirewallToken "${2}/${1}"; then
-                    firewall-cmd --zone=public --add-port=${2}/${1} --permanent
+                if ! firewall-cmd --list-ports --permanent | hasFirewallToken "${dash_port}/${1}"; then
+                    firewall-cmd --zone=public --add-port=${dash_port}/${1} --permanent
                     echoColor purple "$(i18n firewall_firewalld_open ${1} ${2})"
                     firewall-cmd --reload
                 fi
@@ -2775,7 +3128,7 @@ EOF
         # 检查 nftables
         if command -v nft >/dev/null 2>&1; then
             if ! nft list ruleset | grep -q "allow ${1}/${2}(hihysteria)"; then
-                nft add rule inet filter input ip protocol ${1} dport ${2} comment "allow ${1}/${2}(hihysteria)" accept
+                nft add rule inet filter input ip protocol ${1} dport ${dash_port} comment "allow ${1}/${2}(hihysteria)" accept
                 echoColor purple "$(i18n firewall_nftables_open ${1} ${2})"
                 nft list ruleset >/etc/nftables.conf
             fi
@@ -2819,10 +3172,11 @@ delHihyFirewallPort() {
             firewall-cmd --reload 2>/dev/null
             echoColor purple "$(i18n firewall_firewalld_delete ${port}/${protocol})"
         fi
-        if [ -n "${firewall_port_range}" ] && firewall-cmd --list-ports --permanent | hasFirewallToken "${firewall_port_range}/${protocol}"; then
-            firewall-cmd --zone=public --remove-port="${firewall_port_range}/${protocol}" --permanent 2>/dev/null
+        # firewalld 的范围规则用 47000-48000 语法(listen 字段原生格式,勿转冒号)
+        if [ -n "${port_range}" ] && firewall-cmd --list-ports --permanent | hasFirewallToken "${port_range}/${protocol}"; then
+            firewall-cmd --zone=public --remove-port="${port_range}/${protocol}" --permanent 2>/dev/null
             firewall-cmd --reload 2>/dev/null
-            echoColor purple "$(i18n firewall_firewalld_delete ${firewall_port_range}/${protocol})"
+            echoColor purple "$(i18n firewall_firewalld_delete ${port_range}/${protocol})"
         fi
     elif command -v iptables >/dev/null; then
         iptables-save | sed -e "/hihysteria/d" | iptables-restore
@@ -2907,10 +3261,9 @@ checkRoot() {
 uninstall() {
     local install_state
     install_state=$(classifyInstallState)
-    portHoppingStatus=$(getBackupValueOrDefault "/etc/hihy/conf/backup.yaml" "portHoppingStatus" "false")
     if [ "$install_state" = "not-installed" ]; then
         echoColor red "$(i18n hysteria_not_installed)"
-        exit 1
+        return 1
     fi
 
     if [ "$install_state" = "partially-installed" ]; then
@@ -2962,6 +3315,7 @@ uninstall() {
     rm -rf /etc/hihy
     rm -f /var/run/hihy.pid
     rm -f /usr/bin/yq
+    rm -f /etc/sysctl.d/99-hihy.conf
     rm -f "$HIHY_BIN_LINK"
 
     if [ -f "/etc/rc.local" ]; then
@@ -3088,13 +3442,17 @@ loadClientParams() {
         HIHY_CP_phMinHopInterval=$(getBackupValueOrDefault "$backup" "portHoppingMinHopInterval" "10s")
         HIHY_CP_phMaxHopInterval=$(getBackupValueOrDefault "$backup" "portHoppingMaxHopInterval" "30s")
     fi
+
+    # 伪装状态(v1.13 起记录;旧版 backup 无此键时按"曾默认开启"回退为 true)
+    HIHY_CP_masqueradeStatus=$(getBackupValueOrDefault "$backup" "masquerade_status" "true")
+    HIHY_CP_masqueradeTcp=$(getBackupValueOrDefault "$backup" "masquerade_tcp" "false")
 }
 
 # ----- 72-client-native.sh -----
 generate_client_config() {
     if [ ! -e "/etc/rc.d/hihy" ] && [ ! -e "/etc/init.d/hihy" ]; then
         echoColor red "$(i18n client_config_hysteria_not_installed)"
-        exit 1
+        return 1
     fi
     # 统一从公共层读取所有参数(消除三个生成器的重复读取)
     loadClientParams
@@ -3245,9 +3603,11 @@ generate_client_config() {
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
     if [ "${realmMode}" != "true" ]; then
-        if [ "${portHoppingStatus}" == "false" ]; then
-            echo -e "$(i18n client_config_masquerade_tcp_not_listened)"
-            echo -e "$(i18n client_config_masquerade_h3_hint "$(echoColor red "$(i18n client_config_masquerade_h3_action)")")"
+        if [ "$HIHY_CP_masqueradeStatus" == "true" ]; then
+            if [ "$HIHY_CP_masqueradeTcp" != "true" ]; then
+                echo -e "$(i18n client_config_masquerade_tcp_not_listened)"
+                echo -e "$(i18n client_config_masquerade_h3_hint "$(echoColor red "$(i18n client_config_masquerade_h3_action)")")"
+            fi
         fi
 
         if [ -n "${pinSHA256}" ]; then
@@ -3261,7 +3621,10 @@ generate_client_config() {
             echo -e "   $(i18n client_config_selfsigned_verify_step1)"
             echo -e "   $(i18n client_config_selfsigned_verify_step2)"
         fi
-        echoColor purple "\n$(i18n client_config_masquerade_address "$(echoColor red https://${tls_sni}:${port})")"
+        # 伪装地址提示只在启用了伪装且监听 TCP 时才有意义
+        if [ "$HIHY_CP_masqueradeStatus" == "true" ] && [ "$HIHY_CP_masqueradeTcp" == "true" ]; then
+            echoColor purple "\n$(i18n client_config_masquerade_address "$(echoColor red https://${tls_sni}:${port})")"
+        fi
     fi
 
     if [ "${realmMode}" == "true" ]; then
@@ -3716,8 +4079,14 @@ format_bytes() {
 }
 
 getHysteriaTrafic() {
-    local api_port=$(getYamlValue "/etc/hihy/conf/backup.yaml" "trafficPort")
-    local secret=$(getYamlValue "/etc/hihy/conf/config.yaml" "auth.password")
+    local api_port=$(getBackupValueOrDefault "/etc/hihy/conf/backup.yaml" "trafficPort" "")
+    local secret=$(getYamlValue "/etc/hihy/conf/config.yaml" "auth.password" 2>/dev/null)
+
+    # 未安装/配置缺失时 trafficPort 拿不到,直接报错而不是对着乱值发请求
+    if ! isPositiveInt "${api_port}"; then
+        echoColor red "$(i18n config_file_not_found)"
+        return 1
+    fi
 
     if [ -n "$secret" ]; then
         CURL_OPTS=(-H "Authorization: $secret")
@@ -3885,35 +4254,41 @@ format_time_display() {
 
 # ----- 85-actions.sh -----
 hihyUpdate() {
-    localV=${hihyV}
+    local localV=${hihyV}
+    local remoteV
     remoteV=$(getLatestHihyVersion || true)
-    if [ -z $remoteV ]; then
+    if [ -z "$remoteV" ]; then
         echoColor red "$(i18n network_error_cannot_connect_github)"
-        exit
+        return 1
     fi
     if [ "${localV}" = "${remoteV}" ]; then
         echoColor green "$(i18n already_latest_version)"
         # 清除版本检查缓存，防止因缓存过期而显示过时的"有新版本"通知
         rm -f "$HIHY_VERSION_STATUS_FILE"
-    else
-        rm -f "$HIHY_BIN_LINK"
-        if ! installHihyLauncher /dev/null "$HIHY_BIN_LINK"; then
-            echoColor red "$(i18n hihy_cmd_install_fail)"
-            exit 1
-        fi
-        echoColor green "$(i18n hihy_update_complete)"
-        # 清除版本检查缓存，确保下次运行时重新检查并显示正确状态
-        rm -f "$HIHY_VERSION_STATUS_FILE"
+        return 0
     fi
 
+    # 先下载校验、再原子替换,统一走 installHihyScriptFromRemote。旧逻辑先 rm 再原地
+    # wget:下载失败会毁掉 hihy 命令,且对正在执行的脚本原地写入可能让 bash 读到损坏内容。
+    if ! installHihyScriptFromRemote "$HIHY_BIN_LINK"; then
+        echoColor red "$(i18n hihy_cmd_install_fail)"
+        return 1
+    fi
+    echoColor green "$(i18n hihy_update_complete)"
+    # 清除版本检查缓存，确保下次运行时重新检查并显示正确状态
+    rm -f "$HIHY_VERSION_STATUS_FILE"
 }
 
 changeIp64() {
-    local socks5_status=$(getYamlValue "/etc/hihy/conf/backup.yaml" "socks5_status")
+    local socks5_status=$(getBackupValueOrDefault "/etc/hihy/conf/backup.yaml" "socks5_status" "false")
     local config_file="/etc/hihy/conf/config.yaml"
     if [ "${socks5_status}" == "true" ]; then
         echoColor red "$(i18n ip_priority_socks5_active_error)"
-        exit 1
+        return 1
+    fi
+    if [ ! -f "${config_file}" ]; then
+        echoColor red "$(i18n config_file_not_found)"
+        return 1
     fi
     mode_now=$(getYamlValue "$config_file" "outbounds[0].direct.mode")
 
@@ -3954,10 +4329,10 @@ changeIp64() {
                 echoColor green "$(i18n switch_success)"
             fi
             ;;
-        0) exit 0 ;;
+        0) return 0 ;;
         *)
             echoColor red "$(i18n error_input_error)"
-            exit 1
+            return 1
             ;;
     esac
 }
@@ -3965,14 +4340,9 @@ changeIp64() {
 changeServerConfig() {
     if [ ! -e "/etc/rc.d/hihy" ] && [ ! -e "/etc/init.d/hihy" ]; then
         echoColor red "$(i18n change_config_install_first)"
-        exit
+        return 1
     fi
-    portHoppingStatus=$(getYamlValue "/etc/hihy/conf/backup.yaml" "portHoppingStatus")
-    if [ "${portHoppingStatus}" == "true" ]; then
-        portHoppingStart=$(getYamlValue "/etc/hihy/conf/backup.yaml" "portHoppingStart")
-        portHoppingEnd=$(getYamlValue "/etc/hihy/conf/backup.yaml" "portHoppingEnd")
-    fi
-    masquerade_tcp=$(getYamlValue "/etc/hihy/conf/backup.yaml" "masquerade_tcp")
+    masquerade_tcp=$(getBackupValueOrDefault "/etc/hihy/conf/backup.yaml" "masquerade_tcp" "false")
     stop
     killHysteriaProcess TERM
     cleanupHysteria2Iptables >/dev/null 2>&1 || true
@@ -3982,7 +4352,8 @@ changeServerConfig() {
     else
         delHihyFirewallPort udp
     fi
-    updateHysteriaCore
+    # 顺带尝试更新内核;失败(如网络不可达)不阻塞重新配置,继续用现有内核
+    updateHysteriaCore || true
     setHysteriaConfig
     start
     generate_client_config
@@ -3994,7 +4365,7 @@ aclControl() {
     local acl_file="/etc/hihy/acl/acl.txt"
     if [ ! -f "${acl_file}" ]; then
         echoColor red "$(i18n acl_file_not_found)"
-        exit 1
+        return 1
     fi
     echoColor purple "$(i18n acl_action_prompt)"
     echoColor yellow "$(i18n acl_choice_add)"
@@ -4014,7 +4385,7 @@ aclControl() {
                     read -r -p "$(i18n acl_v4_domain_prompt)" domain
                     if [ -z "${domain}" ]; then
                         echoColor red "$(i18n domain_cannot_be_empty)"
-                        exit 1
+                        return 1
                     fi
                     if grep -q "v4_only(suffix:${domain})" "${acl_file}"; then
                         echoColor red "$(i18n acl_rule_exists)"
@@ -4028,7 +4399,7 @@ aclControl() {
                     read -r -p "$(i18n acl_v6_domain_prompt)" domain
                     if [ -z "${domain}" ]; then
                         echoColor red "$(i18n domain_cannot_be_empty)"
-                        exit 1
+                        return 1
                     fi
                     if grep -q "v6_only(suffix:${domain})" "${acl_file}"; then
                         echoColor red "$(i18n acl_rule_exists)"
@@ -4042,7 +4413,7 @@ aclControl() {
                     read -r -p "$(i18n acl_reject_domain_prompt)" rejectInput
                     if [ -z "${rejectInput}" ]; then
                         echoColor red "$(i18n domain_cannot_be_empty)"
-                        exit 1
+                        return 1
                     fi
                     if grep -q "reject(suffix:${rejectInput})" "${acl_file}"; then
                         echoColor red "$(i18n acl_rule_exists)"
@@ -4054,7 +4425,7 @@ aclControl() {
                     ;;
                 *)
                     echoColor red "$(i18n error_input_error)"
-                    exit 1
+                    return 1
                     ;;
             esac
             ;;
@@ -4062,10 +4433,12 @@ aclControl() {
             read -r -p "$(i18n acl_delete_rule_prompt)" domain
             if [ -z "${domain}" ]; then
                 echoColor red "$(i18n domain_cannot_be_empty)"
-                exit 1
+                return 1
             fi
-            if grep -q "${domain}" "${acl_file}"; then
-                sed -i "/${domain}/d" "${acl_file}"
+            if grep -qF "${domain}" "${acl_file}"; then
+                # 字面量匹配重写文件,用户输入不再被当作 sed 正则解释
+                grep -vF "${domain}" "${acl_file}" >"${acl_file}.tmp" || true
+                mv "${acl_file}.tmp" "${acl_file}"
                 echoColor green "$(i18n delete_success)"
                 restart
             else
@@ -4077,10 +4450,10 @@ aclControl() {
             echoColor purple "$(i18n acl_current_list)"
             cat "${acl_file}"
             ;;
-        0) exit 0 ;;
+        0) return 0 ;;
         *)
             echoColor red "$(i18n error_input_error)"
-            exit 1
+            return 1
             ;;
     esac
 
@@ -4089,18 +4462,18 @@ aclControl() {
 addSocks5Outbound() {
     if [ ! -f "/etc/hihy/conf/config.yaml" ]; then
         echoColor red "$(i18n config_file_not_found)"
-        exit 1
+        return 1
     fi
     local server_config="/etc/hihy/conf/config.yaml"
     local backup_config="/etc/hihy/conf/backup.yaml"
     echo -e "$(i18n socks5_warp_tip)"
     echoColor yellow "$(i18n menu_option_exit)"
     read -r -p "$(i18n menu_prompt_choice)" num
-    if [ -z "${num}" ] || [ ${num} == "1" ]; then
-        socks5_status=$(getYamlValue "/etc/hihy/conf/backup.yaml" "socks5_status")
+    if [ -z "${num}" ] || [ "${num}" == "1" ]; then
+        socks5_status=$(getBackupValueOrDefault "/etc/hihy/conf/backup.yaml" "socks5_status" "false")
         if [ "${socks5_status}" == "true" ]; then
             echoColor red "$(i18n socks5_already_enabled)"
-            exit 1
+            return 1
         fi
         local conf_file="/etc/wireguard/proxy.conf"
         if [ -f "$conf_file" ]; then
@@ -4111,7 +4484,7 @@ addSocks5Outbound() {
 
         if [ ! -f "$conf_file" ]; then
             echoColor red "$(i18n socks5_warp_config_not_found)"
-            exit 1
+            return 1
         fi
         local port=$(grep "BindAddress" "$conf_file" | grep -v "^#" | awk -F':' '{print $2}')
         echoColor purple "$(i18n socks5_local_warp_port "$(echoColor red "${port}")")"
@@ -4120,26 +4493,26 @@ addSocks5Outbound() {
         yq eval '.outbounds = [{"name": "warp", "type": "socks5", "socks5": {"addr": "127.0.0.1:'$port'"}}] + .outbounds' -i "${server_config}"
 
         restart
-        addOrUpdateYaml ${backup_config} "socks5_status" "true"
+        addOrUpdateYaml "${backup_config}" "socks5_status" "true"
         echoColor green "$(i18n socks5_add_warp_success)"
 
-    elif [ ${num} == "2" ]; then
-        socks5_status=$(getYamlValue "/etc/hihy/conf/backup.yaml" "socks5_status")
+    elif [ "${num}" == "2" ]; then
+        socks5_status=$(getBackupValueOrDefault "/etc/hihy/conf/backup.yaml" "socks5_status" "false")
         if [ "${socks5_status}" == "true" ]; then
             echoColor red "$(i18n socks5_already_enabled)"
-            exit 1
+            return 1
         fi
         read -r -p "$(i18n socks5_addr_prompt)" socks5_addr
         if [ -z "${socks5_addr}" ]; then
             echoColor red "$(i18n addr_cannot_be_empty)"
-            exit 1
+            return 1
         fi
         read -r -p "$(i18n socks5_user_prompt)" socks5_user
         if [ -n "${socks5_user}" ]; then
             read -r -p "$(i18n socks5_pass_prompt)" socks5_pass
             if [ -z "${socks5_pass}" ]; then
                 echoColor red "$(i18n password_cannot_be_empty)"
-                exit 1
+                return 1
             fi
         fi
         local server_config="/etc/hihy/conf/config.yaml"
@@ -4150,18 +4523,18 @@ addSocks5Outbound() {
 
         fi
         restart
-        addOrUpdateYaml ${backup_config} "socks5_status" "true"
+        addOrUpdateYaml "${backup_config}" "socks5_status" "true"
         echoColor green "$(i18n socks5_add_custom_success)"
-    elif [ ${num} == "3" ]; then
+    elif [ "${num}" == "3" ]; then
         # 删除outbounds相关配置
-        outbound_name=$(getYamlValue ${server_config} "outbounds[0].name")
+        outbound_name=$(getYamlValue "${server_config}" "outbounds[0].name")
         if [ "${outbound_name}" == "warp" ] || [ "${outbound_name}" == "custom" ]; then
             yq eval 'del(.outbounds[0])' -i "${server_config}"
             if [ "${outbound_name}" == "warp" ]; then
                 warp u
             fi
             restart
-            addOrUpdateYaml ${backup_config} "socks5_status" "false"
+            addOrUpdateYaml "${backup_config}" "socks5_status" "false"
             echoColor green "$(i18n uninstall_success)"
         else
             echoColor red "$(i18n socks5_outbound_not_found)"
@@ -4169,7 +4542,7 @@ addSocks5Outbound() {
 
     else
         echoColor red "$(i18n error_input_error)"
-        exit 1
+        return 1
     fi
 
 }
@@ -4181,82 +4554,40 @@ menu() {
         show_menu
         read -r -p "$(i18n menu_prompt_choice)" input
         case $input in
-            1)
-                install
-                exit 0
-                ;;
-            2)
-                uninstall
-                exit 0
-                ;;
-            3)
-                start
-                wait_for_continue
-                ;;
-            4)
-                stop
-                wait_for_continue
-                ;;
-            5)
-                restart
-                wait_for_continue
-                ;;
-            6)
-                checkStatus
-                wait_for_continue
-                ;;
-            7)
-                updateHysteriaCore
-                exit 0
-                ;;
-            8)
-                generate_client_config
-                wait_for_continue
-                ;;
-            9)
-                changeServerConfig
-                exit 0
-                ;;
-            10)
-                changeIp64
-                exit 0
-                ;;
-            11)
-                hihyUpdate
-                exit 0
-                ;;
-            12)
-                aclControl
-                exit 0
-                ;;
-            13)
-                getHysteriaTrafic
-                wait_for_continue
-                ;;
-            14)
-                checkLogs
-                exit 0
-                ;;
-            15)
-                addSocks5Outbound
-                exit 0
-                ;;
+            1) install ;;
+            2) uninstall ;;
+            3) start ;;
+            4) stop ;;
+            5) restart ;;
+            6) checkStatus ;;
+            7) updateHysteriaCore ;;
+            8) generate_client_config ;;
+            9) changeServerConfig ;;
+            10) changeIp64 ;;
+            11) hihyUpdate ;;
+            12) aclControl ;;
+            13) getHysteriaTrafic ;;
+            14) checkLogs ;;
+            15) addSocks5Outbound ;;
+            16) install auto ;;
             0) exit 0 ;;
-            *)
-                echoColor red "$(i18n error_input_error)"
-                wait_for_continue
-                ;;
+            *) echoColor red "$(i18n error_input_error)" ;;
         esac
+        wait_for_continue
     done
 }
 
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then
     loadPersistedLanguage
     checkRoot
-    case "$1" in
+    case "${1:-}" in
         install | 1)
             echoColor purple "$(i18n cmd_title_install)"
             install
+            ;;
+        autoinstall | auto | 16)
+            echoColor purple "$(i18n cmd_title_autoinstall)"
+            install auto
             ;;
         uninstall | 2)
             echoColor purple "$(i18n cmd_title_uninstall)"

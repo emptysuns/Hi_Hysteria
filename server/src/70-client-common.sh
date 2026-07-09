@@ -87,4 +87,8 @@ loadClientParams() {
         HIHY_CP_phMinHopInterval=$(getBackupValueOrDefault "$backup" "portHoppingMinHopInterval" "10s")
         HIHY_CP_phMaxHopInterval=$(getBackupValueOrDefault "$backup" "portHoppingMaxHopInterval" "30s")
     fi
+
+    # 伪装状态(v1.13 起记录;旧版 backup 无此键时按"曾默认开启"回退为 true)
+    HIHY_CP_masqueradeStatus=$(getBackupValueOrDefault "$backup" "masquerade_status" "true")
+    HIHY_CP_masqueradeTcp=$(getBackupValueOrDefault "$backup" "masquerade_tcp" "false")
 }

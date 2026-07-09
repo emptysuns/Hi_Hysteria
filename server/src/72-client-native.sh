@@ -2,7 +2,7 @@
 generate_client_config() {
     if [ ! -e "/etc/rc.d/hihy" ] && [ ! -e "/etc/init.d/hihy" ]; then
         echoColor red "$(i18n client_config_hysteria_not_installed)"
-        exit 1
+        return 1
     fi
     # 统一从公共层读取所有参数(消除三个生成器的重复读取)
     loadClientParams
@@ -153,9 +153,11 @@ generate_client_config() {
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
     if [ "${realmMode}" != "true" ]; then
-        if [ "${portHoppingStatus}" == "false" ]; then
-            echo -e "$(i18n client_config_masquerade_tcp_not_listened)"
-            echo -e "$(i18n client_config_masquerade_h3_hint "$(echoColor red "$(i18n client_config_masquerade_h3_action)")")"
+        if [ "$HIHY_CP_masqueradeStatus" == "true" ]; then
+            if [ "$HIHY_CP_masqueradeTcp" != "true" ]; then
+                echo -e "$(i18n client_config_masquerade_tcp_not_listened)"
+                echo -e "$(i18n client_config_masquerade_h3_hint "$(echoColor red "$(i18n client_config_masquerade_h3_action)")")"
+            fi
         fi
 
         if [ -n "${pinSHA256}" ]; then
@@ -169,7 +171,10 @@ generate_client_config() {
             echo -e "   $(i18n client_config_selfsigned_verify_step1)"
             echo -e "   $(i18n client_config_selfsigned_verify_step2)"
         fi
-        echoColor purple "\n$(i18n client_config_masquerade_address "$(echoColor red https://${tls_sni}:${port})")"
+        # 伪装地址提示只在启用了伪装且监听 TCP 时才有意义
+        if [ "$HIHY_CP_masqueradeStatus" == "true" ] && [ "$HIHY_CP_masqueradeTcp" == "true" ]; then
+            echoColor purple "\n$(i18n client_config_masquerade_address "$(echoColor red https://${tls_sni}:${port})")"
+        fi
     fi
 
     if [ "${realmMode}" == "true" ]; then

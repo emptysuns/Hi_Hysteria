@@ -56,10 +56,9 @@ checkRoot() {
 uninstall() {
     local install_state
     install_state=$(classifyInstallState)
-    portHoppingStatus=$(getBackupValueOrDefault "/etc/hihy/conf/backup.yaml" "portHoppingStatus" "false")
     if [ "$install_state" = "not-installed" ]; then
         echoColor red "$(i18n hysteria_not_installed)"
-        exit 1
+        return 1
     fi
 
     if [ "$install_state" = "partially-installed" ]; then
@@ -111,6 +110,7 @@ uninstall() {
     rm -rf /etc/hihy
     rm -f /var/run/hihy.pid
     rm -f /usr/bin/yq
+    rm -f /etc/sysctl.d/99-hihy.conf
     rm -f "$HIHY_BIN_LINK"
 
     if [ -f "/etc/rc.local" ]; then

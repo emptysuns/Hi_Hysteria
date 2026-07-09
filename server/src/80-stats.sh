@@ -13,8 +13,14 @@ format_bytes() {
 }
 
 getHysteriaTrafic() {
-    local api_port=$(getYamlValue "/etc/hihy/conf/backup.yaml" "trafficPort")
-    local secret=$(getYamlValue "/etc/hihy/conf/config.yaml" "auth.password")
+    local api_port=$(getBackupValueOrDefault "/etc/hihy/conf/backup.yaml" "trafficPort" "")
+    local secret=$(getYamlValue "/etc/hihy/conf/config.yaml" "auth.password" 2>/dev/null)
+
+    # 未安装/配置缺失时 trafficPort 拿不到,直接报错而不是对着乱值发请求
+    if ! isPositiveInt "${api_port}"; then
+        echoColor red "$(i18n config_file_not_found)"
+        return 1
+    fi
 
     if [ -n "$secret" ]; then
         CURL_OPTS=(-H "Authorization: $secret")

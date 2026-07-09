@@ -1,17 +1,55 @@
 #!/bin/bash
 
+# 从远端(主源+镜像)拉取 hihy 脚本到目标路径:临时文件 -> 内容校验(hihyV= 标记) -> 原子 mv。
+# 目标可能正是正在执行的脚本,rename 只换 inode,运行中的进程不受影响。
+installHihyScriptFromRemote() {
+    local dest="$1"
+    local dest_dir temp_path
+
+    dest_dir="$(dirname "$dest")"
+    mkdir -p "$dest_dir" || return 1
+    temp_path="$(mktemp "$dest_dir/.hihy.tmp.XXXXXX")" || return 1
+
+    if ! downloadToFile "$HIHY_REMOTE_SCRIPT_URL" "$temp_path" \
+        && ! downloadToFile "$HIHY_REMOTE_SCRIPT_MIRROR_URL" "$temp_path"; then
+        rm -f "$temp_path"
+        return 1
+    fi
+    # 内容合法性校验:必须是带版本标记的 hihy 脚本,而非镜像返回的错误页
+    if ! grep -q '^hihyV=' "$temp_path"; then
+        rm -f "$temp_path"
+        return 1
+    fi
+    chmod +x "$temp_path"
+    mv "$temp_path" "$dest" || {
+        rm -f "$temp_path"
+        return 1
+    }
+}
+
 installHihyLauncher() {
     local source_path="${1:-${BASH_SOURCE[0]}}"
     local bin_link="${2:-$HIHY_BIN_LINK}"
     local bin_dir
+    local temp_path
 
     bin_dir="$(dirname "$bin_link")"
     mkdir -p "$bin_dir"
 
     if [ -f "$source_path" ] && [ "$source_path" != "$bin_link" ]; then
-        cp "$source_path" "$bin_link"
+        # 本地已有脚本文件:同目录临时文件 + mv(rename)落盘,避免原地截断
+        temp_path="$(mktemp "$bin_dir/.hihy.tmp.XXXXXX")" || return 1
+        if ! cp "$source_path" "$temp_path"; then
+            rm -f "$temp_path"
+            return 1
+        fi
+        chmod +x "$temp_path"
+        mv "$temp_path" "$bin_link" || {
+            rm -f "$temp_path"
+            return 1
+        }
     elif [ ! -f "$bin_link" ]; then
-        wget -q -O "$bin_link" --no-check-certificate "$HIHY_REMOTE_SCRIPT_URL" 2>/dev/null
+        installHihyScriptFromRemote "$bin_link" || return 1
     fi
 
     if [ -f "$bin_link" ]; then
@@ -72,6 +110,25 @@ generate_uuid() {
         uuid=$(cat /dev/urandom | tr -dc 'a-f0-9' | head -c 32 | sed 's/\(.\{8\}\)/\1-/g;s/-$//')
     fi
     echo "$uuid"
+}
+
+# 多源探测公网 IP;$1 为 curl 地址族参数(-4/-6/空)
+getPublicIP() {
+    local family="${1:-}"
+    local source detected
+    for source in "https://ip.sb" "https://api64.ipify.org" "https://ifconfig.me"; do
+        detected=$(curl ${family} -s -m 4 "$source" 2>/dev/null | tr -d '[:space:]')
+        if [ -n "$detected" ]; then
+            printf '%s\n' "$detected"
+            return 0
+        fi
+    done
+    return 1
+}
+
+# 常用探测策略:先 IPv4,失败再不限地址族(唯一实现点,勿在调用处复制回退梯子)
+detectPublicIP() {
+    getPublicIP -4 || getPublicIP ""
 }
 
 getListenPrimaryPort() {
@@ -137,9 +194,9 @@ getYamlValue() {
     local file=$1    # YAML文件路径
     local keyPath=$2 # 键路径，用点号分隔
 
-    # 检查文件是否存在
+    # 检查文件是否存在(错误走 stderr,避免污染调用方捕获的 stdout)
     if [[ ! -f "$file" ]]; then
-        echo "错误: 文件不存在"
+        echo "getYamlValue: file not found: $file" >&2
         return 1
     fi
 
@@ -148,7 +205,7 @@ getYamlValue() {
 
     # 检查 yq 命令是否成功执行
     if [[ $? -ne 0 ]]; then
-        echo "错误: 读取 YAML 文件失败"
+        echo "getYamlValue: failed to read $keyPath from $file" >&2
         return 1
     fi
 
