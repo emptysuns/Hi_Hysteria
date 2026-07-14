@@ -4078,6 +4078,69 @@ format_bytes() {
     fi
 }
 
+# 将 /dump/streams 的文本表格转换为内部的管道分隔格式，并按最后活动时间排序。
+# 所有 awk -v 参数必须放在程序文本之前；部分 awk 实现会把程序后的 -v 当作输入文件。
+formatTrafficStreamRows() {
+    awk -v estab="$(i18n traffic_status_estab)" \
+        -v closed="$(i18n traffic_status_closed)" \
+        -v byte_suffix="$(i18n unit_byte_literal)" \
+        -v kb_suffix="$(i18n unit_kilobyte_literal)" \
+        -v mb_suffix="$(i18n unit_megabyte_literal)" \
+        -v gb_suffix="$(i18n unit_gigabyte_literal)" \
+        -v ms_suffix="$(i18n unit_millisecond_literal)" \
+        -v s_suffix="$(i18n unit_second_literal)" \
+        -v m_suffix="$(i18n unit_minute_literal)" \
+        -v h_suffix="$(i18n unit_hour_literal)" \
+        'BEGIN {
+            status["ESTAB"] = estab
+            status["CLOSED"] = closed
+        }
+
+        function format_bytes(bytes) {
+            if (bytes < 1024) return bytes byte_suffix
+            if (bytes < 1024*1024) return sprintf("%.2f%s", bytes/1024, kb_suffix)
+            if (bytes < 1024*1024*1024) return sprintf("%.2f%s", bytes/(1024*1024), mb_suffix)
+            return sprintf("%.2f%s", bytes/(1024*1024*1024), gb_suffix)
+        }
+
+        function format_time(time) {
+            if (time == "-") return 0
+            if (index(time, "ms") > 0) {
+                gsub("ms", "", time)
+                return time/1000
+            }
+            if (index(time, "s") > 0) {
+                gsub("s", "", time)
+                return time
+            }
+            if (index(time, "m") > 0) {
+                gsub("m", "", time)
+                return time * 60
+            }
+            if (index(time, "h") > 0) {
+                gsub("h", "", time)
+                return time * 3600
+            }
+            return time
+        }
+
+        function format_time_display(seconds) {
+            if (seconds < 1) return sprintf("%.0f%s", seconds * 1000, ms_suffix)
+            if (seconds < 60) return sprintf("%.1f%s", seconds, s_suffix)
+            if (seconds < 3600) return sprintf("%.1f%s", seconds/60, m_suffix)
+            return sprintf("%.1f%s", seconds/3600, h_suffix)
+        }
+
+        NR > 1 {
+            last_active = format_time($8)
+            printf "%s|%s|%s|%s|%s|%s|%s|%.2f|%s|%s\n", \
+                status[$1], $2, $3, $4, \
+                format_bytes($5), format_bytes($6), \
+                format_time_display(format_time($7)), \
+                last_active, $9, $10
+        }' | sort -t'|' -k8,8nr
+}
+
 getHysteriaTrafic() {
     local api_port=$(getBackupValueOrDefault "/etc/hihy/conf/backup.yaml" "trafficPort" "")
     local secret=$(getYamlValue "/etc/hihy/conf/config.yaml" "auth.password" 2>/dev/null)
@@ -4144,65 +4207,7 @@ getHysteriaTrafic() {
         # 使用临时文件存储排序数据
         temp_file=$(mktemp)
 
-        echo "$STREAMS_OUTPUT" | awk -v estab="$(i18n traffic_status_estab)" \
-            -v closed="$(i18n traffic_status_closed)" \
-            'BEGIN {
-            status["ESTAB"]=estab
-            status["CLOSED"]=closed
-        }
-
-        function format_bytes(bytes) {
-            if (bytes < 1024) return bytes byte_suffix
-            if (bytes < 1024*1024) return sprintf("%.2f%s", bytes/1024, kb_suffix)
-            if (bytes < 1024*1024*1024) return sprintf("%.2f%s", bytes/(1024*1024), mb_suffix)
-            return sprintf("%.2f%s", bytes/(1024*1024*1024), gb_suffix)
-        }
-
-        function format_time(time) {
-            if (time == "-") return 0
-            if (index(time, "ms") > 0) {
-                gsub("ms", "", time)
-                return time/1000
-            }
-            if (index(time, "s") > 0) {
-                gsub("s", "", time)
-                return time
-            }
-            if (index(time, "m") > 0) {
-                gsub("m", "", time)
-                return time * 60
-            }
-            if (index(time, "h") > 0) {
-                gsub("h", "", time)
-                return time * 3600
-            }
-            return time
-        }
-
-        function format_time_display(seconds) {
-            if (seconds < 1) return sprintf("%.0f%s", seconds * 1000, ms_suffix)
-            if (seconds < 60) return sprintf("%.1f%s", seconds, s_suffix)
-            if (seconds < 3600) return sprintf("%.1f%s", seconds/60, m_suffix)
-            return sprintf("%.1f%s", seconds/3600, h_suffix)
-        }
-
-        NR > 1 {
-            last_active = format_time($8)
-            printf "%s|%s|%s|%s|%s|%s|%s|%.2f|%s|%s\n", \
-                status[$1], $2, $3, $4, \
-                format_bytes($5), format_bytes($6), \
-                format_time_display(format_time($7)), \
-                last_active, \
-                $9, $10
-        }' -v byte_suffix="$(i18n unit_byte_literal)" \
-            -v kb_suffix="$(i18n unit_kilobyte_literal)" \
-            -v mb_suffix="$(i18n unit_megabyte_literal)" \
-            -v gb_suffix="$(i18n unit_gigabyte_literal)" \
-            -v ms_suffix="$(i18n unit_millisecond_literal)" \
-            -v s_suffix="$(i18n unit_second_literal)" \
-            -v m_suffix="$(i18n unit_minute_literal)" \
-            -v h_suffix="$(i18n unit_hour_literal)" \
-            | sort -t'|' -k8,8nr >"$temp_file"
+        printf '%s\n' "$STREAMS_OUTPUT" | formatTrafficStreamRows >"$temp_file"
 
         # 读取排序后的数据并格式化输出
         while IFS='|' read -r state user conn_id flows up down alive last_active req_addr target_addr; do
@@ -4250,7 +4255,6 @@ format_time_display() {
         printf "$(i18n unit_hours $hours)"
     fi
 }
-
 
 # ----- 85-actions.sh -----
 hihyUpdate() {
