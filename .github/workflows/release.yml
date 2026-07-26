@@ -1,0 +1,53 @@
+name: Release
+
+on:
+  push:
+    tags: ["ver*"]
+
+permissions:
+  contents: write
+
+env:
+  YQ_VERSION: v4.44.3
+
+jobs:
+  release:
+    name: Verify & publish release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq shellcheck qrencode
+          sudo wget -q -O /usr/local/bin/yq "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Verify build sync & tests
+        run: |
+          bash scripts/build.sh
+          git diff --exit-code server/hy2.sh
+          bash server/test_build.sh
+          bash scripts/i18n-validate.sh
+          bash server/test_bootstrap_install.sh
+          bash server/test_install_recovery.sh
+          bash server/test_auto_config.sh
+          bash server/test_client_config.sh
+
+      - name: Verify tag matches script version
+        run: |
+          script_version=$(grep -oP '^hihyV="\K[^"]+' server/hy2.sh)
+          if [ "$script_version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match hihyV=$script_version in server/hy2.sh"
+            exit 1
+          fi
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            server/hy2.sh server/install.sh \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes

@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  YQ_VERSION: v4.44.3
+
+jobs:
+  lint-and-test:
+    name: Build, lint & unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install toolchain (shellcheck, yq, qrencode)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq shellcheck qrencode
+          sudo wget -q -O /usr/local/bin/yq "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Build hy2.sh from modules
+        run: bash scripts/build.sh
+
+      - name: Verify artifact/source sync (server/hy2.sh committed up to date)
+        run: |
+          git diff --exit-code server/hy2.sh \
+            || { echo "::error::server/hy2.sh is out of sync with server/src/ — run 'bash scripts/build.sh' and commit the result"; exit 1; }
+          bash server/test_build.sh
+
+      - name: shellcheck (error severity)
+        run: |
+          shellcheck -S error \
+            server/hy2.sh server/install.sh \
+            server/test_bootstrap_install.sh server/test_install_recovery.sh \
+            server/test_auto_config.sh server/test_client_config.sh server/test_build.sh \
+            scripts/build.sh scripts/i18n-validate.sh scripts/i18n-extract.sh
+
+      - name: i18n catalogs consistency
+        run: bash scripts/i18n-validate.sh
+
+      - name: Unit tests
+        run: |
+          bash server/test_bootstrap_install.sh
+          bash server/test_install_recovery.sh
+          bash server/test_auto_config.sh
+          bash server/test_client_config.sh
+
+  e2e-install:
+    name: E2E autoinstall (debian:12 container)
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: One-key install, restart & uninstall inside container
+        run: |
+          docker run --rm --cap-add=NET_ADMIN -v "$PWD":/repo:ro debian:12 bash -c '
+            set -eo pipefail
+            export DEBIAN_FRONTEND=noninteractive
+            apt-get update -qq >/dev/null
+            apt-get install -y -qq wget curl lsof iptables bc dnsutils qrencode cron procps openssl util-linux >/dev/null
+            mkdir -p /etc/hihy/i18n /etc/hihy/conf
+            cp /repo/server/i18n/en.json /etc/hihy/i18n/hy2.sh.en.json
+            printf "HIHY_LANG=en\n" > /etc/hihy/conf/i18n.conf
+            # 模拟 bootstrap:先落 launcher 再执行(官方安装路径)
+            cp /repo/server/hy2.sh /usr/bin/hihy && chmod +x /usr/bin/hihy
+
+            HIHY_AUTO_PORT=34567 hihy autoinstall | tee /tmp/install.log
+            grep -q "Installation complete" /tmp/install.log
+            # 全新安装不允许出现残留警告 (回归: classifyInstallState 误把 launcher 当残留)
+            # 注意不能写 "! grep":set -e 对 ! 前缀的失败不生效,断言会静默放水
+            if grep -q "Incomplete installation residue detected" /tmp/install.log; then
+              echo "::error::residue warning shown on fresh install"; exit 1
+            fi
+
+            pid=$(cat /var/run/hihy.pid); kill -0 "$pid"
+            # 服务必须运行在独立会话 (回归: Ctrl+C 组播杀死服务)
+            [ "$(ps -o sid= -p "$pid" | tr -d " ")" = "$pid" ]
+
+            hihy restart
+            sleep 1
+            kill -0 "$(cat /var/run/hihy.pid)"
+
+            hihy uninstall | tee /tmp/uninstall.log
+            grep -q "Hysteria uninstalled completely" /tmp/uninstall.log
+            if pgrep -f /etc/hihy/bin/appS; then
+              echo "::error::appS still running after uninstall"; exit 1
+            fi
+            echo "E2E OK"
+          '
