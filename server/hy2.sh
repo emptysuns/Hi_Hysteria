@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="ver1.14"
+hihyV="ver1.15"
 # =============================================================================
 # GENERATED FILE — DO NOT EDIT.
 # Source lives in server/src/*.sh. Edit there and run: bash scripts/build.sh
@@ -561,6 +561,75 @@ getYamlValue() {
 }
 
 
+# ----- 22-ech.sh -----
+# ECH (Encrypted Client Hello) 密钥对生成 —— 纯 openssl + od + printf 实现,
+# 与 `sing-box generate ech-keypair <public_name>` 输出等价,无需额外下载任何二进制。
+#
+# 结构规范(hysteria app/internal/utils/ech.go 的解析逻辑即权威):
+#   "ECH KEYS"    PEM = u16len|X25519私钥(32B) + u16len|ECHConfig     (服务端持有)
+#   "ECH CONFIGS" PEM = ECHConfigList = u16len( ECHConfig... )        (发给客户端)
+#   ECHConfig  = 版本 0xfe0d + u16len(contents)
+#   contents   = config_id(1B) + kem_id 0x0020(X25519-HKDF-SHA256)
+#              + u16len+公钥(32B) + u16len+HPKE套件列表
+#              + max_name_length(1B=0) + u8len+public_name + 扩展 u16len=0
+# 已用真实 hysteria v2.10.0 内核验证:服务端加载成功,派生 configList 与本实现逐字节一致,
+# 客户端携带该 configList 可完成 ECH 握手。
+
+echHexLen2() { printf '%04x' $(( ${#1} / 2 )); }
+echHexToBin() { printf '%b' "$(printf '%s' "$1" | sed 's/../\\x&/g')"; }
+
+# 生成 ECH 密钥对文件并导出客户端配置。
+# $1 = 输出 pem 路径(0600)  $2 = public_name(明文幌子域名)
+# 成功: 返回 0,并设置全局 ech_config 为 ECHConfigList 的 base64(客户端 tls.ech 取值)
+generateEchKeypair() {
+    local out_path="$1" public_name="$2"
+    local priv_pem priv_hex pub_hex config_id name_hex suites contents config config_list keys_blob
+
+    if ! command -v openssl >/dev/null 2>&1; then
+        return 1
+    fi
+    priv_pem=$(openssl genpkey -algorithm X25519 2>/dev/null) || return 1
+    priv_hex=$(printf '%s\n' "$priv_pem" | openssl pkey -outform DER 2>/dev/null | tail -c 32 | od -An -tx1 | tr -d ' \n')
+    pub_hex=$(printf '%s\n' "$priv_pem" | openssl pkey -pubout -outform DER 2>/dev/null | tail -c 32 | od -An -tx1 | tr -d ' \n')
+    # X25519 原始密钥固定 32 字节;取不到说明 openssl 过旧(<1.1.1)或输出异常
+    if [ ${#priv_hex} -ne 64 ] || [ ${#pub_hex} -ne 64 ]; then
+        return 1
+    fi
+
+    config_id=$(printf '%02x' "$(od -An -N1 -tu1 /dev/urandom | tr -d ' ')")
+    name_hex=$(printf '%s' "$public_name" | od -An -tx1 | tr -d ' \n')
+    # HPKE 套件:HKDF-SHA256 × (AES-128-GCM / AES-256-GCM / ChaCha20-Poly1305),Go 标准库支持的全集
+    suites="000100010001000200010003"
+
+    contents="${config_id}0020$(echHexLen2 "$pub_hex")${pub_hex}$(echHexLen2 "$suites")${suites}00$(printf '%02x' $(( ${#name_hex} / 2 )))${name_hex}0000"
+    config="fe0d$(echHexLen2 "$contents")${contents}"
+    config_list="$(echHexLen2 "$config")${config}"
+    keys_blob="0020${priv_hex}$(echHexLen2 "$config")${config}"
+
+    mkdir -p "$(dirname "$out_path")"
+    {
+        echo "-----BEGIN ECH KEYS-----"
+        echHexToBin "$keys_blob" | openssl base64
+        echo "-----END ECH KEYS-----"
+        echo "-----BEGIN ECH CONFIGS-----"
+        echHexToBin "$config_list" | openssl base64
+        echo "-----END ECH CONFIGS-----"
+    } >"$out_path"
+    chmod 600 "$out_path"
+
+    ech_config=$(echHexToBin "$config_list" | openssl base64 -A)
+    [ -n "$ech_config" ]
+}
+
+# base64 值用于 URL 查询参数时的百分号编码(+ / = 三个字符)
+echUrlEncodeB64() {
+    local s="$1"
+    s="${s//+/%2B}"
+    s="${s//\//%2F}"
+    s="${s//=/%3D}"
+    printf '%s' "$s"
+}
+
 # ----- 25-system.sh -----
 detectVirtualization() {
     local virt_type=""
@@ -836,6 +905,17 @@ getLocalHysteriaVersion() {
     fi
 
     printf '%s\n' "$version"
+}
+
+# 本地内核是否满足最低版本要求($1,如 "2.10.0")。取不到版本号视为不满足。
+localCoreVersionAtLeast() {
+    local required="$1"
+    local local_version
+    local_version=$(getLocalHysteriaVersion 2>/dev/null) || return 1
+    local_version="${local_version#app/}"
+    local_version="${local_version#v}"
+    [ -n "$local_version" ] || return 1
+    [ "$(printf '%s\n%s\n' "$required" "$local_version" | sort -V | head -n 1)" = "$required" ]
 }
 
 ensureVersionCheckStateDir() {
@@ -1212,6 +1292,10 @@ setConfigDefaults() {
     obfs_status="false"
     obfs_type=""
     obfs_pass=""
+    ech_status="false"
+    ech_public_name=""
+    ech_config=""
+    brutal_disable_loss_comp="false"
     masquerade_status="false"
     masquerade_type=""
     masquerade_string=""
@@ -1867,6 +1951,20 @@ collectHysteriaConfig() {
             break
         done
         echo -e "\n->$(i18n upload_label)$(echoColor red "${upload}")mbps\n"
+        # Brutal 速率补偿开关(hysteria v2.10.0+):默认保持开启
+        echoColor green "$(i18n losscomp_prompt)"
+        echoColor white "$(i18n losscomp_hint)"
+        echoColor yellow "$(i18n losscomp_choice_keep_default)"
+        echoColor yellow "$(i18n losscomp_choice_disable)"
+        echoColor green "$(i18n prompt_enter_number)"
+        read -r losscomp_num
+        if [ "${losscomp_num}" == "2" ]; then
+            brutal_disable_loss_comp="true"
+            echo -e "\n->$(i18n losscomp_disabled_label)\n"
+        else
+            brutal_disable_loss_comp="false"
+            echo -e "\n->$(i18n losscomp_kept_label)\n"
+        fi
     else
         delay=""
         download=""
@@ -1904,6 +2002,26 @@ collectHysteriaConfig() {
         echo -e "\n->$(i18n obfs_disabled)\n"
     fi
     if [ "${realmMode}" != "true" ]; then
+        # ECH(hysteria v2.10.0+):加密 ClientHello 中的 SNI,中间设备只能看到幌子域名
+        echoColor green "$(i18n ech_prompt)"
+        echoColor white "$(i18n ech_hint1)"
+        echoColor white "$(i18n ech_hint2)"
+        echoColor yellow "$(i18n ech_choice_disable_default)"
+        echoColor yellow "$(i18n ech_choice_enable)"
+        echoColor green "$(i18n prompt_enter_number_or_default)"
+        read -r ech_num
+        if [ "${ech_num}" == "2" ]; then
+            ech_status="true"
+            echoColor green "$(i18n ech_public_name_prompt)"
+            read -r ech_public_name
+            if [ -z "${ech_public_name}" ]; then
+                ech_public_name="www.microsoft.com"
+            fi
+            echo -e "\n->$(i18n ech_public_name_label)$(echoColor red "${ech_public_name}")\n"
+        else
+            ech_status="false"
+            echo -e "\n->$(i18n ech_disabled_label)\n"
+        fi
         echoColor green "$(i18n masquerade_prompt)"
         echoColor yellow "$(i18n masquerade_choice_disable)"
         echoColor yellow "$(i18n masquerade_choice_string)"
@@ -2030,6 +2148,10 @@ applyAutoOverrides() {
         masquerade_proxy="${HIHY_AUTO_MASQUERADE}"
         masquerade_xforwarded="true"
     fi
+    if [ "${HIHY_AUTO_ECH:-}" = "true" ] || [ "${HIHY_AUTO_ECH:-}" = "1" ]; then
+        ech_status="true"
+        ech_public_name="${HIHY_AUTO_ECH_PUBLIC_NAME:-www.microsoft.com}"
+    fi
     if [ "${HIHY_AUTO_PORT_HOPPING:-}" = "true" ] || [ "${HIHY_AUTO_PORT_HOPPING:-}" = "1" ]; then
         portHoppingStatus="true"
         portHoppingStart="${HIHY_AUTO_HOP_START:-47000}"
@@ -2092,6 +2214,11 @@ autoHysteriaConfig() {
         echo -e "  $(i18n auto_summary_hopping_on "$(echoColor red "${portHoppingStart}-${portHoppingEnd}")")"
     else
         echo -e "  $(i18n auto_summary_hopping_off)"
+    fi
+    if [ "${ech_status}" == "true" ]; then
+        echo -e "  $(i18n auto_summary_ech_on "$(echoColor red "${ech_public_name}")")"
+    else
+        echo -e "  $(i18n auto_summary_ech_off)"
     fi
     echo -e ""
 
@@ -2205,6 +2332,14 @@ writeHysteriaConfig() {
     if [ "${congestion_mode}" == "brutal" ]; then
         addOrUpdateYaml "$yaml_file" "bandwidth.up" "${server_upload}mbps"
         addOrUpdateYaml "$yaml_file" "bandwidth.down" "${server_download}mbps"
+        # 仅显式关闭时写入。旧内核(mapstructure)会静默忽略该未知字段:不会崩溃,但也不生效,
+        # 所以这里提示用户先更新内核,免得以为已经关闭了补偿。
+        if [ "${brutal_disable_loss_comp}" == "true" ]; then
+            addOrUpdateYaml "$yaml_file" "bandwidth.disableLossCompensation" "true" "bool"
+            if ! localCoreVersionAtLeast "2.10.0"; then
+                echoColor yellow "$(i18n losscomp_core_too_old "$(getLocalHysteriaVersion 2>/dev/null || echo unknown)")"
+            fi
+        fi
     fi
     addOrUpdateYaml "$yaml_file" "acl.file" "${acl_file}"
     if [ "${masquerade_status}" == "true" ]; then
@@ -2353,6 +2488,22 @@ writeHysteriaConfig() {
         u_host="${realmURI}"
     fi
 
+    # ECH:内核 >= v2.10.0 才支持;老内核会忽略 ech 块导致客户端 fail-closed,必须硬性拦截
+    if [ "${ech_status}" == "true" ]; then
+        if ! localCoreVersionAtLeast "2.10.0"; then
+            echoColor yellow "$(i18n ech_core_too_old "$(getLocalHysteriaVersion 2>/dev/null || echo unknown)")"
+            ech_status="false"
+            ech_config=""
+        elif generateEchKeypair "/etc/hihy/cert/ech.pem" "${ech_public_name}"; then
+            addOrUpdateYaml "$yaml_file" "ech.keyPath" "/etc/hihy/cert/ech.pem"
+            echoColor green "$(i18n ech_keygen_success "$(echoColor red "${ech_public_name}")")"
+        else
+            echoColor yellow "$(i18n ech_keygen_failed)"
+            ech_status="false"
+            ech_config=""
+        fi
+    fi
+
     addOrUpdateYaml "$yaml_file" "sniff.enabled" "true"
     addOrUpdateYaml "$yaml_file" "sniff.timeout" "2s"
     addOrUpdateYaml "$yaml_file" "sniff.rewriteDomain" "false"
@@ -2467,6 +2618,14 @@ writeHysteriaConfig() {
     addOrUpdateYaml ${backup_file} "masquerade_status" "${masquerade_status}"
     addOrUpdateYaml ${backup_file} "masquerade_xforwarded" "${masquerade_xforwarded}"
     addOrUpdateYaml ${backup_file} "masquerade_tcp" "${masquerade_tcp}"
+    addOrUpdateYaml ${backup_file} "ech_status" "${ech_status}"
+    if [ "${ech_status}" == "true" ]; then
+        addOrUpdateYaml ${backup_file} "ech_public_name" "${ech_public_name}"
+        addOrUpdateYaml ${backup_file} "ech_config" "${ech_config}" "string"
+    fi
+    if [ "${congestion_mode}" == "brutal" ]; then
+        addOrUpdateYaml ${backup_file} "disable_loss_compensation" "${brutal_disable_loss_comp}"
+    fi
     if [ "${insecure}" == "1" ]; then
         addOrUpdateYaml ${backup_file} "insecure" "true"
     else
@@ -3500,6 +3659,14 @@ loadClientParams() {
     # 伪装状态(v1.13 起记录;旧版 backup 无此键时按"曾默认开启"回退为 true)
     HIHY_CP_masqueradeStatus=$(getBackupValueOrDefault "$backup" "masquerade_status" "true")
     HIHY_CP_masqueradeTcp=$(getBackupValueOrDefault "$backup" "masquerade_tcp" "false")
+
+    # ECH(v1.15 起记录):ech_config = 客户端 ECHConfigList base64
+    HIHY_CP_echStatus=$(getBackupValueOrDefault "$backup" "ech_status" "false")
+    HIHY_CP_echConfig=""
+    if [ "$HIHY_CP_echStatus" = "true" ]; then
+        HIHY_CP_echConfig=$(getBackupValueOrDefault "$backup" "ech_config" "")
+        [ -z "$HIHY_CP_echConfig" ] && HIHY_CP_echStatus="false"
+    fi
 }
 
 # ----- 72-client-native.sh -----
@@ -3559,10 +3726,18 @@ generate_client_config() {
     fi
 
     addOrUpdateYaml "$client_configfile" "tls.sni" "${tls_sni}"
+    if [ "${HIHY_CP_echStatus}" == "true" ]; then
+        addOrUpdateYaml "$client_configfile" "tls.ech" "${HIHY_CP_echConfig}" "string"
+    fi
     if [ -n "${pinSHA256}" ]; then
-        # 通过证书指纹校验自签证书,安全且无需开启不安全连接
+        # 证书指纹钉扎(pinning)必须与 insecure: true 同时使用:
+        # hysteria 的 pinSHA256 只是追加一个 VerifyPeerCertificate 回调,并不会关闭 Go 的标准
+        # 证书链校验 —— 自签证书没有受信任的链,insecure: false 时握手直接失败
+        # ("x509: certificate signed by unknown authority")。
+        # 这不降低安全性:链校验被跳过后,仍要求对端证书的 SHA-256 与此处的指纹逐字节一致,
+        # 攻击者必须持有该证书私钥才能冒充,比信任任意 CA 更严格。
         addOrUpdateYaml "$client_configfile" "tls.pinSHA256" "${pinSHA256}" "string"
-        addOrUpdateYaml "$client_configfile" "tls.insecure" "false"
+        addOrUpdateYaml "$client_configfile" "tls.insecure" "true"
     elif [ "${insecure}" == "true" ]; then
         addOrUpdateYaml "$client_configfile" "tls.insecure" "true"
     elif [ "${insecure}" == "false" ]; then
@@ -3615,7 +3790,7 @@ generate_client_config() {
         realmShare=$(echo "${realmURI}" | sed -E 's#^realm(\+http)?://#hysteria2+realm\1://#')
         url="${realmShare}?auth=${auth_secret}"
         if [ -n "${pinSHA256}" ]; then
-            url="${url}&pinSHA256=${pinSHA256}"
+            url="${url}&pinSHA256=${pinSHA256}&insecure=1"
         elif [ "${insecure}" == "true" ]; then
             url="${url}&insecure=1"
         fi
@@ -3633,8 +3808,8 @@ generate_client_config() {
         fi
 
         if [ -n "${pinSHA256}" ]; then
-            # 自签证书通过指纹校验,无需 insecure
-            url_base="${url_base}pinSHA256=${pinSHA256}"
+            # 与配置文件同理:指纹钉扎必须带 insecure=1 关闭标准链校验,否则客户端连不上
+            url_base="${url_base}pinSHA256=${pinSHA256}&insecure=1"
         elif [ "${insecure}" == "true" ]; then
             url_base="${url_base}insecure=1"
         else
@@ -3643,6 +3818,11 @@ generate_client_config() {
 
         if [ "${obfs_status}" == "true" ]; then
             url_base="${url_base}&obfs=${obfs_type}&obfs-password=${obfs_pass}"
+        fi
+
+        if [ "${HIHY_CP_echStatus}" == "true" ]; then
+            # base64 含 + / = 需百分号编码;hysteria 解析端对 std/url-safe base64 均兼容
+            url_base="${url_base}&ech=$(echUrlEncodeB64 "${HIHY_CP_echConfig}")"
         fi
         url="${url_base}&sni=${tls_sni}#Hy2-${remarks}"
     fi
@@ -3730,9 +3910,10 @@ generate_client_config() {
 #   1. 仅 brutal 模式才输出 up/down;BBR/Reno 省略(=BBR,与原生语义对齐)
 #   2. BBR 时输出 bbr-profile(standard 省略)
 #   3. 端口跳跃输出 hop-interval(random 模式用 min-max 区间)
-#   4. Realm 模式输出 realm-opts(enable/server-url/token/realm-id/stun-servers)
+#   4. Realm 模式输出 realm-opts(enable/server-url/token/realm-id/stun-servers),并保留 port 占位
 #   5. 规则镜像改用 jsdelivr(HIHY_RULESET_MIRROR 可覆盖)
-#   6. 删除非法 GEOIP,LAN 规则(已有 RULE-SET,lancidr 覆盖)
+#   6. 删除 GEOIP 规则:LAN 由 lancidr 覆盖;CN 由 cncidr 覆盖,且 GEOIP 会强制下载 MMDB,
+#      下载失败会让整份配置启动失败
 #   7. gecko 混淆:由调用方拦住,不走到此函数
 generateMihomoYaml() {
     loadClientParams
@@ -3760,9 +3941,11 @@ dns:
   nameserver:
     - https://dns.alidns.com/dns-query
     - https://223.5.5.5/dns-query
-  fallback:
-    - 114.114.114.114
-    - 223.5.5.5
+  # 不配置 fallback:mihomo 的默认 fallback-filter 带 geoip,会在启动时强制下载 MMDB
+  # (下载失败则整份配置起不来);且原先的 fallback 与 nameserver 同为国内 DNS,本就无意义。
+  # proxy-server-nameserver 用于解析节点域名,避免 DNS 请求绕回代理形成环路。
+  proxy-server-nameserver:
+    - https://223.5.5.5/dns-query
 rule-providers:
   reject:
     type: http
@@ -3877,7 +4060,6 @@ rules:
   - RULE-SET,lancidr,DIRECT
   - RULE-SET,cncidr,DIRECT
   - RULE-SET,telegramcidr,PROXY
-  - GEOIP,CN,DIRECT
   - MATCH,PROXY
 EOF
 
@@ -3887,9 +4069,11 @@ EOF
 
     if [ "$HIHY_CP_realmMode" = "true" ]; then
         parseRealmURI "$HIHY_CP_realmURI"
-        # 官方示例: realm 模式保留顶层 server(填服务器地址),port 省略
+        # realm 模式仍必须保留 server + port:mihomo 无条件校验端口,删掉 port 会让整份配置
+        # 以 "proxy 0: invalid port" 拒载(已用 mihomo v1.19.29 实测)。实际地址由牵手服务
+        # 打洞后确定,这里的 443 只是占位,与官方示例保持同一形状。
         addOrUpdateYaml "$metaFile" "proxies[0].server" "${HIHY_CP_serverAddress}"
-        yq eval 'del(.proxies[0].port)' -i "$metaFile"
+        addOrUpdateYaml "$metaFile" "proxies[0].port" "443"
         addOrUpdateYaml "$metaFile" "proxies[0].realm-opts.enable" "true"
         addOrUpdateYaml "$metaFile" "proxies[0].realm-opts.server-url" "${HIHY_REALM_SERVER_URL}"
         addOrUpdateYaml "$metaFile" "proxies[0].realm-opts.token" "${HIHY_REALM_TOKEN}"
@@ -3915,7 +4099,7 @@ EOF
 
     addOrUpdateYaml "$metaFile" "proxies[0].password" "${HIHY_CP_auth}"
 
-    # 拥塞:仅 brutal 输出 up/down;BBR 输出 bbr-profile(standard 时不输出);reno 两者都不输出
+    # 拥塞:仅 brutal 输出 up/down;BBR 输出 bbr-profile(standard 省略,与默认值一致)
     if [ "$HIHY_CP_congestionMode" = "brutal" ]; then
         local up_num down_num
         up_num=$(echo "$HIHY_CP_up" | tr -dc '0-9')
@@ -3947,6 +4131,10 @@ EOF
     fi
 
     addOrUpdateYaml "$metaFile" "proxies[0].sni" "${HIHY_CP_sni}"
+    if [ "$HIHY_CP_echStatus" = "true" ]; then
+        addOrUpdateYaml "$metaFile" "proxies[0].ech-opts.enable" "true"
+        addOrUpdateYaml "$metaFile" "proxies[0].ech-opts.config" "${HIHY_CP_echConfig}" "string"
+    fi
     addOrUpdateYaml "$metaFile" "proxy-groups[0].name" "PROXY"
     addOrUpdateYaml "$metaFile" "proxy-groups[0].type" "select"
     addOrUpdateYaml "$metaFile" "proxy-groups[0].proxies" "[${remarks}]"
@@ -3955,8 +4143,13 @@ EOF
 }
 
 # ----- 76-client-singbox.sh -----
-# sing-box 客户端配置生成(基线 1.11+;realm/gecko/bbr_profile 需 1.14+)
+# sing-box 客户端配置生成(基线 1.12+,旧版 DNS 格式已在 sing-box 1.14 移除;
+# realm/gecko/bbr_profile/hop_interval_max 需 1.14+)
 # 字段映射对照 sing-box.sagernet.org hysteria2 outbound + shared TLS
+#
+# 注意 outbound 的 network 字段指的是"被代理流量"的类型(tcp/udp),不是 QUIC 传输层。
+# 缺省即两者都启用;若误写成 "udp",所有 TCP 流量都会被拒绝
+# (日志: "TCP is not supported by default outbound"),等于整个代理不可用。
 generateSingboxJson() {
     loadClientParams
     local remarks="$HIHY_CP_remarks"
@@ -3965,18 +4158,32 @@ generateSingboxJson() {
     local outFile="./Hy2-${remarks}-singbox.json"
     [ -f "$outFile" ] && rm -f "$outFile"
 
+    # ---------- ECH(可选,附着到 tls 块): config 取 PEM 行数组(sing-box 要求 PEM 格式) ----------
+    local ech_member=""
+    if [ "$HIHY_CP_echStatus" = "true" ]; then
+        local ech_b64_lines
+        ech_b64_lines=$(printf '%s' "$HIHY_CP_echConfig" | fold -w 64 | awk '{printf "\"%s\", ", $0}')
+        ech_member=",
+        \"ech\": {
+          \"enabled\": true,
+          \"config\": [\"-----BEGIN ECH CONFIGS-----\", ${ech_b64_lines}\"-----END ECH CONFIGS-----\"]
+        }"
+    fi
+
     # ---------- TLS: 自签内嵌 CA PEM;否则按 insecure ----------
     local tls_block ca_file pem_lines
     ca_file="$root/result/${HIHY_CP_sni}.ca.crt"
     if [ -n "$HIHY_CP_pinSHA256" ] && [ -f "$ca_file" ]; then
-        # 自签证书:sing-box 不支持 pinSHA256,用内嵌 CA PEM 校验
-        pem_lines=$(awk 'BEGIN{ORS="\", \""} {gsub(/[\r"]/,""); printf "%s", $0}' "$ca_file" | sed 's/\"\,\ \"$//')
+        # 自签证书:sing-box 不支持 pinSHA256,用内嵌 CA PEM 校验。
+        # certificate 必须是"每行 PEM 一个数组元素";把整份 PEM 拼成一个长字符串会让
+        # sing-box 解析证书失败并直接 panic(注意 `sing-box check` 只验 JSON 结构,查不出来)。
+        pem_lines=$(awk '{gsub(/[\r"]/,""); printf "%s\"%s\"", sep, $0; sep=", "}' "$ca_file")
         tls_block=$(cat <<JSON
 "tls": {
         "enabled": true,
         "server_name": "${HIHY_CP_sni}",
         "insecure": false,
-        "certificate": ["${pem_lines}"]
+        "certificate": [${pem_lines}]${ech_member}
       }
 JSON
 )
@@ -3986,7 +4193,7 @@ JSON
 "tls": {
         "enabled": true,
         "server_name": "${HIHY_CP_sni}",
-        "insecure": ${insec}
+        "insecure": ${insec}${ech_member}
       }
 JSON
 )
@@ -4030,6 +4237,9 @@ JSON
     fi
 
     # ---------- 拥塞控制 ----------
+    # 省略 up_mbps/down_mbps 即自动使用 BBR。
+    # bbr_profile 是 sing-box 1.14+ 字段,而 1.14 目前仍是 beta:JSON 解析是严格模式,
+    # 未知字段会让整份配置直接加载失败,所以不输出,仅提示该 profile 只对原生客户端生效。
     local cc_block=""
     if [ "$HIHY_CP_congestionMode" = "brutal" ]; then
         local up_num down_num
@@ -4040,8 +4250,6 @@ JSON
       "down_mbps": ${down_num}
 JSON
 )
-    elif [ "$HIHY_CP_congestionMode" = "bbr" ] && [ "$HIHY_CP_bbrProfile" != "" ] && [ "$HIHY_CP_bbrProfile" != "standard" ]; then
-        cc_block="      \"bbr_profile\": \"${HIHY_CP_bbrProfile}\""
     fi
 
     # ---------- 混淆 ----------
@@ -4057,8 +4265,8 @@ JSON
   "log": { "level": "info", "timestamp": true },
   "dns": {
     "servers": [
-      { "tag": "google", "address": "tls://8.8.8.8", "detour": "PROXY" },
-      { "tag": "local", "address": "https://dns.alidns.com/dns-query", "detour": "direct" }
+      { "type": "tls", "tag": "google", "server": "8.8.8.8", "detour": "PROXY" },
+      { "type": "https", "tag": "local", "server": "223.5.5.5", "detour": "direct" }
     ],
     "rules": [
       { "rule_set": "geosite-cn", "server": "local" }
@@ -4074,12 +4282,12 @@ JSON
       "tag": "PROXY",
       ${server_block},
       "password": "${HIHY_CP_auth}",
-      ${tls_block},
-      "network": "udp"
+      ${tls_block}
     },
     { "type": "direct", "tag": "direct" }
   ],
   "route": {
+    "default_domain_resolver": "local",
     "rule_set": [
       { "type": "remote", "tag": "geosite-cn", "format": "binary", "url": "${mirror}/MetaCubeX/meta-rules-dat@sing/geo/geosite/cn.srs", "download_detour": "PROXY" },
       { "type": "remote", "tag": "geoip-cn", "format": "binary", "url": "${mirror}/MetaCubeX/meta-rules-dat@sing/geo/geoip/cn.srs", "download_detour": "PROXY" }
@@ -4116,6 +4324,14 @@ JSON
 
     echoColor purple "\n$(i18n client_singbox_file_hint "$(echoColor green "${outFile}")")"
     echoColor yellow "$(i18n client_singbox_version_hint)"
+    # realm 是 1.14+ 字段,而 1.14 尚未发布正式版:稳定版 sing-box 会直接拒载整份配置
+    if [ "$HIHY_CP_realmMode" = "true" ]; then
+        echoColor yellow "$(i18n client_singbox_realm_beta_warning)"
+    fi
+    if [ "$HIHY_CP_congestionMode" != "brutal" ] && [ "$HIHY_CP_congestionMode" = "bbr" ] \
+        && [ -n "$HIHY_CP_bbrProfile" ] && [ "$HIHY_CP_bbrProfile" != "standard" ]; then
+        echoColor lightYellow "$(i18n client_singbox_bbr_profile_note "${HIHY_CP_bbrProfile}")"
+    fi
 }
 
 # ----- 80-stats.sh -----

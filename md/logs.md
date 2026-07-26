@@ -1,4 +1,27 @@
 # Hi Hysteria
+##### (2026/07/27) ver1.15
+
+```
+修复客户端配置在真实内核上无法使用的三个致命问题，新增 ECH 与 Brutal 速率补偿开关。
+
+【客户端配置修复 —— 均已用真实 mihomo / sing-box / hysteria 内核跑通实际流量验证】
+1、修复:自签证书(默认方式)下原生客户端配置与分享链接根本连不上。hysteria 的 pinSHA256 只是追加证书校验回调,并不会关闭标准证书链校验,而自签证书没有受信链,原先写的 insecure: false 必然握手失败(x509: certificate signed by unknown authority)。现改为 pinSHA256 + insecure: true —— 仍逐字节比对证书指纹,安全性不降低
+2、修复:sing-box 配置内嵌自签 CA 时,整份 PEM 被拼成一行,导致 sing-box 启动即 panic(注意 sing-box check 只验 JSON 结构,查不出该问题)。现按每行一个数组元素输出
+3、修复:sing-box outbound 误设 network: udp,该字段指的是被代理流量类型而非传输层,导致所有 TCP 流量被拒(日志 TCP is not supported by default outbound)。现不再限制
+4、修复:sing-box DNS 仍用旧格式,最新稳定版 1.13 已拒绝加载(需环境变量),1.14 直接移除。现改用 1.12+ 新格式,并补上 route.default_domain_resolver
+5、修复:sing-box 输出了 1.14 才有的 bbr_profile,而 1.14 至今仅有 beta —— 未知字段会让稳定版拒载整份配置。现不再输出,改为提示;realm 同为 1.14+ 字段,保留输出并明确告警
+6、修复:mihomo 在 Realm 模式下被删掉了 port 字段,mihomo 无条件校验端口,导致整份配置以 invalid port 拒载。现保留占位端口
+7、修复:mihomo 配置的 dns.fallback 会触发默认 fallback-filter 的 GeoIP,启动时强制下载 MMDB,下载失败则整份配置起不来;且原 fallback 与 nameserver 同为国内 DNS 本就无意义。现移除 fallback 与冗余的 GEOIP,CN 规则(已由 cncidr 规则集覆盖),并补上 proxy-server-nameserver 避免 DNS 环路
+
+【新特性(hysteria v2.10.0)】
+8、新增 ECH(加密 ClientHello)支持,可选开启。密钥对由脚本用 openssl 本地生成,不需要额外下载 sing-box 内核;产物与 sing-box generate ech-keypair 等价(已验证服务端派生的配置列表与脚本计算值逐字节一致)。服务端配置、三种客户端配置与分享链接全链路适配,一键安装支持 HIHY_AUTO_ECH / HIHY_AUTO_ECH_PUBLIC_NAME
+9、Brutal 模式新增"是否关闭速率补偿"选项(bandwidth.disableLossCompensation),默认不关闭;内核低于 v2.10.0 时提示该选项暂不生效
+10、内核版本低于 v2.10.0 时自动跳过 ECH 并提示,避免客户端 fail-closed 连不上
+
+【测试】
+11、客户端配置测试新增真实内核校验:CI 拉取最新稳定版 mihomo 与 sing-box,让它们真正加载生成的配置(仅靠 yq/json 可解析并不能发现未知字段、缺失必填项等问题)
+```
+
 ##### (2026/07/27) ver1.14
 
 ```

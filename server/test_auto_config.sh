@@ -26,6 +26,40 @@ load_funcs() { source "$REPO_ROOT/server/hy2.sh"; }
     [ "$portHoppingStatus" = "false" ] && pass "defaults: hopping off" || fail "defaults portHoppingStatus='$portHoppingStatus'"
     [ "$block_http3" = "false" ] && pass "defaults: block_http3 off" || fail "defaults block_http3='$block_http3'"
     [ "$masquerade_xforwarded" = "false" ] && pass "defaults: xforwarded set" || fail "defaults masquerade_xforwarded='$masquerade_xforwarded'"
+    [ "$ech_status" = "false" ] && pass "defaults: ech off" || fail "defaults ech_status='$ech_status'"
+    [ "$brutal_disable_loss_comp" = "false" ] && pass "defaults: loss compensation kept on" || fail "defaults brutal_disable_loss_comp='$brutal_disable_loss_comp'"
+    exit $FAIL
+) || FAIL=1
+
+# ---------- ECH 环境变量覆盖 ----------
+(
+    load_funcs
+    setConfigDefaults
+    HIHY_AUTO_ECH="true"
+    applyAutoOverrides || fail "applyAutoOverrides rejected HIHY_AUTO_ECH"
+    [ "$ech_status" = "true" ] && pass "override: ech enabled" || fail "override ech_status='$ech_status'"
+    [ "$ech_public_name" = "www.microsoft.com" ] && pass "override: ech default public name" || fail "override ech_public_name='$ech_public_name'"
+    setConfigDefaults
+    HIHY_AUTO_ECH="1"
+    HIHY_AUTO_ECH_PUBLIC_NAME="decoy.example.org"
+    applyAutoOverrides || fail "applyAutoOverrides rejected custom ech public name"
+    [ "$ech_public_name" = "decoy.example.org" ] && pass "override: ech custom public name" || fail "override ech_public_name='$ech_public_name'"
+    exit $FAIL
+) || FAIL=1
+
+# ---------- 内核版本门槛(ECH / disableLossCompensation 均需 v2.10.0+) ----------
+(
+    load_funcs
+    getLocalHysteriaVersion() { echo "app/v2.10.0"; }
+    localCoreVersionAtLeast "2.10.0" && pass "version gate: 2.10.0 satisfies 2.10.0" || fail "version gate rejected equal version"
+    getLocalHysteriaVersion() { echo "app/v2.9.1"; }
+    if localCoreVersionAtLeast "2.10.0"; then fail "version gate accepted 2.9.1 (string compare bug)"
+    else pass "version gate: 2.9.1 below 2.10.0"; fi
+    getLocalHysteriaVersion() { echo "app/v2.11.3"; }
+    localCoreVersionAtLeast "2.10.0" && pass "version gate: 2.11.3 above 2.10.0" || fail "version gate rejected newer version"
+    getLocalHysteriaVersion() { return 1; }
+    if localCoreVersionAtLeast "2.10.0"; then fail "version gate accepted unknown version"
+    else pass "version gate: unknown version rejected"; fi
     exit $FAIL
 ) || FAIL=1
 

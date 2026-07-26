@@ -4,9 +4,10 @@
 #   1. 仅 brutal 模式才输出 up/down;BBR/Reno 省略(=BBR,与原生语义对齐)
 #   2. BBR 时输出 bbr-profile(standard 省略)
 #   3. 端口跳跃输出 hop-interval(random 模式用 min-max 区间)
-#   4. Realm 模式输出 realm-opts(enable/server-url/token/realm-id/stun-servers)
+#   4. Realm 模式输出 realm-opts(enable/server-url/token/realm-id/stun-servers),并保留 port 占位
 #   5. 规则镜像改用 jsdelivr(HIHY_RULESET_MIRROR 可覆盖)
-#   6. 删除非法 GEOIP,LAN 规则(已有 RULE-SET,lancidr 覆盖)
+#   6. 删除 GEOIP 规则:LAN 由 lancidr 覆盖;CN 由 cncidr 覆盖,且 GEOIP 会强制下载 MMDB,
+#      下载失败会让整份配置启动失败
 #   7. gecko 混淆:由调用方拦住,不走到此函数
 generateMihomoYaml() {
     loadClientParams
@@ -34,9 +35,11 @@ dns:
   nameserver:
     - https://dns.alidns.com/dns-query
     - https://223.5.5.5/dns-query
-  fallback:
-    - 114.114.114.114
-    - 223.5.5.5
+  # 不配置 fallback:mihomo 的默认 fallback-filter 带 geoip,会在启动时强制下载 MMDB
+  # (下载失败则整份配置起不来);且原先的 fallback 与 nameserver 同为国内 DNS,本就无意义。
+  # proxy-server-nameserver 用于解析节点域名,避免 DNS 请求绕回代理形成环路。
+  proxy-server-nameserver:
+    - https://223.5.5.5/dns-query
 rule-providers:
   reject:
     type: http
@@ -151,7 +154,6 @@ rules:
   - RULE-SET,lancidr,DIRECT
   - RULE-SET,cncidr,DIRECT
   - RULE-SET,telegramcidr,PROXY
-  - GEOIP,CN,DIRECT
   - MATCH,PROXY
 EOF
 
@@ -161,9 +163,11 @@ EOF
 
     if [ "$HIHY_CP_realmMode" = "true" ]; then
         parseRealmURI "$HIHY_CP_realmURI"
-        # 官方示例: realm 模式保留顶层 server(填服务器地址),port 省略
+        # realm 模式仍必须保留 server + port:mihomo 无条件校验端口,删掉 port 会让整份配置
+        # 以 "proxy 0: invalid port" 拒载(已用 mihomo v1.19.29 实测)。实际地址由牵手服务
+        # 打洞后确定,这里的 443 只是占位,与官方示例保持同一形状。
         addOrUpdateYaml "$metaFile" "proxies[0].server" "${HIHY_CP_serverAddress}"
-        yq eval 'del(.proxies[0].port)' -i "$metaFile"
+        addOrUpdateYaml "$metaFile" "proxies[0].port" "443"
         addOrUpdateYaml "$metaFile" "proxies[0].realm-opts.enable" "true"
         addOrUpdateYaml "$metaFile" "proxies[0].realm-opts.server-url" "${HIHY_REALM_SERVER_URL}"
         addOrUpdateYaml "$metaFile" "proxies[0].realm-opts.token" "${HIHY_REALM_TOKEN}"
@@ -189,7 +193,7 @@ EOF
 
     addOrUpdateYaml "$metaFile" "proxies[0].password" "${HIHY_CP_auth}"
 
-    # 拥塞:仅 brutal 输出 up/down;BBR 输出 bbr-profile(standard 时不输出);reno 两者都不输出
+    # 拥塞:仅 brutal 输出 up/down;BBR 输出 bbr-profile(standard 省略,与默认值一致)
     if [ "$HIHY_CP_congestionMode" = "brutal" ]; then
         local up_num down_num
         up_num=$(echo "$HIHY_CP_up" | tr -dc '0-9')
@@ -221,6 +225,10 @@ EOF
     fi
 
     addOrUpdateYaml "$metaFile" "proxies[0].sni" "${HIHY_CP_sni}"
+    if [ "$HIHY_CP_echStatus" = "true" ]; then
+        addOrUpdateYaml "$metaFile" "proxies[0].ech-opts.enable" "true"
+        addOrUpdateYaml "$metaFile" "proxies[0].ech-opts.config" "${HIHY_CP_echConfig}" "string"
+    fi
     addOrUpdateYaml "$metaFile" "proxy-groups[0].name" "PROXY"
     addOrUpdateYaml "$metaFile" "proxy-groups[0].type" "select"
     addOrUpdateYaml "$metaFile" "proxy-groups[0].proxies" "[${remarks}]"

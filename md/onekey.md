@@ -27,6 +27,7 @@ hihy autoinstall   # 等价: hihy 16 / 菜单选项 16
 | 伪装网站 | 不启用(Hysteria2 内置返回 404，与常见未配置站点表现一致) |
 | 端口跳跃 | 不启用 |
 | 混淆 | 不启用(兼容性最好) |
+| ECH | 不启用(可用 `HIHY_AUTO_ECH=true` 开启) |
 
 安装完成后自动打印/生成三种客户端配置(原生 Hysteria2、mihomo、sing-box)与分享链接二维码，与交互式安装一致。
 
@@ -51,6 +52,8 @@ hihy autoinstall
 | `HIHY_AUTO_PORT_HOPPING` | `true` 启用端口跳跃(默认范围 47000-48000，固定 30s 间隔) |
 | `HIHY_AUTO_HOP_START` / `HIHY_AUTO_HOP_END` | 自定义跳跃范围 |
 | `HIHY_AUTO_REMARKS` | 客户端配置备注名(默认 `auto-<端口>`) |
+| `HIHY_AUTO_ECH` | `true` 启用 ECH(加密 ClientHello，需内核 v2.10.0+)。密钥对由脚本本地生成，无需额外工具 |
+| `HIHY_AUTO_ECH_PUBLIC_NAME` | ECH 公开域名(明文幌子 SNI)，默认 `www.microsoft.com` |
 
 bootstrap 阶段(`install.sh --auto`)还支持 `--lang=zh|en|fa|ru` 指定语言，缺省英文。
 

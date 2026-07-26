@@ -55,10 +55,18 @@ generate_client_config() {
     fi
 
     addOrUpdateYaml "$client_configfile" "tls.sni" "${tls_sni}"
+    if [ "${HIHY_CP_echStatus}" == "true" ]; then
+        addOrUpdateYaml "$client_configfile" "tls.ech" "${HIHY_CP_echConfig}" "string"
+    fi
     if [ -n "${pinSHA256}" ]; then
-        # 通过证书指纹校验自签证书,安全且无需开启不安全连接
+        # 证书指纹钉扎(pinning)必须与 insecure: true 同时使用:
+        # hysteria 的 pinSHA256 只是追加一个 VerifyPeerCertificate 回调,并不会关闭 Go 的标准
+        # 证书链校验 —— 自签证书没有受信任的链,insecure: false 时握手直接失败
+        # ("x509: certificate signed by unknown authority")。
+        # 这不降低安全性:链校验被跳过后,仍要求对端证书的 SHA-256 与此处的指纹逐字节一致,
+        # 攻击者必须持有该证书私钥才能冒充,比信任任意 CA 更严格。
         addOrUpdateYaml "$client_configfile" "tls.pinSHA256" "${pinSHA256}" "string"
-        addOrUpdateYaml "$client_configfile" "tls.insecure" "false"
+        addOrUpdateYaml "$client_configfile" "tls.insecure" "true"
     elif [ "${insecure}" == "true" ]; then
         addOrUpdateYaml "$client_configfile" "tls.insecure" "true"
     elif [ "${insecure}" == "false" ]; then
@@ -111,7 +119,7 @@ generate_client_config() {
         realmShare=$(echo "${realmURI}" | sed -E 's#^realm(\+http)?://#hysteria2+realm\1://#')
         url="${realmShare}?auth=${auth_secret}"
         if [ -n "${pinSHA256}" ]; then
-            url="${url}&pinSHA256=${pinSHA256}"
+            url="${url}&pinSHA256=${pinSHA256}&insecure=1"
         elif [ "${insecure}" == "true" ]; then
             url="${url}&insecure=1"
         fi
@@ -129,8 +137,8 @@ generate_client_config() {
         fi
 
         if [ -n "${pinSHA256}" ]; then
-            # 自签证书通过指纹校验,无需 insecure
-            url_base="${url_base}pinSHA256=${pinSHA256}"
+            # 与配置文件同理:指纹钉扎必须带 insecure=1 关闭标准链校验,否则客户端连不上
+            url_base="${url_base}pinSHA256=${pinSHA256}&insecure=1"
         elif [ "${insecure}" == "true" ]; then
             url_base="${url_base}insecure=1"
         else
@@ -139,6 +147,11 @@ generate_client_config() {
 
         if [ "${obfs_status}" == "true" ]; then
             url_base="${url_base}&obfs=${obfs_type}&obfs-password=${obfs_pass}"
+        fi
+
+        if [ "${HIHY_CP_echStatus}" == "true" ]; then
+            # base64 含 + / = 需百分号编码;hysteria 解析端对 std/url-safe base64 均兼容
+            url_base="${url_base}&ech=$(echUrlEncodeB64 "${HIHY_CP_echConfig}")"
         fi
         url="${url_base}&sni=${tls_sni}#Hy2-${remarks}"
     fi

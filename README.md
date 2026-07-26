@@ -102,6 +102,8 @@
 
 #### 9. [一键安装 - 零交互](md/onekey.md)
 
+#### 10. [ECH - 加密 ClientHello](md/ech.md)
+
 ### 拉取安装
 
 ```
@@ -127,7 +129,7 @@ bash <(curl -fsSL https://git.io/hysteria.sh) --auto
 
 ```
  ╭───────────────────────────────────────────╮
- │            Hi Hysteria ver1.14            │
+ │            Hi Hysteria ver1.15            │
  │ https://github.com/emptysuns/Hi_Hysteria  │
  ╰───────────────────────────────────────────╯
   ● 运行中 │ 内核: v2.9.1

@@ -43,12 +43,37 @@ jobs:
       - name: i18n catalogs consistency
         run: bash scripts/i18n-validate.sh
 
+      # 客户端配置的正确性只有真实内核说了算:yq/json 能解析不代表内核接受
+      # (未知字段、缺失必填项都会让整份配置被拒载)。拉稳定版 mihomo + sing-box 做加载校验。
+      - name: Fetch mihomo & sing-box for client-config validation
+        run: |
+          mkdir -p "$RUNNER_TEMP/cores"
+          mihomo_url=$(gh api repos/MetaCubeX/mihomo/releases/latest \
+            --jq '.assets[]|select(.name|test("linux-amd64-compatible-v.*\\.gz$"))|.browser_download_url' | head -1)
+          curl -fsSL "$mihomo_url" -o "$RUNNER_TEMP/cores/mihomo.gz"
+          gunzip "$RUNNER_TEMP/cores/mihomo.gz"
+          chmod +x "$RUNNER_TEMP/cores/mihomo"
+          sb_tag=$(gh api repos/SagerNet/sing-box/releases --jq '[.[]|select(.prerelease==false)][0].tag_name')
+          sb_ver="${sb_tag#v}"
+          curl -fsSL "https://github.com/SagerNet/sing-box/releases/download/${sb_tag}/sing-box-${sb_ver}-linux-amd64.tar.gz" \
+            -o "$RUNNER_TEMP/cores/sb.tar.gz"
+          tar xzf "$RUNNER_TEMP/cores/sb.tar.gz" --wildcards --strip-components=1 -O '*/sing-box' \
+            > "$RUNNER_TEMP/cores/sing-box"
+          chmod +x "$RUNNER_TEMP/cores/sing-box"
+          "$RUNNER_TEMP/cores/mihomo" -v | head -1
+          "$RUNNER_TEMP/cores/sing-box" version | head -1
+        env:
+          GH_TOKEN: ${{ github.token }}
+
       - name: Unit tests
         run: |
           bash server/test_bootstrap_install.sh
           bash server/test_install_recovery.sh
           bash server/test_auto_config.sh
           bash server/test_client_config.sh
+        env:
+          HIHY_TEST_MIHOMO_BIN: ${{ runner.temp }}/cores/mihomo
+          HIHY_TEST_SINGBOX_BIN: ${{ runner.temp }}/cores/sing-box
 
   e2e-install:
     name: E2E autoinstall (debian:12 container)

@@ -1,6 +1,11 @@
 #!/bin/bash
-# sing-box 客户端配置生成(基线 1.11+;realm/gecko/bbr_profile 需 1.14+)
+# sing-box 客户端配置生成(基线 1.12+,旧版 DNS 格式已在 sing-box 1.14 移除;
+# realm/gecko/bbr_profile/hop_interval_max 需 1.14+)
 # 字段映射对照 sing-box.sagernet.org hysteria2 outbound + shared TLS
+#
+# 注意 outbound 的 network 字段指的是"被代理流量"的类型(tcp/udp),不是 QUIC 传输层。
+# 缺省即两者都启用;若误写成 "udp",所有 TCP 流量都会被拒绝
+# (日志: "TCP is not supported by default outbound"),等于整个代理不可用。
 generateSingboxJson() {
     loadClientParams
     local remarks="$HIHY_CP_remarks"
@@ -9,18 +14,32 @@ generateSingboxJson() {
     local outFile="./Hy2-${remarks}-singbox.json"
     [ -f "$outFile" ] && rm -f "$outFile"
 
+    # ---------- ECH(可选,附着到 tls 块): config 取 PEM 行数组(sing-box 要求 PEM 格式) ----------
+    local ech_member=""
+    if [ "$HIHY_CP_echStatus" = "true" ]; then
+        local ech_b64_lines
+        ech_b64_lines=$(printf '%s' "$HIHY_CP_echConfig" | fold -w 64 | awk '{printf "\"%s\", ", $0}')
+        ech_member=",
+        \"ech\": {
+          \"enabled\": true,
+          \"config\": [\"-----BEGIN ECH CONFIGS-----\", ${ech_b64_lines}\"-----END ECH CONFIGS-----\"]
+        }"
+    fi
+
     # ---------- TLS: 自签内嵌 CA PEM;否则按 insecure ----------
     local tls_block ca_file pem_lines
     ca_file="$root/result/${HIHY_CP_sni}.ca.crt"
     if [ -n "$HIHY_CP_pinSHA256" ] && [ -f "$ca_file" ]; then
-        # 自签证书:sing-box 不支持 pinSHA256,用内嵌 CA PEM 校验
-        pem_lines=$(awk 'BEGIN{ORS="\", \""} {gsub(/[\r"]/,""); printf "%s", $0}' "$ca_file" | sed 's/\"\,\ \"$//')
+        # 自签证书:sing-box 不支持 pinSHA256,用内嵌 CA PEM 校验。
+        # certificate 必须是"每行 PEM 一个数组元素";把整份 PEM 拼成一个长字符串会让
+        # sing-box 解析证书失败并直接 panic(注意 `sing-box check` 只验 JSON 结构,查不出来)。
+        pem_lines=$(awk '{gsub(/[\r"]/,""); printf "%s\"%s\"", sep, $0; sep=", "}' "$ca_file")
         tls_block=$(cat <<JSON
 "tls": {
         "enabled": true,
         "server_name": "${HIHY_CP_sni}",
         "insecure": false,
-        "certificate": ["${pem_lines}"]
+        "certificate": [${pem_lines}]${ech_member}
       }
 JSON
 )
@@ -30,7 +49,7 @@ JSON
 "tls": {
         "enabled": true,
         "server_name": "${HIHY_CP_sni}",
-        "insecure": ${insec}
+        "insecure": ${insec}${ech_member}
       }
 JSON
 )
@@ -74,6 +93,9 @@ JSON
     fi
 
     # ---------- 拥塞控制 ----------
+    # 省略 up_mbps/down_mbps 即自动使用 BBR。
+    # bbr_profile 是 sing-box 1.14+ 字段,而 1.14 目前仍是 beta:JSON 解析是严格模式,
+    # 未知字段会让整份配置直接加载失败,所以不输出,仅提示该 profile 只对原生客户端生效。
     local cc_block=""
     if [ "$HIHY_CP_congestionMode" = "brutal" ]; then
         local up_num down_num
@@ -84,8 +106,6 @@ JSON
       "down_mbps": ${down_num}
 JSON
 )
-    elif [ "$HIHY_CP_congestionMode" = "bbr" ] && [ "$HIHY_CP_bbrProfile" != "" ] && [ "$HIHY_CP_bbrProfile" != "standard" ]; then
-        cc_block="      \"bbr_profile\": \"${HIHY_CP_bbrProfile}\""
     fi
 
     # ---------- 混淆 ----------
@@ -101,8 +121,8 @@ JSON
   "log": { "level": "info", "timestamp": true },
   "dns": {
     "servers": [
-      { "tag": "google", "address": "tls://8.8.8.8", "detour": "PROXY" },
-      { "tag": "local", "address": "https://dns.alidns.com/dns-query", "detour": "direct" }
+      { "type": "tls", "tag": "google", "server": "8.8.8.8", "detour": "PROXY" },
+      { "type": "https", "tag": "local", "server": "223.5.5.5", "detour": "direct" }
     ],
     "rules": [
       { "rule_set": "geosite-cn", "server": "local" }
@@ -118,12 +138,12 @@ JSON
       "tag": "PROXY",
       ${server_block},
       "password": "${HIHY_CP_auth}",
-      ${tls_block},
-      "network": "udp"
+      ${tls_block}
     },
     { "type": "direct", "tag": "direct" }
   ],
   "route": {
+    "default_domain_resolver": "local",
     "rule_set": [
       { "type": "remote", "tag": "geosite-cn", "format": "binary", "url": "${mirror}/MetaCubeX/meta-rules-dat@sing/geo/geosite/cn.srs", "download_detour": "PROXY" },
       { "type": "remote", "tag": "geoip-cn", "format": "binary", "url": "${mirror}/MetaCubeX/meta-rules-dat@sing/geo/geoip/cn.srs", "download_detour": "PROXY" }
@@ -160,4 +180,12 @@ JSON
 
     echoColor purple "\n$(i18n client_singbox_file_hint "$(echoColor green "${outFile}")")"
     echoColor yellow "$(i18n client_singbox_version_hint)"
+    # realm 是 1.14+ 字段,而 1.14 尚未发布正式版:稳定版 sing-box 会直接拒载整份配置
+    if [ "$HIHY_CP_realmMode" = "true" ]; then
+        echoColor yellow "$(i18n client_singbox_realm_beta_warning)"
+    fi
+    if [ "$HIHY_CP_congestionMode" != "brutal" ] && [ "$HIHY_CP_congestionMode" = "bbr" ] \
+        && [ -n "$HIHY_CP_bbrProfile" ] && [ "$HIHY_CP_bbrProfile" != "standard" ]; then
+        echoColor lightYellow "$(i18n client_singbox_bbr_profile_note "${HIHY_CP_bbrProfile}")"
+    fi
 }

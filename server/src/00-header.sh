@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="ver1.14"
+hihyV="ver1.15"
 
 # i18n 多语言支持
 HIHY_I18N_SCHEMA=1

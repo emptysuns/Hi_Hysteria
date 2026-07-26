@@ -91,4 +91,12 @@ loadClientParams() {
     # 伪装状态(v1.13 起记录;旧版 backup 无此键时按"曾默认开启"回退为 true)
     HIHY_CP_masqueradeStatus=$(getBackupValueOrDefault "$backup" "masquerade_status" "true")
     HIHY_CP_masqueradeTcp=$(getBackupValueOrDefault "$backup" "masquerade_tcp" "false")
+
+    # ECH(v1.15 起记录):ech_config = 客户端 ECHConfigList base64
+    HIHY_CP_echStatus=$(getBackupValueOrDefault "$backup" "ech_status" "false")
+    HIHY_CP_echConfig=""
+    if [ "$HIHY_CP_echStatus" = "true" ]; then
+        HIHY_CP_echConfig=$(getBackupValueOrDefault "$backup" "ech_config" "")
+        [ -z "$HIHY_CP_echConfig" ] && HIHY_CP_echStatus="false"
+    fi
 }

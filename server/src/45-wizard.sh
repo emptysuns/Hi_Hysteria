@@ -80,6 +80,10 @@ setConfigDefaults() {
     obfs_status="false"
     obfs_type=""
     obfs_pass=""
+    ech_status="false"
+    ech_public_name=""
+    ech_config=""
+    brutal_disable_loss_comp="false"
     masquerade_status="false"
     masquerade_type=""
     masquerade_string=""
@@ -735,6 +739,20 @@ collectHysteriaConfig() {
             break
         done
         echo -e "\n->$(i18n upload_label)$(echoColor red "${upload}")mbps\n"
+        # Brutal 速率补偿开关(hysteria v2.10.0+):默认保持开启
+        echoColor green "$(i18n losscomp_prompt)"
+        echoColor white "$(i18n losscomp_hint)"
+        echoColor yellow "$(i18n losscomp_choice_keep_default)"
+        echoColor yellow "$(i18n losscomp_choice_disable)"
+        echoColor green "$(i18n prompt_enter_number)"
+        read -r losscomp_num
+        if [ "${losscomp_num}" == "2" ]; then
+            brutal_disable_loss_comp="true"
+            echo -e "\n->$(i18n losscomp_disabled_label)\n"
+        else
+            brutal_disable_loss_comp="false"
+            echo -e "\n->$(i18n losscomp_kept_label)\n"
+        fi
     else
         delay=""
         download=""
@@ -772,6 +790,26 @@ collectHysteriaConfig() {
         echo -e "\n->$(i18n obfs_disabled)\n"
     fi
     if [ "${realmMode}" != "true" ]; then
+        # ECH(hysteria v2.10.0+):加密 ClientHello 中的 SNI,中间设备只能看到幌子域名
+        echoColor green "$(i18n ech_prompt)"
+        echoColor white "$(i18n ech_hint1)"
+        echoColor white "$(i18n ech_hint2)"
+        echoColor yellow "$(i18n ech_choice_disable_default)"
+        echoColor yellow "$(i18n ech_choice_enable)"
+        echoColor green "$(i18n prompt_enter_number_or_default)"
+        read -r ech_num
+        if [ "${ech_num}" == "2" ]; then
+            ech_status="true"
+            echoColor green "$(i18n ech_public_name_prompt)"
+            read -r ech_public_name
+            if [ -z "${ech_public_name}" ]; then
+                ech_public_name="www.microsoft.com"
+            fi
+            echo -e "\n->$(i18n ech_public_name_label)$(echoColor red "${ech_public_name}")\n"
+        else
+            ech_status="false"
+            echo -e "\n->$(i18n ech_disabled_label)\n"
+        fi
         echoColor green "$(i18n masquerade_prompt)"
         echoColor yellow "$(i18n masquerade_choice_disable)"
         echoColor yellow "$(i18n masquerade_choice_string)"
@@ -898,6 +936,10 @@ applyAutoOverrides() {
         masquerade_proxy="${HIHY_AUTO_MASQUERADE}"
         masquerade_xforwarded="true"
     fi
+    if [ "${HIHY_AUTO_ECH:-}" = "true" ] || [ "${HIHY_AUTO_ECH:-}" = "1" ]; then
+        ech_status="true"
+        ech_public_name="${HIHY_AUTO_ECH_PUBLIC_NAME:-www.microsoft.com}"
+    fi
     if [ "${HIHY_AUTO_PORT_HOPPING:-}" = "true" ] || [ "${HIHY_AUTO_PORT_HOPPING:-}" = "1" ]; then
         portHoppingStatus="true"
         portHoppingStart="${HIHY_AUTO_HOP_START:-47000}"
@@ -960,6 +1002,11 @@ autoHysteriaConfig() {
         echo -e "  $(i18n auto_summary_hopping_on "$(echoColor red "${portHoppingStart}-${portHoppingEnd}")")"
     else
         echo -e "  $(i18n auto_summary_hopping_off)"
+    fi
+    if [ "${ech_status}" == "true" ]; then
+        echo -e "  $(i18n auto_summary_ech_on "$(echoColor red "${ech_public_name}")")"
+    else
+        echo -e "  $(i18n auto_summary_ech_off)"
     fi
     echo -e ""
 
@@ -1073,6 +1120,14 @@ writeHysteriaConfig() {
     if [ "${congestion_mode}" == "brutal" ]; then
         addOrUpdateYaml "$yaml_file" "bandwidth.up" "${server_upload}mbps"
         addOrUpdateYaml "$yaml_file" "bandwidth.down" "${server_download}mbps"
+        # 仅显式关闭时写入。旧内核(mapstructure)会静默忽略该未知字段:不会崩溃,但也不生效,
+        # 所以这里提示用户先更新内核,免得以为已经关闭了补偿。
+        if [ "${brutal_disable_loss_comp}" == "true" ]; then
+            addOrUpdateYaml "$yaml_file" "bandwidth.disableLossCompensation" "true" "bool"
+            if ! localCoreVersionAtLeast "2.10.0"; then
+                echoColor yellow "$(i18n losscomp_core_too_old "$(getLocalHysteriaVersion 2>/dev/null || echo unknown)")"
+            fi
+        fi
     fi
     addOrUpdateYaml "$yaml_file" "acl.file" "${acl_file}"
     if [ "${masquerade_status}" == "true" ]; then
@@ -1221,6 +1276,22 @@ writeHysteriaConfig() {
         u_host="${realmURI}"
     fi
 
+    # ECH:内核 >= v2.10.0 才支持;老内核会忽略 ech 块导致客户端 fail-closed,必须硬性拦截
+    if [ "${ech_status}" == "true" ]; then
+        if ! localCoreVersionAtLeast "2.10.0"; then
+            echoColor yellow "$(i18n ech_core_too_old "$(getLocalHysteriaVersion 2>/dev/null || echo unknown)")"
+            ech_status="false"
+            ech_config=""
+        elif generateEchKeypair "/etc/hihy/cert/ech.pem" "${ech_public_name}"; then
+            addOrUpdateYaml "$yaml_file" "ech.keyPath" "/etc/hihy/cert/ech.pem"
+            echoColor green "$(i18n ech_keygen_success "$(echoColor red "${ech_public_name}")")"
+        else
+            echoColor yellow "$(i18n ech_keygen_failed)"
+            ech_status="false"
+            ech_config=""
+        fi
+    fi
+
     addOrUpdateYaml "$yaml_file" "sniff.enabled" "true"
     addOrUpdateYaml "$yaml_file" "sniff.timeout" "2s"
     addOrUpdateYaml "$yaml_file" "sniff.rewriteDomain" "false"
@@ -1335,6 +1406,14 @@ writeHysteriaConfig() {
     addOrUpdateYaml ${backup_file} "masquerade_status" "${masquerade_status}"
     addOrUpdateYaml ${backup_file} "masquerade_xforwarded" "${masquerade_xforwarded}"
     addOrUpdateYaml ${backup_file} "masquerade_tcp" "${masquerade_tcp}"
+    addOrUpdateYaml ${backup_file} "ech_status" "${ech_status}"
+    if [ "${ech_status}" == "true" ]; then
+        addOrUpdateYaml ${backup_file} "ech_public_name" "${ech_public_name}"
+        addOrUpdateYaml ${backup_file} "ech_config" "${ech_config}" "string"
+    fi
+    if [ "${congestion_mode}" == "brutal" ]; then
+        addOrUpdateYaml ${backup_file} "disable_loss_compensation" "${brutal_disable_loss_comp}"
+    fi
     if [ "${insecure}" == "1" ]; then
         addOrUpdateYaml ${backup_file} "insecure" "true"
     else
