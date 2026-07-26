@@ -88,7 +88,8 @@ jobs:
 
             hihy uninstall | tee /tmp/uninstall.log
             grep -q "Hysteria uninstalled completely" /tmp/uninstall.log
-            if pgrep -f /etc/hihy/bin/appS; then
+            # 锚定 ^:bash -c 内联脚本自身的命令行也含该路径,不锚定会匹配到 PID 1(driver 自己)
+            if pgrep -f "^/etc/hihy/bin/appS"; then
               echo "::error::appS still running after uninstall"; exit 1
             fi
             echo "E2E OK"

@@ -13,11 +13,13 @@ killHysteriaProcess() {
         rm -f "$pid_file"
     fi
 
-    if pgrep -f "/etc/hihy/bin/appS" >/dev/null 2>&1; then
-        pkill "-${signal}" -f "/etc/hihy/bin/appS" 2>/dev/null || true
+    # 锚定 ^:只匹配以核心路径开头的命令行(nohup/setsid/chrt 均为 exec 链,最终 argv[0] 就是该路径),
+    # 否则会误杀命令行参数里恰好带此路径的无辜进程(编辑器、grep、CI 驱动脚本等)
+    if pgrep -f "^/etc/hihy/bin/appS" >/dev/null 2>&1; then
+        pkill "-${signal}" -f "^/etc/hihy/bin/appS" 2>/dev/null || true
         sleep 2
-        if pgrep -f "/etc/hihy/bin/appS" >/dev/null 2>&1; then
-            pkill -9 -f "/etc/hihy/bin/appS" 2>/dev/null || true
+        if pgrep -f "^/etc/hihy/bin/appS" >/dev/null 2>&1; then
+            pkill -9 -f "^/etc/hihy/bin/appS" 2>/dev/null || true
             sleep 1
         fi
     fi

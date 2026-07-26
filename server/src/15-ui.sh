@@ -76,7 +76,7 @@ getPortBindMsg() {
         exit
     fi
 
-    pkill -f "/etc/hihy/bin/appS"
+    pkill -f "^/etc/hihy/bin/appS"
     echoColor purple "$(i18n port_bind_unbinding)"
     sleep 3
 
