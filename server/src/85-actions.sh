@@ -101,6 +101,8 @@ changeServerConfig() {
     # 顺带尝试更新内核;失败(如网络不可达)不阻塞重新配置,继续用现有内核
     updateHysteriaCore || true
     setHysteriaConfig
+    # 重新配置时同步刷新服务脚本,让老安装也能拿到服务脚本层面的修复
+    installServiceScript
     start
     generate_client_config
     echoColor green "$(i18n change_config_success)"

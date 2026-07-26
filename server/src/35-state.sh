@@ -32,13 +32,14 @@ classifyInstallState() {
     local service_primary="${3:-$(getHihyServiceScriptPrimary)}"
     local service_fallback="${4:-$(getHihyServiceScriptFallback)}"
     local failure_marker="${5:-$(getInstallFailureMarker "$root_dir")}"
+    # bin_link(hihy 启动器)不参与残留判定:bootstrap(install.sh)在 install 运行前就会
+    # 先落好启动器,仅有启动器 = 全新安装;把它算作痕迹会让官方安装路径每次都误报残留
     local owned_paths=(
         "$root_dir/bin/appS"
         "$root_dir/conf/config.yaml"
         "$root_dir/conf/backup.yaml"
         "$service_primary"
         "$service_fallback"
-        "$bin_link"
     )
     local has_any_artifact="false"
     local has_core_assets="false"

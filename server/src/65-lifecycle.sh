@@ -61,6 +61,16 @@ uninstall() {
         return 1
     fi
 
+    # rm -rf /etc/hihy 会连带删掉 i18n 语言文件,先快照到临时目录,
+    # 否则卸载过程后半段的提示全部退化为裸 key
+    local i18n_snapshot=""
+    if [ -d "$HIHY_I18N_DIR" ]; then
+        i18n_snapshot=$(mktemp -d 2>/dev/null) || i18n_snapshot=""
+        if [ -n "$i18n_snapshot" ] && cp -r "$HIHY_I18N_DIR/." "$i18n_snapshot/" 2>/dev/null; then
+            HIHY_I18N_DIR="$i18n_snapshot"
+        fi
+    fi
+
     if [ "$install_state" = "partially-installed" ]; then
         echoColor yellow "$(i18n partial_uninstall_cleanup)"
     fi
@@ -76,6 +86,10 @@ uninstall() {
         if [ -f "/etc/rc.d/hihy" ]; then
             /etc/rc.d/hihy stop >/dev/null 2>&1 || true
             rm -f /etc/rc.d/hihy
+        fi
+        # 清理 install 时创建的 /etc/init.d/hihy 软链(否则卸载后留下悬空链接)
+        if [ -L "/etc/init.d/hihy" ] && [ "$(readlink /etc/init.d/hihy)" = "/etc/rc.d/hihy" ]; then
+            rm -f /etc/init.d/hihy
         fi
     fi
 
@@ -141,8 +155,10 @@ uninstall() {
     # 检查是否完全删除
     if [ ! -d "/etc/hihy" ]; then
         echoColor green "$(i18n uninstall_complete)"
+        [ -n "$i18n_snapshot" ] && rm -rf "$i18n_snapshot"
     else
         echoColor red "$(i18n uninstall_error)"
+        [ -n "$i18n_snapshot" ] && rm -rf "$i18n_snapshot"
         exit 1
     fi
 }

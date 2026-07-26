@@ -28,7 +28,7 @@ generate_client_config() {
     if [ -f "${client_configfile}" ]; then
         rm -f "${client_configfile}"
     fi
-    touch ${client_configfile}
+    touch "${client_configfile}"
     if [ "${realmMode}" == "true" ]; then
         addOrUpdateYaml "$client_configfile" "server" "${realmURI}"
         addOrUpdateYaml "$client_configfile" "auth" "${auth_secret}"
@@ -204,7 +204,7 @@ generate_client_config() {
     fi
     echoColor purple "$(i18n client_config_tutorial_link)"
     echoColor green "↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓$(i18n client_config_copy_marker)↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓"
-    cat ${client_configfile}
+    cat "${client_configfile}"
     echoColor green "↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑$(i18n client_config_copy_marker)↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑"
     # mihomo: gecko 混淆时跳过(realm 模式现在也支持了)
     if [ "${HIHY_CP_obfsType}" = "gecko" ]; then

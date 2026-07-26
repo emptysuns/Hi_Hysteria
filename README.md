@@ -127,7 +127,7 @@ bash <(curl -fsSL https://git.io/hysteria.sh) --auto
 
 ```
  ╭───────────────────────────────────────────╮
- │            Hi Hysteria ver1.13            │
+ │            Hi Hysteria ver1.14            │
  │ https://github.com/emptysuns/Hi_Hysteria  │
  ╰───────────────────────────────────────────╯
   ● 运行中 │ 内核: v2.9.1

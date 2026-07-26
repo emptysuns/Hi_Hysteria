@@ -117,6 +117,15 @@ test_not_installed_state() {
     assert_equals "not-installed" "$(classifyInstallState "$HIHY_ROOT_DIR" "$HIHY_BIN_LINK" "$TEST_ETC/init.d/hihy" "$TEST_ETC/rc.d/hihy" "$(getInstallFailureMarker "$HIHY_ROOT_DIR")")" "clean system should be detected as not-installed"
 }
 
+test_bootstrap_launcher_only_is_not_residue() {
+    # bootstrap(install.sh)会在 install 运行前先安装 /usr/bin/hihy 启动器;
+    # 仅有启动器必须判定为全新安装,否则官方安装路径每次都误报"检测到残留"
+    reset_state
+    mkdir -p "$TEST_BIN"
+    touch "$HIHY_BIN_LINK"
+    assert_equals "not-installed" "$(classifyInstallState "$HIHY_ROOT_DIR" "$HIHY_BIN_LINK" "$TEST_ETC/init.d/hihy" "$TEST_ETC/rc.d/hihy" "$(getInstallFailureMarker "$HIHY_ROOT_DIR")")" "launcher installed by bootstrap alone must not be treated as residue"
+}
+
 test_partial_state_detection_and_recovery() {
     reset_state
     mkdir -p "$HIHY_ROOT_DIR/bin" "$HIHY_ROOT_DIR/conf" "$HIHY_ROOT_DIR/result" "$TEST_ETC/rc.d"
@@ -382,6 +391,7 @@ EOF
 }
 
 test_not_installed_state
+test_bootstrap_launcher_only_is_not_residue
 test_partial_state_detection_and_recovery
 test_installed_state_detection
 test_missing_launcher_is_partial_state

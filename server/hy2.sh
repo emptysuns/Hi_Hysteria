@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="ver1.13"
+hihyV="ver1.14"
 # =============================================================================
 # GENERATED FILE — DO NOT EDIT.
 # Source lives in server/src/*.sh. Edit there and run: bash scripts/build.sh
@@ -1048,13 +1048,14 @@ classifyInstallState() {
     local service_primary="${3:-$(getHihyServiceScriptPrimary)}"
     local service_fallback="${4:-$(getHihyServiceScriptFallback)}"
     local failure_marker="${5:-$(getInstallFailureMarker "$root_dir")}"
+    # bin_link(hihy 启动器)不参与残留判定:bootstrap(install.sh)在 install 运行前就会
+    # 先落好启动器,仅有启动器 = 全新安装;把它算作痕迹会让官方安装路径每次都误报残留
     local owned_paths=(
         "$root_dir/bin/appS"
         "$root_dir/conf/config.yaml"
         "$root_dir/conf/backup.yaml"
         "$service_primary"
         "$service_fallback"
-        "$bin_link"
     )
     local has_any_artifact="false"
     local has_core_assets="false"
@@ -2662,68 +2663,34 @@ uninstall_rc_local_for_arch() {
     fi
 }
 
-install() {
-    local mode="${1:-}"
-    local install_state
-    install_state=$(classifyInstallState)
-
-    if [ "$install_state" = "installed" ]; then
-        echoColor green "$(i18n already_installed)"
-        return 0
-    fi
-
-    if [ "$install_state" = "partially-installed" ]; then
-        echoColor yellow "$(i18n partial_install_cleanup)"
-        killHysteriaProcess KILL
-        delHihyFirewallPort udp >/dev/null 2>&1 || true
-        delHihyFirewallPort tcp >/dev/null 2>&1 || true
-        cleanupHysteria2Iptables >/dev/null 2>&1 || true
-        recoverPartialInstallState
-        echoColor purple "$(i18n partial_install_recovered)"
-    fi
-
-    # 创建必要目录
-    mkdir -p /etc/hihy/{bin,conf,cert,result,logs}
-    markInstallFailed "install-start" "installation started but not completed"
-    echoColor purple "$(i18n install_ready)"
-
-    # 尽早安装 hihy 启动器，确保即使后续步骤失败，用户仍可用 hihy 命令重试
-    if ! installHihyLauncher; then
-        markInstallFailed "launcher" "failed to install hihy launcher at start"
-        echoColor red "$(i18n hihy_cmd_install_fail)"
-        exit 1
-    fi
-
-    checkSystemForUpdate
-    if ! downloadHysteriaCore; then
-        markInstallFailed "core-download" "failed to download hysteria core"
-        exit 1
-    fi
-    if [ "$mode" = "auto" ]; then
-        autoHysteriaConfig
-    else
-        setHysteriaConfig
-    fi
-
-    # 获取启动命令前缀
-    local start_cmd_prefix=$(getStartCommand)
+# 写入服务管理脚本(OpenRC 或传统 rc.d)并接好开机自启。
+# 关键点:
+#   1. setsid 让服务进程脱离调用者的会话/前台进程组 —— 否则从菜单启动的服务会留在
+#      终端前台进程组里,用户按 Ctrl+C 退出菜单时 SIGINT 广播会连带杀死刚启动的服务
+#      (nohup 只挡 SIGHUP;hysteria 通过 signal.Notify 接管 SIGINT,bash 的后台 SIG_IGN 挡不住)
+#   2. stop 等待进程真正退出(最多 5s,兜底 kill -9),避免 restart 时新进程抢不到端口
+#   3. start 后校验进程存活 1s,启动失败立即报错而不是假装成功
+#   4. rc.local 无条件补执行位:RHEL 系 /etc/rc.local 默认无执行位,rc-local.service
+#      的 ConditionFileIsExecutable 不满足,开机自启会静默失效
+installServiceScript() {
+    local start_cmd_prefix
+    start_cmd_prefix=$(getStartCommand)
 
     if [ -f "/etc/alpine-release" ]; then
         # 使用 OpenRC
+        mkdir -p /etc/init.d
         cat >/etc/init.d/hihy <<EOF
 #!/sbin/openrc-run
 
 name="hihy"
 description="Hysteria Proxy Service"
-supervisor="supervise-daemon"
 command="${start_cmd_prefix} /etc/hihy/bin/appS"
 command_args="--log-level info -c /etc/hihy/conf/config.yaml server"
-command_background="yes"
 pidfile="/var/run/hihy.pid"
 output_log="/etc/hihy/logs/hihy.log"
 error_log="/etc/hihy/logs/hihy.log"
 
-extra_started_commands="log status"
+extra_started_commands="log"
 
 depend() {
     need net
@@ -2742,9 +2709,19 @@ start() {
 
     ebegin "Starting hihy"
     mkdir -p \$(dirname "\$output_log")
-    nohup \$command \$command_args > "\$output_log" 2>&1 &
+    DAEMON_WRAP=""
+    if command -v setsid >/dev/null 2>&1; then
+        DAEMON_WRAP="setsid"
+    fi
+    nohup \$DAEMON_WRAP \$command \$command_args > "\$output_log" 2>&1 &
     echo \$! > "\$pidfile"
-    eend \$?
+    sleep 1
+    if ! kill -0 \$(cat "\$pidfile") 2>/dev/null; then
+        rm -f "\$pidfile"
+        eend 1 "hihy failed to start, check \$output_log"
+        return 1
+    fi
+    eend 0
 }
 
 stop() {
@@ -2753,19 +2730,26 @@ stop() {
         return 1
     fi
 
+    PID=\$(cat "\$pidfile")
     ebegin "Stopping hihy"
-    kill \$(cat "\$pidfile")
+    kill "\$PID" 2>/dev/null
+    n=0
+    while [ \$n -lt 5 ]; do
+        if ! kill -0 "\$PID" 2>/dev/null; then
+            break
+        fi
+        sleep 1
+        n=\$((n + 1))
+    done
+    if kill -0 "\$PID" 2>/dev/null; then
+        kill -9 "\$PID" 2>/dev/null
+    fi
     rm -f "\$pidfile"
-    eend \$?
+    eend 0
 }
 
 restart() {
     stop
-    sleep 2
-    if [ -f "\$pidfile" ]; then
-        eerror "Failed to stop hihy"
-        return 1
-    fi
     start
 }
 
@@ -2782,9 +2766,7 @@ log() {
 }
 EOF
         chmod +x /etc/init.d/hihy
-        rc-update add hihy default
-        rc-service hihy start
-
+        rc-update add hihy default >/dev/null 2>&1 || true
     else
         # 使用传统启动脚本
         mkdir -p /etc/rc.d
@@ -2803,10 +2785,14 @@ start() {
     fi
 
     echo "Starting hihy..."
+    DAEMON_WRAP=""
+    if command -v setsid >/dev/null 2>&1; then
+        DAEMON_WRAP="setsid"
+    fi
     if [ -n "\$START_CMD_PREFIX" ]; then
-        nohup \$START_CMD_PREFIX \$HIHY_PATH/bin/appS --log-level info -c \$HIHY_PATH/conf/config.yaml server > "\$LOG_FILE" 2>&1 &
+        nohup \$DAEMON_WRAP \$START_CMD_PREFIX \$HIHY_PATH/bin/appS --log-level info -c \$HIHY_PATH/conf/config.yaml server > "\$LOG_FILE" 2>&1 &
     else
-        nohup \$HIHY_PATH/bin/appS --log-level info -c \$HIHY_PATH/conf/config.yaml server > "\$LOG_FILE" 2>&1 &
+        nohup \$DAEMON_WRAP \$HIHY_PATH/bin/appS --log-level info -c \$HIHY_PATH/conf/config.yaml server > "\$LOG_FILE" 2>&1 &
     fi
     echo \$! > "\$PID_FILE"
     sleep 1
@@ -2877,12 +2863,62 @@ EOF
         if [ ! -f "/etc/rc.local" ]; then
             touch /etc/rc.local
             echo "#!/bin/bash" >/etc/rc.local
-            chmod +x /etc/rc.local
         fi
+        chmod +x /etc/rc.local 2>/dev/null || true
         if ! grep -q "/etc/rc.d/hihy start" /etc/rc.local; then
             echo "/etc/rc.d/hihy start" >>/etc/rc.local
         fi
-        # 启动服务
+    fi
+}
+
+install() {
+    local mode="${1:-}"
+    local install_state
+    install_state=$(classifyInstallState)
+
+    if [ "$install_state" = "installed" ]; then
+        echoColor green "$(i18n already_installed)"
+        return 0
+    fi
+
+    if [ "$install_state" = "partially-installed" ]; then
+        echoColor yellow "$(i18n partial_install_cleanup)"
+        killHysteriaProcess KILL
+        delHihyFirewallPort udp >/dev/null 2>&1 || true
+        delHihyFirewallPort tcp >/dev/null 2>&1 || true
+        cleanupHysteria2Iptables >/dev/null 2>&1 || true
+        recoverPartialInstallState
+        echoColor purple "$(i18n partial_install_recovered)"
+    fi
+
+    # 创建必要目录
+    mkdir -p /etc/hihy/{bin,conf,cert,result,logs}
+    markInstallFailed "install-start" "installation started but not completed"
+    echoColor purple "$(i18n install_ready)"
+
+    # 尽早安装 hihy 启动器，确保即使后续步骤失败，用户仍可用 hihy 命令重试
+    if ! installHihyLauncher; then
+        markInstallFailed "launcher" "failed to install hihy launcher at start"
+        echoColor red "$(i18n hihy_cmd_install_fail)"
+        exit 1
+    fi
+
+    checkSystemForUpdate
+    if ! downloadHysteriaCore; then
+        markInstallFailed "core-download" "failed to download hysteria core"
+        exit 1
+    fi
+    if [ "$mode" = "auto" ]; then
+        autoHysteriaConfig
+    else
+        setHysteriaConfig
+    fi
+
+    # 写入服务脚本并启动(独立函数,重新配置时也会刷新服务脚本)
+    installServiceScript
+    if [ -f "/etc/alpine-release" ]; then
+        rc-service hihy start
+    else
         /etc/rc.d/hihy start
     fi
 
@@ -3266,6 +3302,16 @@ uninstall() {
         return 1
     fi
 
+    # rm -rf /etc/hihy 会连带删掉 i18n 语言文件,先快照到临时目录,
+    # 否则卸载过程后半段的提示全部退化为裸 key
+    local i18n_snapshot=""
+    if [ -d "$HIHY_I18N_DIR" ]; then
+        i18n_snapshot=$(mktemp -d 2>/dev/null) || i18n_snapshot=""
+        if [ -n "$i18n_snapshot" ] && cp -r "$HIHY_I18N_DIR/." "$i18n_snapshot/" 2>/dev/null; then
+            HIHY_I18N_DIR="$i18n_snapshot"
+        fi
+    fi
+
     if [ "$install_state" = "partially-installed" ]; then
         echoColor yellow "$(i18n partial_uninstall_cleanup)"
     fi
@@ -3281,6 +3327,10 @@ uninstall() {
         if [ -f "/etc/rc.d/hihy" ]; then
             /etc/rc.d/hihy stop >/dev/null 2>&1 || true
             rm -f /etc/rc.d/hihy
+        fi
+        # 清理 install 时创建的 /etc/init.d/hihy 软链(否则卸载后留下悬空链接)
+        if [ -L "/etc/init.d/hihy" ] && [ "$(readlink /etc/init.d/hihy)" = "/etc/rc.d/hihy" ]; then
+            rm -f /etc/init.d/hihy
         fi
     fi
 
@@ -3346,8 +3396,10 @@ uninstall() {
     # 检查是否完全删除
     if [ ! -d "/etc/hihy" ]; then
         echoColor green "$(i18n uninstall_complete)"
+        [ -n "$i18n_snapshot" ] && rm -rf "$i18n_snapshot"
     else
         echoColor red "$(i18n uninstall_error)"
+        [ -n "$i18n_snapshot" ] && rm -rf "$i18n_snapshot"
         exit 1
     fi
 }
@@ -3478,7 +3530,7 @@ generate_client_config() {
     if [ -f "${client_configfile}" ]; then
         rm -f "${client_configfile}"
     fi
-    touch ${client_configfile}
+    touch "${client_configfile}"
     if [ "${realmMode}" == "true" ]; then
         addOrUpdateYaml "$client_configfile" "server" "${realmURI}"
         addOrUpdateYaml "$client_configfile" "auth" "${auth_secret}"
@@ -3654,7 +3706,7 @@ generate_client_config() {
     fi
     echoColor purple "$(i18n client_config_tutorial_link)"
     echoColor green "↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓$(i18n client_config_copy_marker)↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓"
-    cat ${client_configfile}
+    cat "${client_configfile}"
     echoColor green "↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑$(i18n client_config_copy_marker)↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑"
     # mihomo: gecko 混淆时跳过(realm 模式现在也支持了)
     if [ "${HIHY_CP_obfsType}" = "gecko" ]; then
@@ -4355,6 +4407,8 @@ changeServerConfig() {
     # 顺带尝试更新内核;失败(如网络不可达)不阻塞重新配置,继续用现有内核
     updateHysteriaCore || true
     setHysteriaConfig
+    # 重新配置时同步刷新服务脚本,让老安装也能拿到服务脚本层面的修复
+    installServiceScript
     start
     generate_client_config
     echoColor green "$(i18n change_config_success)"
