@@ -2,10 +2,11 @@
 
 [English](README_en.md) | **中文** | [فارسی](README_fa.md) | [Русский](README_ru.md)
 
-##### (2026/07/07) ver1.12
+##### (2026/07/07) ver1.15
 
 ```
-脚本模块化重构；i18n 多语言支持(en/zh/fa/ru)；mihomo 配置修复(拥塞控制/gecko 拦截/hop-interval/Realm)并改名；新增 sing-box 客户端配置生成
+ECH、支持关闭brutal的速率补偿机制
+修复若干bug
 ```
 
 
