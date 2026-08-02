@@ -215,6 +215,9 @@ addSocks5Outbound() {
     local server_config="/etc/hihy/conf/config.yaml"
     local backup_config="/etc/hihy/conf/backup.yaml"
     echo -e "$(i18n socks5_warp_tip)"
+    echoColor yellow "$(i18n socks5_warp_choice)"
+    echoColor yellow "$(i18n socks5_custom_choice)"
+    echoColor yellow "$(i18n socks5_remove_choice)"
     echoColor yellow "$(i18n menu_option_exit)"
     read -r -p "$(i18n menu_prompt_choice)" num
     if [ -z "${num}" ] || [ "${num}" == "1" ]; then

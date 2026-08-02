@@ -2,10 +2,11 @@
 
 **English** | [中文](README.md) | [فارسی](README_fa.md) | [Русский](README_ru.md)
 
-##### (2026/07/07) ver1.12
+##### (2026/08/02) ver1.16
 
 ```
-Modular refactor; i18n multi-language (en/zh/fa/ru); mihomo config fixes (congestion/gecko/hop-interval/Realm) + rename; new sing-box client config generator
+Fixed awk error in traffic statistics and missing SOCKS5 outbound menu options
+Removed namedotcom ACME DNS provider (unsupported since hysteria v2.11.0)
 ```
 
 
@@ -117,7 +118,7 @@ You can directly invoke functions by number, e.g. `hihy 5` restarts hysteria2.
  -------------------------------------------
 |**********      Hi Hysteria       **********|
 |**********    Author: emptysuns   **********|
-|**********   Version: ver1.12     **********|
+||**********   Version: ver1.16     **********||
  -------------------------------------------
 Tips: hihy  command to run this script again.
 ............................................. 

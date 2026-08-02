@@ -2,10 +2,11 @@
 
 [English](README_en.md) | **中文** | [فارسی](README_fa.md) | [Русский](README_ru.md)
 
-##### (2026/07/07) ver1.12
+##### (2026/08/02) ver1.16
 
 ```
-脚本模块化重构；i18n 多语言支持(en/zh/fa/ru)；mihomo 配置修复(拥塞控制/gecko 拦截/hop-interval/Realm)并改名；新增 sing-box 客户端配置生成
+修复流量统计awk报错、SOCKS5出站菜单选项丢失
+移除namedotcom ACME DNS服务商(hysteria v2.11.0起不再支持)
 ```
 
 
@@ -117,7 +118,7 @@ bash <(curl -fsSL https://git.io/hysteria.sh)
  -------------------------------------------
 |**********      Hi Hysteria       **********|
 |**********    Author: emptysuns   **********|
-|**********   Version: ver1.12     **********|
+||**********   Version: ver1.16     **********||
  -------------------------------------------
 Tips: hihy  命令再次运行本脚本.
 ............................................. 

@@ -78,8 +78,17 @@ getHysteriaTrafic() {
         # 使用临时文件存储排序数据
         temp_file=$(mktemp)
 
-        echo "$STREAMS_OUTPUT" | awk -v estab="$(i18n traffic_status_estab)" \
+        echo "$STREAMS_OUTPUT" | awk \
+            -v estab="$(i18n traffic_status_estab)" \
             -v closed="$(i18n traffic_status_closed)" \
+            -v byte_suffix="$(i18n unit_byte_literal)" \
+            -v kb_suffix="$(i18n unit_kilobyte_literal)" \
+            -v mb_suffix="$(i18n unit_megabyte_literal)" \
+            -v gb_suffix="$(i18n unit_gigabyte_literal)" \
+            -v ms_suffix="$(i18n unit_millisecond_literal)" \
+            -v s_suffix="$(i18n unit_second_literal)" \
+            -v m_suffix="$(i18n unit_minute_literal)" \
+            -v h_suffix="$(i18n unit_hour_literal)" \
             'BEGIN {
             status["ESTAB"]=estab
             status["CLOSED"]=closed
@@ -128,15 +137,7 @@ getHysteriaTrafic() {
                 format_time_display(format_time($7)), \
                 last_active, \
                 $9, $10
-        }' -v byte_suffix="$(i18n unit_byte_literal)" \
-            -v kb_suffix="$(i18n unit_kilobyte_literal)" \
-            -v mb_suffix="$(i18n unit_megabyte_literal)" \
-            -v gb_suffix="$(i18n unit_gigabyte_literal)" \
-            -v ms_suffix="$(i18n unit_millisecond_literal)" \
-            -v s_suffix="$(i18n unit_second_literal)" \
-            -v m_suffix="$(i18n unit_minute_literal)" \
-            -v h_suffix="$(i18n unit_hour_literal)" \
-            | sort -t'|' -k8,8nr >"$temp_file"
+        }' | sort -t'|' -k8,8nr >"$temp_file"
 
         # 读取排序后的数据并格式化输出
         while IFS='|' read -r state user conn_id flows up down alive last_active req_addr target_addr; do

@@ -2,11 +2,11 @@
 
 [English](README_en.md) | **中文** | [فارسی](README_fa.md) | [Русский](README_ru.md)
 
-##### (2026/07/07) ver1.15
+##### (2026/08/02) ver1.16
 
 ```
-ECH、支持关闭brutal的速率补偿机制
-修复若干bug
+修复流量统计awk报错、SOCKS5出站菜单选项丢失
+移除namedotcom ACME DNS服务商(hysteria v2.11.0起不再支持)
 ```
 
 
@@ -130,7 +130,7 @@ bash <(curl -fsSL https://git.io/hysteria.sh) --auto
 
 ```
  ╭───────────────────────────────────────────╮
- │            Hi Hysteria ver1.15            │
+ │            Hi Hysteria ver1.16            │
  │ https://github.com/emptysuns/Hi_Hysteria  │
  ╰───────────────────────────────────────────╯
   ● 运行中 │ 内核: v2.9.1

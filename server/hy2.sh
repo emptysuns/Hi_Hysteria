@@ -1,5 +1,5 @@
 #!/bin/bash
-hihyV="ver1.15"
+hihyV="ver1.16"
 # =============================================================================
 # GENERATED FILE — DO NOT EDIT.
 # Source lives in server/src/*.sh. Edit there and run: bash scripts/build.sh
@@ -1269,9 +1269,6 @@ setConfigDefaults() {
     duckdns_override_domain=""
     gandi_api_token=""
     godaddy_api_token=""
-    namedotcom_api_token=""
-    namedotcom_user=""
-    namedotcom_server=""
     vultr_api_token=""
     port=""
     portHoppingStatus="false"
@@ -1506,7 +1503,6 @@ collectHysteriaConfig() {
         echoColor yellow "$(i18n dns_choice_duckdns)"
         echoColor yellow "$(i18n dns_choice_gandi)"
         echoColor yellow "$(i18n dns_choice_godaddy)"
-        echoColor yellow "$(i18n dns_choice_namecom)"
         echoColor yellow "$(i18n dns_choice_vultr)"
         echoColor green "$(i18n prompt_enter_number)"
         read -r dnsNum
@@ -1573,39 +1569,6 @@ collectHysteriaConfig() {
                 fi
             done
         elif [ "${dnsNum}" == "5" ]; then
-            dns="namedotcom"
-            echo -e "\n\n->$(i18n dns_selected_namecom)\n"
-            echoColor green "$(i18n namecom_token_prompt)"
-            while :; do
-                read -r namedotcom_api_token
-                if [ -z "${namedotcom_api_token}" ]; then
-                    echoColor red "\n\n->$(i18n this_option_cannot_be_empty)"
-                    echoColor green "$(i18n namecom_token_prompt)"
-                else
-                    break
-                fi
-            done
-            echoColor green "$(i18n namecom_user_prompt)"
-            while :; do
-                read -r namedotcom_user
-                if [ -z "${namedotcom_user}" ]; then
-                    echoColor red "\n\n->$(i18n this_option_cannot_be_empty)"
-                    echoColor green "$(i18n namecom_user_prompt)"
-                else
-                    break
-                fi
-            done
-            echoColor green "$(i18n namecom_server_prompt)"
-            while :; do
-                read -r namedotcom_server
-                if [ -z "${namedotcom_server}" ]; then
-                    echoColor red "\n\n->$(i18n this_option_cannot_be_empty)"
-                    echoColor green "$(i18n namecom_server_prompt)"
-                else
-                    break
-                fi
-            done
-        elif [ "${dnsNum}" == "6" ]; then
             dns="vultr"
             echo -e "\n\n->$(i18n dns_selected_vultr)\n"
             echoColor green "$(i18n vultr_token_prompt)"
@@ -2465,12 +2428,6 @@ writeHysteriaConfig() {
                 "godaddy")
                     addOrUpdateYaml "$yaml_file" "acme.dns.name" "godaddy"
                     addOrUpdateYaml "$yaml_file" "acme.dns.config.godaddy_api_token" "${godaddy_api_token}"
-                    ;;
-                "namedotcom")
-                    addOrUpdateYaml "$yaml_file" "acme.dns.name" "namedotcom"
-                    addOrUpdateYaml "$yaml_file" "acme.dns.config.namedotcom_api_token" "${namedotcom_api_token}"
-                    addOrUpdateYaml "$yaml_file" "acme.dns.config.namedotcom_user" "${namedotcom_user}"
-                    addOrUpdateYaml "$yaml_file" "acme.dns.config.namedotcom_server" "${namedotcom_server}"
                     ;;
                 "vultr")
                     addOrUpdateYaml "$yaml_file" "acme.dns.name" "vultr"
@@ -4414,8 +4371,17 @@ getHysteriaTrafic() {
         # 使用临时文件存储排序数据
         temp_file=$(mktemp)
 
-        echo "$STREAMS_OUTPUT" | awk -v estab="$(i18n traffic_status_estab)" \
+        echo "$STREAMS_OUTPUT" | awk \
+            -v estab="$(i18n traffic_status_estab)" \
             -v closed="$(i18n traffic_status_closed)" \
+            -v byte_suffix="$(i18n unit_byte_literal)" \
+            -v kb_suffix="$(i18n unit_kilobyte_literal)" \
+            -v mb_suffix="$(i18n unit_megabyte_literal)" \
+            -v gb_suffix="$(i18n unit_gigabyte_literal)" \
+            -v ms_suffix="$(i18n unit_millisecond_literal)" \
+            -v s_suffix="$(i18n unit_second_literal)" \
+            -v m_suffix="$(i18n unit_minute_literal)" \
+            -v h_suffix="$(i18n unit_hour_literal)" \
             'BEGIN {
             status["ESTAB"]=estab
             status["CLOSED"]=closed
@@ -4464,15 +4430,7 @@ getHysteriaTrafic() {
                 format_time_display(format_time($7)), \
                 last_active, \
                 $9, $10
-        }' -v byte_suffix="$(i18n unit_byte_literal)" \
-            -v kb_suffix="$(i18n unit_kilobyte_literal)" \
-            -v mb_suffix="$(i18n unit_megabyte_literal)" \
-            -v gb_suffix="$(i18n unit_gigabyte_literal)" \
-            -v ms_suffix="$(i18n unit_millisecond_literal)" \
-            -v s_suffix="$(i18n unit_second_literal)" \
-            -v m_suffix="$(i18n unit_minute_literal)" \
-            -v h_suffix="$(i18n unit_hour_literal)" \
-            | sort -t'|' -k8,8nr >"$temp_file"
+        }' | sort -t'|' -k8,8nr >"$temp_file"
 
         # 读取排序后的数据并格式化输出
         while IFS='|' read -r state user conn_id flows up down alive last_active req_addr target_addr; do
@@ -4739,6 +4697,9 @@ addSocks5Outbound() {
     local server_config="/etc/hihy/conf/config.yaml"
     local backup_config="/etc/hihy/conf/backup.yaml"
     echo -e "$(i18n socks5_warp_tip)"
+    echoColor yellow "$(i18n socks5_warp_choice)"
+    echoColor yellow "$(i18n socks5_custom_choice)"
+    echoColor yellow "$(i18n socks5_remove_choice)"
     echoColor yellow "$(i18n menu_option_exit)"
     read -r -p "$(i18n menu_prompt_choice)" num
     if [ -z "${num}" ] || [ "${num}" == "1" ]; then
