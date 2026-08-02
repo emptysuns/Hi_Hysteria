@@ -7,6 +7,7 @@
 ```
 Fixed awk error in traffic statistics and missing SOCKS5 outbound menu options
 Removed namedotcom ACME DNS provider (unsupported since hysteria v2.11.0)
+Fixed traffic stats rows not displaying; redesigned the active connections table
 ```
 
 

@@ -7,6 +7,7 @@
 ```
 修复流量统计awk报错、SOCKS5出站菜单选项丢失
 移除namedotcom ACME DNS服务商(hysteria v2.11.0起不再支持)
+修复流量统计行数据不显示、重设计活动连接表格
 ```
 
 

@@ -1,4 +1,29 @@
 #!/bin/bash
+# 按终端显示宽度左对齐补齐(CJK 等宽字符按 2 列计),避免中文表头与数据错位
+padl() {
+    local s="$1" w="$2" i c len=0
+    for ((i = 0; i < ${#s}; i++)); do
+        c="${s:i:1}"
+        if [ "$(printf '%d' "'${c}" 2>/dev/null)" -ge 128 ]; then
+            len=$((len + 2))
+        else
+            len=$((len + 1))
+        fi
+    done
+    printf '%s' "$s"
+    while [ "${len}" -lt "${w}" ]; do
+        printf ' '
+        len=$((len + 1))
+    done
+}
+
+# 活动连接表格行:9 列按显示宽度对齐
+print_table_row() {
+    padl "$1" 6; printf ' | '; padl "$2" 16; printf ' | '; padl "$3" 8; printf ' | '
+    padl "$4" 5; printf ' | '; padl "$5" 9; printf ' | '; padl "$6" 9; printf ' | '
+    padl "$7" 8; printf ' | '; padl "$8" 8; printf ' | '; padl "$9" 22; printf '\n'
+}
+
 format_bytes() {
     local bytes=$1
     if [ $bytes -lt 1024 ]; then
@@ -32,26 +57,37 @@ getHysteriaTrafic() {
 
     # 流量统计部分保持不变
     echoColor green "$(i18n traffic_stats_label)"
-    curl -s "${CURL_OPTS[@]}" "http://127.0.0.1:${api_port}/traffic" \
-        | grep -oE '"[^"]+":{"tx":[0-9]+,"rx":[0-9]+}' \
-        | while IFS=: read -r user stats; do
-            tx=$(echo $stats | grep -oE '"tx":[0-9]+' | cut -d: -f2)
-            rx=$(echo $stats | grep -oE '"rx":[0-9]+' | cut -d: -f2)
-            user=$(echo $user | tr -d '"')
-            tx_formatted=$(format_bytes $tx)
-            rx_formatted=$(format_bytes $rx)
-            printf "$(i18n traffic_stats_row)\n" "$user" "$tx_formatted" "$rx_formatted"
-        done
+    # 用 yq 解析(脚本硬依赖):grep 正则对 JSON 的 { 转义/空白格式差异太脆弱,401/HTML 响应会被静默吞掉
+    local traffic_resp traffic_out
+    traffic_resp=$(curl -s "${CURL_OPTS[@]}" "http://127.0.0.1:${api_port}/traffic")
+    if [ -n "${traffic_resp}" ]; then
+        traffic_out=$(printf '%s' "${traffic_resp}" | yq -p json -o tsv 'to_entries[] | [.key, .value.tx, .value.rx] | @tsv' 2>/dev/null)
+        if [ -n "${traffic_out}" ]; then
+            while IFS=$'\t' read -r user tx rx; do
+                tx_formatted=$(format_bytes "${tx}")
+                rx_formatted=$(format_bytes "${rx}")
+                # 模板占位符必须由 i18n 消费(外层 printf 再展开会把 %s 提前吞掉)
+                printf '%s\n' "$(i18n traffic_stats_row "$user" "$tx_formatted" "$rx_formatted")"
+            done <<<"${traffic_out}"
+        else
+            echoColor red "$(i18n traffic_api_error "${traffic_resp}")"
+        fi
+    fi
 
     # 在线用户部分保持不变
     echoColor green "\n$(i18n traffic_online_users_label)"
-    curl -s "${CURL_OPTS[@]}" "http://127.0.0.1:${api_port}/online" \
-        | grep -oE '"[^"]+":[0-9]+' \
-        | while IFS=: read -r user count; do
-            user=$(echo $user | tr -d '"')
-            count=$(echo $count | tr -d ' ')
-            printf "$(i18n traffic_online_users_row)\n" "$user" "$count"
-        done
+    local online_resp online_out
+    online_resp=$(curl -s "${CURL_OPTS[@]}" "http://127.0.0.1:${api_port}/online")
+    if [ -n "${online_resp}" ]; then
+        online_out=$(printf '%s' "${online_resp}" | yq -p json -o tsv 'to_entries[] | [.key, .value] | @tsv' 2>/dev/null)
+        if [ -n "${online_out}" ]; then
+            while IFS=$'\t' read -r user count; do
+                printf '%s\n' "$(i18n traffic_online_users_row "$user" "$count")"
+            done <<<"${online_out}"
+        else
+            echoColor red "$(i18n traffic_api_error "${online_resp}")"
+        fi
+    fi
 
     echoColor green "\n$(i18n traffic_active_connections_label)"
     STREAMS_OUTPUT=$(curl -s "${CURL_OPTS[@]}" -H "Accept: text/plain" "http://127.0.0.1:${api_port}/dump/streams")
@@ -60,7 +96,7 @@ getHysteriaTrafic() {
         echo "$(i18n traffic_no_active_connections)"
     else
         # 打印表头
-        local _h_state _h_user _h_conn_id _h_flows _h_up _h_down _h_alive _h_last_active _h_req_addr _h_target_addr
+        local _h_state _h_user _h_conn_id _h_flows _h_up _h_down _h_alive _h_last_active _h_target_addr
         _h_state="$(i18n traffic_header_state)"
         _h_user="$(i18n traffic_header_user)"
         _h_conn_id="$(i18n traffic_header_conn_id)"
@@ -69,11 +105,9 @@ getHysteriaTrafic() {
         _h_down="$(i18n traffic_header_download)"
         _h_alive="$(i18n traffic_header_alive_time)"
         _h_last_active="$(i18n traffic_header_last_active)"
-        _h_req_addr="$(i18n traffic_header_request_address)"
         _h_target_addr="$(i18n traffic_header_target_address)"
-        printf "%-8s | %-15s | %-10s | %-3s | %-10s | %-10s | %-12s | %-12s | %-20s | %-20s\n" \
-            "$_h_state" "$_h_user" "$_h_conn_id" "$_h_flows" "$_h_up" "$_h_down" "$_h_alive" "$_h_last_active" "$_h_req_addr" "$_h_target_addr"
-        echo "----------|-----------------|------------|------|------------|------------|--------------|--------------|----------------------|----------------------"
+        print_table_row "$_h_state" "$_h_user" "$_h_conn_id" "$_h_flows" "$_h_up" "$_h_down" "$_h_alive" "$_h_last_active" "$_h_target_addr"
+        echo "------|----------------|--------|-----|---------|---------|--------|--------|----------------------"
 
         # 使用临时文件存储排序数据
         temp_file=$(mktemp)
@@ -131,19 +165,19 @@ getHysteriaTrafic() {
 
         NR > 1 {
             last_active = format_time($8)
-            printf "%s|%s|%s|%s|%s|%s|%s|%.2f|%s|%s\n", \
+            # 第9列 Req-Addr 即客户端请求的目标地址;第10列 Hooked-Req-Addr 仅在 SNI 改写时非空,略去
+            printf "%s|%s|%s|%s|%s|%s|%s|%.2f|%s\n", \
                 status[$1], $2, $3, $4, \
                 format_bytes($5), format_bytes($6), \
                 format_time_display(format_time($7)), \
                 last_active, \
-                $9, $10
+                $9
         }' | sort -t'|' -k8,8nr >"$temp_file"
 
         # 读取排序后的数据并格式化输出
-        while IFS='|' read -r state user conn_id flows up down alive last_active req_addr target_addr; do
-            printf "%-8s | %-15s | %-10s | %-3s | %-10s | %-10s | %-12s | %-12s | %-20s | %-20s\n" \
-                "$state" "$user" "$conn_id" "$flows" "$up" "$down" \
-                "$alive" "$(format_time_display $last_active)" "$req_addr" "$target_addr"
+        while IFS='|' read -r state user conn_id flows up down alive last_active target_addr; do
+            print_table_row "$state" "$user" "$conn_id" "$flows" "$up" "$down" \
+                "$alive" "$(format_time_display "$last_active")" "$target_addr"
         done <"$temp_file"
 
         rm -f "$temp_file"
