@@ -63,6 +63,37 @@ teardown_fixture() { rm -rf "$HIHY_ROOT_DIR"; }
     exit $FAIL
 ) || FAIL=1
 
+# ---------- loadClientParams: mimic_status ----------
+(
+    setup_fixture
+    printf 'mimic_status: true\n' >> "$HIHY_ROOT_DIR/conf/backup.yaml"
+    load_funcs
+    loadClientParams
+    [ "$HIHY_CP_mimicStatus" = "true" ] && pass "loadClientParams mimic on" || fail "loadClientParams mimic got '$HIHY_CP_mimicStatus'"
+    teardown_fixture
+    exit $FAIL
+) || FAIL=1
+
+# ---------- native: mimic.enabled written; hopping still off ----------
+(
+    setup_fixture
+    # 需要服务脚本存在才会进入 generate_client_config 主体;这里直接测 yaml 写入路径
+    printf 'mimic_status: true\n' >> "$HIHY_ROOT_DIR/conf/backup.yaml"
+    load_funcs
+    cd "$HIHY_ROOT_DIR"
+    loadClientParams
+    cf="./Hy2-testnode-v2rayN.yaml"
+    : > "$cf"
+    if [ "${HIHY_CP_mimicStatus}" == "true" ]; then
+        addOrUpdateYaml "$cf" "mimic.enabled" "true" "bool"
+    fi
+    if yq eval '.mimic.enabled' "$cf" | grep -q 'true'; then pass "native mimic.enabled true"
+    else fail "native mimic.enabled missing"
+    fi
+    teardown_fixture
+    exit $FAIL
+) || FAIL=1
+
 # ---------- parseRealmURI ----------
 (
     load_funcs

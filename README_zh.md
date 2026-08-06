@@ -2,12 +2,12 @@
 
 [English](README_en.md) | **中文** | [فارسی](README_fa.md) | [Русский](README_ru.md)
 
-##### (2026/08/02) ver1.16
+##### (2026/08/06) ver1.17
 
 ```
-修复流量统计awk报错、SOCKS5出站菜单选项丢失
-移除namedotcom ACME DNS服务商(hysteria v2.11.0起不再支持)
-修复流量统计行数据不显示、重设计活动连接表格
+新增 Mimic(伪装 TCP) 支持(hysteria v2.12.0+)，默认关闭
+启用后跳过端口跳跃；客户端须 Linux+root(如软路由)
+mihomo/sing-box 不支持 mimic，仅输出原生配置
 ```
 
 
@@ -78,6 +78,7 @@
 * 支持lxc、openvz、kvm等现在的所有主流的虚拟化方式
 * 支持Realm模式（P2P穿透），无需公网IP和端口转发即可建立连接
 * 支持使用Realm穿透cloudflare warp, 使用warp ip连接hysteria2, 隐藏真实ip（变相套CF CDN）
+* 支持 Mimic(伪装 TCP，hysteria v2.12.0+)：默认关闭；两端需 Linux+root 与 mimic 模块，启用后与端口跳跃互斥
 * 更新及时，hysteria2更新后24h内完成适配
 
 </details>
@@ -119,7 +120,7 @@ bash <(curl -fsSL https://git.io/hysteria.sh)
  -------------------------------------------
 |**********      Hi Hysteria       **********|
 |**********    Author: emptysuns   **********|
-||**********   Version: ver1.16     **********||
+||**********   Version: ver1.17     **********||
  -------------------------------------------
 Tips: hihy  命令再次运行本脚本.
 ............................................. 

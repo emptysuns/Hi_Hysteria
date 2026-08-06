@@ -78,6 +78,7 @@ setConfigDefaults() {
     obfs_type=""
     obfs_pass=""
     ech_status="false"
+    mimic_status="false"
     ech_public_name=""
     ech_config=""
     brutal_disable_loss_comp="false"
@@ -504,115 +505,140 @@ collectHysteriaConfig() {
     fi
 
     if [ "${realmMode}" != "true" ]; then
-        echoColor green "\n$(i18n port_hopping_prompt)"
-        echoColor white "$(i18n port_hopping_intro)"
-        echoColor white "$(i18n port_hopping_detail_url)"
-        echoColor green "$(i18n prompt_choose)"
-        echoColor yellow "$(i18n port_hopping_choice_enable)"
-        echoColor yellow "$(i18n port_hopping_choice_skip)"
-        echoColor green "$(i18n prompt_enter_number)"
-        read -r portHoppingStatus
-        if [ -z "${portHoppingStatus}" ] || [ "${portHoppingStatus}" == "1" ]; then
-            portHoppingStatus="true"
-            echoColor purple "$(i18n port_hopping_enabled)"
-            echoColor white "$(i18n port_hopping_range_hint)"
-            while :; do
-                echoColor green "$(i18n port_hopping_start)"
-                read -r portHoppingStart
-                if [ -z "${portHoppingStart}" ]; then
-                    portHoppingStart=47000
-                fi
-                if ! isValidPort "${portHoppingStart}"; then
-                    echoColor red "$(i18n port_invalid_error)"
-                    continue
-                fi
-                echo -e "\n->$(i18n start_port_label)$(echoColor red "${portHoppingStart}")\n"
-                echoColor green "$(i18n port_hopping_end)"
-                read -r portHoppingEnd
-                if [ -z "${portHoppingEnd}" ]; then
-                    portHoppingEnd=48000
-                fi
-                if ! isValidPort "${portHoppingEnd}"; then
-                    echoColor red "$(i18n port_invalid_error)"
-                    continue
-                fi
-                echo -e "\n->$(i18n end_port_label)$(echoColor red "${portHoppingEnd}")\n"
-                if [ ${portHoppingStart} -ge ${portHoppingEnd} ]; then
-                    echoColor red "$(i18n start_port_greater_error)"
-                else
-                    break
-                fi
-            done
-            echoColor green "$(i18n port_hopping_mode_prompt)"
-            echoColor yellow "$(i18n port_hopping_mode_fixed)"
-            echoColor yellow "$(i18n port_hopping_mode_random)"
-            echoColor green "$(i18n prompt_enter_number)"
-            read -r portHoppingIntervalModeNum
-            if [ -z "${portHoppingIntervalModeNum}" ] || [ "${portHoppingIntervalModeNum}" == "1" ]; then
-                portHoppingIntervalMode="fixed"
-                while :; do
-                    echoColor green "$(i18n fixed_hop_interval_prompt)"
-                    read -r portHoppingHopInterval
-                    if [ -z "${portHoppingHopInterval}" ]; then
-                        portHoppingHopInterval="30s"
-                    fi
-                    echo -e "\n->$(i18n fixed_hop_interval_label)$(echoColor red "${portHoppingHopInterval}")\n"
-                    hopSeconds=$(echo "${portHoppingHopInterval}" | sed 's/s$//')
-                    if ! isPositiveInt "${hopSeconds}" || [ "${hopSeconds}" -lt 5 ]; then
-                        echoColor red "$(i18n fixed_hop_interval_error)"
-                        continue
-                    fi
-                    portHoppingHopInterval="${hopSeconds}s"
-                    break
-                done
-                portHoppingMinHopInterval=""
-                portHoppingMaxHopInterval=""
-            else
-                portHoppingIntervalMode="random"
-                portHoppingHopInterval=""
-                while :; do
-                    echoColor green "$(i18n min_hop_interval_prompt)"
-                    read -r portHoppingMinHopInterval
-                    if [ -z "${portHoppingMinHopInterval}" ]; then
-                        portHoppingMinHopInterval="10s"
-                    fi
-                    echo -e "\n->$(i18n min_hop_interval_label)$(echoColor red "${portHoppingMinHopInterval}")\n"
-                    minHopSeconds=$(echo "${portHoppingMinHopInterval}" | sed 's/s$//')
-                    if ! isPositiveInt "${minHopSeconds}" || [ "${minHopSeconds}" -lt 5 ]; then
-                        echoColor red "$(i18n min_hop_interval_error)"
-                        continue
-                    fi
-                    portHoppingMinHopInterval="${minHopSeconds}s"
-                    echoColor green "$(i18n max_hop_interval_prompt)"
-                    read -r portHoppingMaxHopInterval
-                    if [ -z "${portHoppingMaxHopInterval}" ]; then
-                        portHoppingMaxHopInterval="30s"
-                    fi
-                    echo -e "\n->$(i18n max_hop_interval_label)$(echoColor red "${portHoppingMaxHopInterval}")\n"
-                    maxHopSeconds=$(echo "${portHoppingMaxHopInterval}" | sed 's/s$//')
-                    if ! isPositiveInt "${maxHopSeconds}" || [ "${maxHopSeconds}" -lt "${minHopSeconds}" ]; then
-                        echoColor red "$(i18n max_hop_interval_error)"
-                        continue
-                    fi
-                    portHoppingMaxHopInterval="${maxHopSeconds}s"
-                    break
-                done
-            fi
-            echo -e "\n->$(i18n port_hopping_range_label)$(echoColor red "${portHoppingStart}-${portHoppingEnd}")\n"
-            if [ "${portHoppingIntervalMode}" == "fixed" ]; then
-                echo -e "\n->$(i18n fixed_hop_interval_summary)$(echoColor red "${portHoppingHopInterval}")\n"
-            else
-                echo -e "\n->$(i18n random_hop_interval_summary)$(echoColor red "${portHoppingMinHopInterval}~${portHoppingMaxHopInterval}")\n"
-            fi
-        else
+        # Mimic(hysteria v2.12.0+):eBPF 把 UDP 伪装成 TCP。两端都要 Linux+root+mimic,且不能与端口跳跃同开。
+        echoColor green "\n$(i18n mimic_prompt)"
+        echoColor white "$(i18n mimic_hint1)"
+        echoColor white "$(i18n mimic_hint2)"
+        echoColor white "$(i18n mimic_hint3)"
+        echoColor yellow "$(i18n mimic_choice_disable_default)"
+        echoColor yellow "$(i18n mimic_choice_enable)"
+        echoColor green "$(i18n prompt_enter_number_or_default)"
+        read -r mimic_num
+        if [ "${mimic_num}" == "2" ]; then
+            mimic_status="true"
             portHoppingStatus="false"
             portHoppingIntervalMode=""
             portHoppingHopInterval=""
             portHoppingMinHopInterval=""
             portHoppingMaxHopInterval=""
-            echoColor red "$(i18n port_hopping_disabled)"
+            portHoppingStart=""
+            portHoppingEnd=""
+            echo -e "\n->$(i18n mimic_enabled_label)\n"
+            echoColor purple "$(i18n mimic_skip_port_hopping)"
+        else
+            mimic_status="false"
+            echo -e "\n->$(i18n mimic_disabled_label)\n"
+            echoColor green "\n$(i18n port_hopping_prompt)"
+            echoColor white "$(i18n port_hopping_intro)"
+            echoColor white "$(i18n port_hopping_detail_url)"
+            echoColor green "$(i18n prompt_choose)"
+            echoColor yellow "$(i18n port_hopping_choice_enable)"
+            echoColor yellow "$(i18n port_hopping_choice_skip)"
+            echoColor green "$(i18n prompt_enter_number)"
+            read -r portHoppingStatus
+            if [ -z "${portHoppingStatus}" ] || [ "${portHoppingStatus}" == "1" ]; then
+                portHoppingStatus="true"
+                echoColor purple "$(i18n port_hopping_enabled)"
+                echoColor white "$(i18n port_hopping_range_hint)"
+                while :; do
+                    echoColor green "$(i18n port_hopping_start)"
+                    read -r portHoppingStart
+                    if [ -z "${portHoppingStart}" ]; then
+                        portHoppingStart=47000
+                    fi
+                    if ! isValidPort "${portHoppingStart}"; then
+                        echoColor red "$(i18n port_invalid_error)"
+                        continue
+                    fi
+                    echo -e "\n->$(i18n start_port_label)$(echoColor red "${portHoppingStart}")\n"
+                    echoColor green "$(i18n port_hopping_end)"
+                    read -r portHoppingEnd
+                    if [ -z "${portHoppingEnd}" ]; then
+                        portHoppingEnd=48000
+                    fi
+                    if ! isValidPort "${portHoppingEnd}"; then
+                        echoColor red "$(i18n port_invalid_error)"
+                        continue
+                    fi
+                    echo -e "\n->$(i18n end_port_label)$(echoColor red "${portHoppingEnd}")\n"
+                    if [ ${portHoppingStart} -ge ${portHoppingEnd} ]; then
+                        echoColor red "$(i18n start_port_greater_error)"
+                    else
+                        break
+                    fi
+                done
+                echoColor green "$(i18n port_hopping_mode_prompt)"
+                echoColor yellow "$(i18n port_hopping_mode_fixed)"
+                echoColor yellow "$(i18n port_hopping_mode_random)"
+                echoColor green "$(i18n prompt_enter_number)"
+                read -r portHoppingIntervalModeNum
+                if [ -z "${portHoppingIntervalModeNum}" ] || [ "${portHoppingIntervalModeNum}" == "1" ]; then
+                    portHoppingIntervalMode="fixed"
+                    while :; do
+                        echoColor green "$(i18n fixed_hop_interval_prompt)"
+                        read -r portHoppingHopInterval
+                        if [ -z "${portHoppingHopInterval}" ]; then
+                            portHoppingHopInterval="30s"
+                        fi
+                        echo -e "\n->$(i18n fixed_hop_interval_label)$(echoColor red "${portHoppingHopInterval}")\n"
+                        hopSeconds=$(echo "${portHoppingHopInterval}" | sed 's/s$//')
+                        if ! isPositiveInt "${hopSeconds}" || [ "${hopSeconds}" -lt 5 ]; then
+                            echoColor red "$(i18n fixed_hop_interval_error)"
+                            continue
+                        fi
+                        portHoppingHopInterval="${hopSeconds}s"
+                        break
+                    done
+                    portHoppingMinHopInterval=""
+                    portHoppingMaxHopInterval=""
+                else
+                    portHoppingIntervalMode="random"
+                    portHoppingHopInterval=""
+                    while :; do
+                        echoColor green "$(i18n min_hop_interval_prompt)"
+                        read -r portHoppingMinHopInterval
+                        if [ -z "${portHoppingMinHopInterval}" ]; then
+                            portHoppingMinHopInterval="10s"
+                        fi
+                        echo -e "\n->$(i18n min_hop_interval_label)$(echoColor red "${portHoppingMinHopInterval}")\n"
+                        minHopSeconds=$(echo "${portHoppingMinHopInterval}" | sed 's/s$//')
+                        if ! isPositiveInt "${minHopSeconds}" || [ "${minHopSeconds}" -lt 5 ]; then
+                            echoColor red "$(i18n min_hop_interval_error)"
+                            continue
+                        fi
+                        portHoppingMinHopInterval="${minHopSeconds}s"
+                        echoColor green "$(i18n max_hop_interval_prompt)"
+                        read -r portHoppingMaxHopInterval
+                        if [ -z "${portHoppingMaxHopInterval}" ]; then
+                            portHoppingMaxHopInterval="30s"
+                        fi
+                        echo -e "\n->$(i18n max_hop_interval_label)$(echoColor red "${portHoppingMaxHopInterval}")\n"
+                        maxHopSeconds=$(echo "${portHoppingMaxHopInterval}" | sed 's/s$//')
+                        if ! isPositiveInt "${maxHopSeconds}" || [ "${maxHopSeconds}" -lt "${minHopSeconds}" ]; then
+                            echoColor red "$(i18n max_hop_interval_error)"
+                            continue
+                        fi
+                        portHoppingMaxHopInterval="${maxHopSeconds}s"
+                        break
+                    done
+                fi
+                echo -e "\n->$(i18n port_hopping_range_label)$(echoColor red "${portHoppingStart}-${portHoppingEnd}")\n"
+                if [ "${portHoppingIntervalMode}" == "fixed" ]; then
+                    echo -e "\n->$(i18n fixed_hop_interval_summary)$(echoColor red "${portHoppingHopInterval}")\n"
+                else
+                    echo -e "\n->$(i18n random_hop_interval_summary)$(echoColor red "${portHoppingMinHopInterval}~${portHoppingMaxHopInterval}")\n"
+                fi
+            else
+                portHoppingStatus="false"
+                portHoppingIntervalMode=""
+                portHoppingHopInterval=""
+                portHoppingMinHopInterval=""
+                portHoppingMaxHopInterval=""
+                echoColor red "$(i18n port_hopping_disabled)"
+            fi
         fi
     else
+        mimic_status="false"
         portHoppingStatus="false"
         echoColor purple "\n->$(i18n realm_skip_port_hopping)\n"
     fi
@@ -903,16 +929,29 @@ applyAutoOverrides() {
         ech_status="true"
         ech_public_name="${HIHY_AUTO_ECH_PUBLIC_NAME:-www.microsoft.com}"
     fi
-    if [ "${HIHY_AUTO_PORT_HOPPING:-}" = "true" ] || [ "${HIHY_AUTO_PORT_HOPPING:-}" = "1" ]; then
-        portHoppingStatus="true"
-        portHoppingStart="${HIHY_AUTO_HOP_START:-47000}"
-        portHoppingEnd="${HIHY_AUTO_HOP_END:-48000}"
-        portHoppingIntervalMode="fixed"
-        portHoppingHopInterval="30s"
-        if ! isValidPort "${portHoppingStart}" || ! isValidPort "${portHoppingEnd}" \
-            || [ "${portHoppingStart}" -ge "${portHoppingEnd}" ]; then
-            echoColor red "$(i18n auto_hop_invalid "${portHoppingStart}" "${portHoppingEnd}")"
-            return 1
+    if [ "${HIHY_AUTO_MIMIC:-}" = "true" ] || [ "${HIHY_AUTO_MIMIC:-}" = "1" ]; then
+        mimic_status="true"
+        # mimic 与端口跳跃互斥;一键开 mimic 时强制关 hopping
+        portHoppingStatus="false"
+        portHoppingStart=""
+        portHoppingEnd=""
+        portHoppingIntervalMode=""
+        portHoppingHopInterval=""
+        portHoppingMinHopInterval=""
+        portHoppingMaxHopInterval=""
+    fi
+    if [ "${mimic_status}" != "true" ]; then
+        if [ "${HIHY_AUTO_PORT_HOPPING:-}" = "true" ] || [ "${HIHY_AUTO_PORT_HOPPING:-}" = "1" ]; then
+            portHoppingStatus="true"
+            portHoppingStart="${HIHY_AUTO_HOP_START:-47000}"
+            portHoppingEnd="${HIHY_AUTO_HOP_END:-48000}"
+            portHoppingIntervalMode="fixed"
+            portHoppingHopInterval="30s"
+            if ! isValidPort "${portHoppingStart}" || ! isValidPort "${portHoppingEnd}" \
+                || [ "${portHoppingStart}" -ge "${portHoppingEnd}" ]; then
+                echoColor red "$(i18n auto_hop_invalid "${portHoppingStart}" "${portHoppingEnd}")"
+                return 1
+            fi
         fi
     fi
     return 0
@@ -961,9 +1000,14 @@ autoHysteriaConfig() {
     else
         echo -e "  $(i18n auto_summary_masquerade_off)"
     fi
-    if [ "${portHoppingStatus}" == "true" ]; then
+    if [ "${mimic_status}" == "true" ]; then
+        echo -e "  $(i18n auto_summary_mimic_on)"
+        echo -e "  $(i18n auto_summary_hopping_off)"
+    elif [ "${portHoppingStatus}" == "true" ]; then
+        echo -e "  $(i18n auto_summary_mimic_off)"
         echo -e "  $(i18n auto_summary_hopping_on "$(echoColor red "${portHoppingStart}-${portHoppingEnd}")")"
     else
+        echo -e "  $(i18n auto_summary_mimic_off)"
         echo -e "  $(i18n auto_summary_hopping_off)"
     fi
     if [ "${ech_status}" == "true" ]; then
@@ -1070,6 +1114,15 @@ writeHysteriaConfig() {
     if [ "${obfs_status}" == "true" ]; then
         addOrUpdateYaml "$yaml_file" "obfs.type" "${obfs_type}"
         addOrUpdateYaml "$yaml_file" "obfs.${obfs_type}.password" "${obfs_pass}"
+    fi
+    # Mimic:内核 >= v2.12.0;与端口跳跃互斥(上面已保证不同时开)
+    if [ "${mimic_status}" == "true" ]; then
+        if ! localCoreVersionAtLeast "2.12.0"; then
+            echoColor yellow "$(i18n mimic_core_too_old "$(getLocalHysteriaVersion 2>/dev/null || echo unknown)")"
+            mimic_status="false"
+        else
+            addOrUpdateYaml "$yaml_file" "mimic.enabled" "true" "bool"
+        fi
     fi
     if [ "${congestion_mode}" == "brutal" ]; then
         addOrUpdateYaml "$yaml_file" "quic.initStreamReceiveWindow" "${SRW}"
@@ -1364,6 +1417,7 @@ writeHysteriaConfig() {
     addOrUpdateYaml ${backup_file} "masquerade_xforwarded" "${masquerade_xforwarded}"
     addOrUpdateYaml ${backup_file} "masquerade_tcp" "${masquerade_tcp}"
     addOrUpdateYaml ${backup_file} "ech_status" "${ech_status}"
+    addOrUpdateYaml ${backup_file} "mimic_status" "${mimic_status}"
     if [ "${ech_status}" == "true" ]; then
         addOrUpdateYaml ${backup_file} "ech_public_name" "${ech_public_name}"
         addOrUpdateYaml ${backup_file} "ech_config" "${ech_config}" "string"

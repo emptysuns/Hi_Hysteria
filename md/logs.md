@@ -1,4 +1,17 @@
 # Hi Hysteria
+##### (2026/08/06) ver1.17
+
+```
+新增 Mimic(伪装 TCP) 支持(hysteria v2.12.0+)。
+
+1、新增 Mimic 配置项:默认关闭。启用后服务端/原生客户端写入 mimic.enabled: true
+2、启用 Mimic 时自动跳过端口跳跃(二者互斥,Hysteria 启动会拒绝同时配置)
+3、强提示:客户端必须是 Linux 且需 root(如软路由),两端需安装 mimic 程序与内核模块;Windows/手机无法连接
+4、mihomo / sing-box 不支持 mimic,启用时跳过这两类客户端配置生成,仅输出原生配置
+5、一键安装支持 HIHY_AUTO_MIMIC=true;与 HIHY_AUTO_PORT_HOPPING 同时设置时 mimic 优先并关闭跳跃
+6、内核低于 v2.12.0 时自动跳过 mimic 并提示
+```
+
 ##### (2026/08/02) ver1.16
 
 ```

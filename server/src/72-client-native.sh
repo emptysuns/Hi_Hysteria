@@ -89,6 +89,11 @@ generate_client_config() {
     else
         yq eval 'del(.obfs)' -i "$client_configfile"
     fi
+    if [ "${HIHY_CP_mimicStatus}" == "true" ]; then
+        addOrUpdateYaml "$client_configfile" "mimic.enabled" "true" "bool"
+    else
+        yq eval 'del(.mimic)' -i "$client_configfile"
+    fi
     if [ "${congestion_mode}" != "brutal" ]; then
         addOrUpdateYaml "$client_configfile" "congestion.type" "${congestion_type}"
         if [ "${congestion_type}" == "bbr" ]; then
@@ -184,6 +189,12 @@ generate_client_config() {
             echo -e "   $(i18n client_config_selfsigned_verify_step1)"
             echo -e "   $(i18n client_config_selfsigned_verify_step2)"
         fi
+        if [ "${HIHY_CP_mimicStatus}" == "true" ]; then
+            echoColor red "\n$(i18n client_config_mimic_warning_title)"
+            echoColor yellow "$(i18n client_config_mimic_warning1)"
+            echoColor yellow "$(i18n client_config_mimic_warning2)"
+            echoColor yellow "$(i18n client_config_mimic_warning3)"
+        fi
         # 伪装地址提示只在启用了伪装且监听 TCP 时才有意义
         if [ "$HIHY_CP_masqueradeStatus" == "true" ] && [ "$HIHY_CP_masqueradeTcp" == "true" ]; then
             echoColor purple "\n$(i18n client_config_masquerade_address "$(echoColor red https://${tls_sni}:${port})")"
@@ -219,15 +230,18 @@ generate_client_config() {
     echoColor green "↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓$(i18n client_config_copy_marker)↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓"
     cat "${client_configfile}"
     echoColor green "↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑$(i18n client_config_copy_marker)↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑"
-    # mihomo: gecko 混淆时跳过(realm 模式现在也支持了)
-    if [ "${HIHY_CP_obfsType}" = "gecko" ]; then
-        echoColor yellow "$(i18n client_mihomo_gecko_skip)"
+    # mihomo/sing-box 都不支持 mimic;gecko 时 mihomo 本就跳过
+    if [ "${HIHY_CP_mimicStatus}" == "true" ]; then
+        echoColor yellow "$(i18n client_mihomo_mimic_skip)"
+        echoColor yellow "$(i18n client_singbox_mimic_skip)"
     else
-        generateMihomoYaml
+        if [ "${HIHY_CP_obfsType}" = "gecko" ]; then
+            echoColor yellow "$(i18n client_mihomo_gecko_skip)"
+        else
+            generateMihomoYaml
+        fi
+        generateSingboxJson
     fi
-
-    generateSingboxJson
-
     echo -e "\n$(i18n client_config_done)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
 }

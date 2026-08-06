@@ -99,4 +99,7 @@ loadClientParams() {
         HIHY_CP_echConfig=$(getBackupValueOrDefault "$backup" "ech_config" "")
         [ -z "$HIHY_CP_echConfig" ] && HIHY_CP_echStatus="false"
     fi
+
+    # Mimic(v1.17 起记录):伪装 TCP,仅原生客户端可用
+    HIHY_CP_mimicStatus=$(getBackupValueOrDefault "$backup" "mimic_status" "false")
 }

@@ -28,6 +28,7 @@ hihy autoinstall   # 等价: hihy 16 / 菜单选项 16
 | 端口跳跃 | 不启用 |
 | 混淆 | 不启用(兼容性最好) |
 | ECH | 不启用(可用 `HIHY_AUTO_ECH=true` 开启) |
+| Mimic | 不启用(可用 `HIHY_AUTO_MIMIC=true` 开启；与端口跳跃互斥，需内核 v2.12.0+，客户端须 Linux+root) |
 
 安装完成后自动打印/生成三种客户端配置(原生 Hysteria2、mihomo、sing-box)与分享链接二维码，与交互式安装一致。
 
@@ -54,6 +55,7 @@ hihy autoinstall
 | `HIHY_AUTO_REMARKS` | 客户端配置备注名(默认 `auto-<端口>`) |
 | `HIHY_AUTO_ECH` | `true` 启用 ECH(加密 ClientHello，需内核 v2.10.0+)。密钥对由脚本本地生成，无需额外工具 |
 | `HIHY_AUTO_ECH_PUBLIC_NAME` | ECH 公开域名(明文幌子 SNI)，默认 `www.microsoft.com` |
+| `HIHY_AUTO_MIMIC` | `true` 启用 Mimic(伪装 TCP，需内核 v2.12.0+)。与端口跳跃互斥；两端须 Linux+root 并安装 mimic |
 
 bootstrap 阶段(`install.sh --auto`)还支持 `--lang=zh|en|fa|ru` 指定语言，缺省英文。
 

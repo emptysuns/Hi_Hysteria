@@ -27,6 +27,7 @@ load_funcs() { source "$REPO_ROOT/server/hy2.sh"; }
     [ "$block_http3" = "false" ] && pass "defaults: block_http3 off" || fail "defaults block_http3='$block_http3'"
     [ "$masquerade_xforwarded" = "false" ] && pass "defaults: xforwarded set" || fail "defaults masquerade_xforwarded='$masquerade_xforwarded'"
     [ "$ech_status" = "false" ] && pass "defaults: ech off" || fail "defaults ech_status='$ech_status'"
+    [ "$mimic_status" = "false" ] && pass "defaults: mimic off" || fail "defaults mimic_status='$mimic_status'"
     [ "$brutal_disable_loss_comp" = "false" ] && pass "defaults: loss compensation kept on" || fail "defaults brutal_disable_loss_comp='$brutal_disable_loss_comp'"
     exit $FAIL
 ) || FAIL=1
@@ -44,6 +45,32 @@ load_funcs() { source "$REPO_ROOT/server/hy2.sh"; }
     HIHY_AUTO_ECH_PUBLIC_NAME="decoy.example.org"
     applyAutoOverrides || fail "applyAutoOverrides rejected custom ech public name"
     [ "$ech_public_name" = "decoy.example.org" ] && pass "override: ech custom public name" || fail "override ech_public_name='$ech_public_name'"
+    exit $FAIL
+) || FAIL=1
+
+# ---------- Mimic 环境变量覆盖(与端口跳跃互斥) ----------
+(
+    load_funcs
+    setConfigDefaults
+    HIHY_AUTO_MIMIC="true"
+    HIHY_AUTO_PORT_HOPPING="true"
+    HIHY_AUTO_HOP_START=50000
+    HIHY_AUTO_HOP_END=51000
+    applyAutoOverrides || fail "applyAutoOverrides rejected HIHY_AUTO_MIMIC"
+    [ "$mimic_status" = "true" ] && pass "override: mimic enabled" || fail "override mimic_status='$mimic_status'"
+    [ "$portHoppingStatus" = "false" ] && pass "override: mimic forces hopping off" \
+        || fail "override hopping still on under mimic '$portHoppingStatus'"
+    exit $FAIL
+) || FAIL=1
+
+# ---------- 内核版本门槛(mimic 需 v2.12.0+) ----------
+(
+    load_funcs
+    getLocalHysteriaVersion() { echo "app/v2.12.0"; }
+    localCoreVersionAtLeast "2.12.0" && pass "version gate: 2.12.0 satisfies 2.12.0" || fail "version gate rejected equal 2.12.0"
+    getLocalHysteriaVersion() { echo "app/v2.11.0"; }
+    if localCoreVersionAtLeast "2.12.0"; then fail "version gate accepted 2.11.0 for 2.12.0"
+    else pass "version gate: 2.11.0 below 2.12.0"; fi
     exit $FAIL
 ) || FAIL=1
 

@@ -2,12 +2,12 @@
 
 **English** | [中文](README.md) | [فارسی](README_fa.md) | [Русский](README_ru.md)
 
-##### (2026/08/02) ver1.16
+##### (2026/08/06) ver1.17
 
 ```
-Fixed awk error in traffic statistics and missing SOCKS5 outbound menu options
-Removed namedotcom ACME DNS provider (unsupported since hysteria v2.11.0)
-Fixed traffic stats rows not displaying; redesigned the active connections table
+Added Mimic (TCP disguise) support (hysteria v2.12.0+), off by default
+Enabling skips port hopping; client must be Linux with root (e.g. soft router)
+mihomo/sing-box do not support mimic — native client config only
 ```
 
 
@@ -78,6 +78,7 @@ There may be bugs — please file an issue if you find any. Stars welcome! Your 
 * Supports LXC, OpenVZ, KVM and all mainstream virtualization platforms
 * Realm mode (P2P hole-punching) — establish connections without a public IP or port forwarding
 * Realm through Cloudflare WARP — connect to Hysteria2 via WARP IP, hiding the real server IP (effectively behind CF CDN)
+* Mimic (TCP disguise, hysteria v2.12.0+): off by default; both ends need Linux+root and the mimic module; mutually exclusive with port hopping
 * Timely updates — adapted within 24 hours of Hysteria2 releases
 
 </details>
@@ -119,7 +120,7 @@ You can directly invoke functions by number, e.g. `hihy 5` restarts hysteria2.
  -------------------------------------------
 |**********      Hi Hysteria       **********|
 |**********    Author: emptysuns   **********|
-||**********   Version: ver1.16     **********||
+||**********   Version: ver1.17     **********||
  -------------------------------------------
 Tips: hihy  command to run this script again.
 ............................................. 
