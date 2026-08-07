@@ -335,8 +335,9 @@
   "mimic_disabled_label": "Mimic: отключен",
   "mimic_enabled_label": "Mimic: включен",
   "mimic_hint1": "Подсказка: Mimic через eBPF маскирует UDP-пакеты под TCP. Полезно в сетях с ограничением/блокировкой UDP. Документация: https://v2.hysteria.network/zh/docs/advanced/Mimic/",
-  "mimic_hint2": "ВНИМАНИЕ: клиент ДОЛЖЕН быть Linux с root (например, софт-роутер). На обеих сторонах нужны программа mimic и модуль ядра. Клиенты Windows/телефонов подключиться не смогут.",
+  "mimic_hint2": "ВНИМАНИЕ: клиент ДОЛЖЕН быть Linux с root (например, софт-роутер). Скрипт автоматически установит mimic на сервере; на клиенте установите вручную: https://github.com/hack3ric/mimic/blob/master/docs/getting-started.md (полное описание CLI: mimic(1)). Клиенты Windows/телефонов подключиться не смогут.",
   "mimic_hint3": "Примечание: Mimic нельзя совмещать с port hopping; при включении port hopping будет пропущен. Нужно ядро hysteria v2.12.0+.",
+  "mimic_module_load_fail": "ВНИМАНИЕ: не удалось загрузить модуль ядра mimic (modprobe mimic). Убедитесь, что ядро >= 6.1 и модуль mimic установлен (DKMS/insmod), иначе сервер не запустится.",
   "mimic_prompt": "(3/13) Включить Mimic (маскировка под TCP)? По умолчанию выкл. Только Linux+root клиент.",
   "mimic_skip_port_hopping": "Mimic включен: несовместим с port hopping, настройка port hopping пропускается.",
   "min_hop_interval_error": "Ошибка формата минимального интервала прыжка; введите секунды не менее 5s, например 10s",
@@ -534,5 +535,12 @@
   "xforwarded_choice_disable": "2. Отключить",
   "xforwarded_choice_enable": "1. Включить (по умолчанию)",
   "xforwarded_label": "Заголовки X-Forwarded: ",
-  "xforwarded_prompt": "Добавить заголовки X-Forwarded-For / Host / Proto?"
+  "xforwarded_prompt": "Добавить заголовки X-Forwarded-For / Host / Proto?",
+  "mimic_installing": "Загрузка и установка mimic (отдельный проект, включая модуль ядра)...",
+  "mimic_installed": "mimic %s установлен, модуль ядра загружен (modprobe mimic), включён при загрузке",
+  "mimic_download_fail": "Не удалось скачать или проверить mimic",
+  "mimic_extract_fail": "Не удалось распаковать пакет mimic",
+  "mimic_unsupported_arch": "mimic не поддерживает архитектуру %s (только amd64/arm64); mimic пропущен",
+  "mimic_module_manual_hint": "Не удалось автоматически собрать модуль ядра mimic (нет dkms/заголовков ядра?). Установите модуль вручную по Getting Started и повторите: https://github.com/hack3ric/mimic/blob/master/docs/getting-started.md",
+  "mimic_install_fallback": "Автоустановка mimic не удалась; mimic отключён (сервис работает). После исправления включите заново: hihy 9"
 }

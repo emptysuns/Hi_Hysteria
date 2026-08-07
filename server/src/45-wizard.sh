@@ -1121,7 +1121,13 @@ writeHysteriaConfig() {
             echoColor yellow "$(i18n mimic_core_too_old "$(getLocalHysteriaVersion 2>/dev/null || echo unknown)")"
             mimic_status="false"
         else
-            addOrUpdateYaml "$yaml_file" "mimic.enabled" "true" "bool"
+            # mimic 是独立项目;脚本自动下载安装(程序+内核模块),失败则回退关闭并提示
+            if installMimic; then
+                addOrUpdateYaml "$yaml_file" "mimic.enabled" "true" "bool"
+            else
+                echoColor yellow "$(i18n mimic_install_fallback)"
+                mimic_status="false"
+            fi
         fi
     fi
     if [ "${congestion_mode}" == "brutal" ]; then

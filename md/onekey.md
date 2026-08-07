@@ -55,7 +55,7 @@ hihy autoinstall
 | `HIHY_AUTO_REMARKS` | 客户端配置备注名(默认 `auto-<端口>`) |
 | `HIHY_AUTO_ECH` | `true` 启用 ECH(加密 ClientHello，需内核 v2.10.0+)。密钥对由脚本本地生成，无需额外工具 |
 | `HIHY_AUTO_ECH_PUBLIC_NAME` | ECH 公开域名(明文幌子 SNI)，默认 `www.microsoft.com` |
-| `HIHY_AUTO_MIMIC` | `true` 启用 Mimic(伪装 TCP，需内核 v2.12.0+)。与端口跳跃互斥；两端须 Linux+root 并安装 mimic |
+| `HIHY_AUTO_MIMIC` | `true` 启用 Mimic(伪装 TCP，需内核 v2.12.0+)。与端口跳跃互斥；服务端由脚本自动下载安装 mimic，客户端需 Linux+root 并手动安装 |
 
 bootstrap 阶段(`install.sh --auto`)还支持 `--lang=zh|en|fa|ru` 指定语言，缺省英文。
 

@@ -2,6 +2,14 @@
 
 [English](README_en.md) | **中文** | [فارسی](README_fa.md) | [Русский](README_ru.md)
 
+##### (2026/08/07) ver1.18
+
+```
+Mimic 自动下载安装(服务端),无需手动下载
+amd64/arm64,失败自动回退;客户端仍需手动安装
+```
+
+
 ##### (2026/08/06) ver1.17
 
 ```
@@ -107,7 +115,7 @@ mihomo/sing-box 不支持 mimic，仅输出原生配置
 
 #### 10. [ECH - 加密 ClientHello](md/ech.md)
 
-#### 11. [Mimic - 伪装 TCP](https://v2.hysteria.network/zh/docs/advanced/Mimic/)
+#### 11. [Mimic - 伪装 TCP](md/mimic.md)
 
 ### 拉取安装
 
@@ -134,7 +142,7 @@ bash <(curl -fsSL https://git.io/hysteria.sh) --auto
 
 ```
  ╭───────────────────────────────────────────╮
- │            Hi Hysteria ver1.17            │
+ │            Hi Hysteria ver1.18            │
  │ https://github.com/emptysuns/Hi_Hysteria  │
  ╰───────────────────────────────────────────╯
   ● 运行中 │ 内核: v2.9.1

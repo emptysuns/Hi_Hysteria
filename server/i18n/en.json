@@ -335,8 +335,9 @@
   "mimic_disabled_label": "Mimic: disabled",
   "mimic_enabled_label": "Mimic: enabled",
   "mimic_hint1": "Tip: Mimic rewrites UDP packets to look like TCP via eBPF. Useful on networks that block/limit UDP. Docs: https://v2.hysteria.network/zh/docs/advanced/Mimic/",
-  "mimic_hint2": "WARNING: Client MUST be Linux with root (e.g. soft router). Both ends need the mimic program + kernel module. Windows/phone clients cannot connect.",
+  "mimic_hint2": "WARNING: Client MUST be Linux with root (e.g. soft router). The script auto-installs mimic on the server; install it manually on the client: https://github.com/hack3ric/mimic/blob/master/docs/getting-started.md (full CLI reference: mimic(1)). Windows/phone clients cannot connect.",
   "mimic_hint3": "Note: Mimic cannot be used with port hopping. Enabling it will skip port hopping. Requires hysteria core v2.12.0+.",
+  "mimic_module_load_fail": "Warning: failed to load mimic kernel module (modprobe mimic). Ensure kernel >= 6.1 and the mimic module is installed (DKMS/insmod), or the server cannot start.",
   "mimic_prompt": "(3/13) Enable Mimic (disguise as TCP)? Default off. Linux+root client only.",
   "mimic_skip_port_hopping": "Mimic enabled: port hopping is incompatible and will be skipped.",
   "min_hop_interval_error": "Minimum hop interval format error; please enter seconds not less than 5s, e.g. 10s",
@@ -534,5 +535,12 @@
   "xforwarded_choice_disable": "2. Disable",
   "xforwarded_choice_enable": "1. Enable (default)",
   "xforwarded_label": "X-Forwarded headers: ",
-  "xforwarded_prompt": "Add X-Forwarded-For / Host / Proto headers?"
+  "xforwarded_prompt": "Add X-Forwarded-For / Host / Proto headers?",
+  "mimic_installing": "Downloading and installing mimic (separate project, incl. kernel module)...",
+  "mimic_installed": "mimic %s installed, kernel module loaded (modprobe mimic), enabled at boot",
+  "mimic_download_fail": "Failed to download or verify mimic",
+  "mimic_extract_fail": "Failed to extract mimic package",
+  "mimic_unsupported_arch": "mimic does not support %s architecture (amd64/arm64 only); mimic skipped",
+  "mimic_module_manual_hint": "mimic kernel module could not be compiled automatically (dkms/kernel headers missing?). Install it manually per Getting Started and retry: https://github.com/hack3ric/mimic/blob/master/docs/getting-started.md",
+  "mimic_install_fallback": "mimic auto-install failed; fell back to disabled (service unaffected). Run `hihy 9` to re-enable after fixing."
 }

@@ -1,4 +1,16 @@
 # Hi Hysteria
+##### (2026/08/07) ver1.18
+
+```
+Mimic 自动下载安装,不再需要手动下载。
+
+1、服务端启用 Mimic 时自动从官方 release 下载安装 mimic(程序+内核模块):Debian/Ubuntu 用 apt 整装(自动编译 DKMS 模块),其他发行版解包静态二进制 + dkms 编译
+2、下载带 sha256 校验;装好后 modprobe 加载内核模块并配置开机自启(/etc/modules-load.d/mimic.conf)
+3、任一步失败(内核<6.1/架构不支持/缺编译环境)自动回退关闭 mimic,服务照常启动;修复后 hihy 9 重新配置开启
+4、已手动装好 mimic 且模块可用时直接复用,不重复下载
+5、官方 release 仅支持 amd64/arm64;客户端仍需手动安装
+```
+
 ##### (2026/08/06) ver1.17
 
 ```

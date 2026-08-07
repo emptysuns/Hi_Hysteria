@@ -168,6 +168,59 @@ load_funcs() { source "$REPO_ROOT/server/hy2.sh"; }
     exit $FAIL
 ) || FAIL=1
 
+# ---------- installMimic: 已装复用 / 自动下载安装 / 失败回退 / 架构门槛 ----------
+(
+    load_funcs
+    TMPD=$(mktemp -d)
+    export HIHY_MODULES_LOAD_DIR="$TMPD/modules"
+    export HIHY_MIMIC_BIN_DIR="$TMPD/bin"
+    export HIHY_DKMS_SRC_DIR="$TMPD/src"
+    modprobe() { return 0; }
+    # 1) 已装且模块可用 -> 直接复用,写开机自启
+    mkdir -p "$TMPD/bin"
+    printf '#!/bin/sh\nexit 0\n' > "$TMPD/bin/mimic"
+    chmod +x "$TMPD/bin/mimic"
+    PATH="$TMPD/bin:/usr/bin:/bin"
+    installMimic
+    rc=$?
+    [ $rc -eq 0 ] && pass "installMimic: already installed ok" || fail "installMimic reuse rc=$rc"
+    [ -f "$TMPD/modules/mimic.conf" ] && [ "$(cat "$TMPD/modules/mimic.conf")" = "mimic" ] \
+        && pass "installMimic: boot conf written" || fail "mimic.conf missing/wrong"
+    # 2) 缺失 -> 自动下载安装(全部 mock,强制走手动路径)
+    rm -f "$TMPD/bin/mimic" "$TMPD/modules/mimic.conf"
+    getLatestMimicVersion() { echo v9.9.9; }
+    downloadMimicDeb() { printf '#!/bin/sh\nexit 0\n' > "$2"; return 0; }
+    installMimicViaApt() { return 1; }
+    extractMimicDeb() {
+        mkdir -p "$2/usr/sbin" "$2/usr/src/mimic-9.9.9"
+        printf '#!/bin/sh\nexit 0\n' > "$2/usr/sbin/mimic"
+        chmod +x "$2/usr/sbin/mimic"
+        return 0
+    }
+    dkms() { return 0; }
+    installMimic
+    rc=$?
+    [ $rc -eq 0 ] && pass "installMimic: auto install ok" || fail "installMimic auto rc=$rc"
+    [ -x "$TMPD/bin/mimic" ] && pass "installMimic: binary installed" || fail "mimic binary not installed"
+    [ -d "$TMPD/src/mimic-9.9.9" ] && pass "installMimic: dkms source staged" || fail "dkms source missing"
+    [ -f "$TMPD/modules/mimic.conf" ] && pass "installMimic: boot conf after install" || fail "conf missing after install"
+    # 3) dkms 编译失败 -> 整体失败,清理残留
+    rm -f "$TMPD/bin/mimic" "$TMPD/modules/mimic.conf"
+    rm -rf "$TMPD/src"
+    dkms() { return 1; }
+    installMimic
+    rc=$?
+    [ $rc -ne 0 ] && pass "installMimic: dkms fail -> nonzero" || fail "installMimic should fail on dkms failure"
+    [ ! -f "$TMPD/modules/mimic.conf" ] && pass "installMimic: no conf on failure" || fail "conf written despite failure"
+    # 4) 不支持的架构 -> 非零
+    rm -f "$TMPD/bin/mimic" "$TMPD/modules/mimic.conf"
+    uname() { echo i686; }
+    installMimic
+    [ $? -ne 0 ] && pass "installMimic: unsupported arch rejected" || fail "unsupported arch accepted"
+    rm -rf "$TMPD"
+    exit $FAIL
+) || FAIL=1
+
 if [ "$FAIL" -eq 0 ]; then echo "ALL auto_config TESTS PASSED"; else
     echo "SOME auto_config TESTS FAILED" >&2
     exit 1

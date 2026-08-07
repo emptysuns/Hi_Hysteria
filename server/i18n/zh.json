@@ -335,8 +335,9 @@
   "mimic_disabled_label": "Mimic: 不启用",
   "mimic_enabled_label": "Mimic: 启用",
   "mimic_hint1": "Tip: Mimic 通过 eBPF 把 UDP 包改写成 TCP 外观,适合限制/封锁 UDP 的网络。文档: https://v2.hysteria.network/zh/docs/advanced/Mimic/",
-  "mimic_hint2": "警告: 客户端必须是支持 root 的 Linux 设备(如软路由)。两端都需安装 mimic 程序和内核模块。Windows/手机客户端将无法连接。",
+  "mimic_hint2": "警告: 客户端必须是支持 root 的 Linux 设备(如软路由)。服务端由脚本自动下载安装 mimic;客户端需手动安装,方法见 https://github.com/hack3ric/mimic/blob/master/docs/getting-started.md (完整命令行说明见 mimic(1))。Windows/手机客户端将无法连接。",
   "mimic_hint3": "注意: Mimic 不能与端口跳跃同时使用,启用后将跳过端口跳跃。需要 hysteria 内核 v2.12.0+。",
+  "mimic_module_load_fail": "警告: mimic 内核模块加载失败(modprobe mimic)。请确认内核 >= 6.1 且已安装 mimic 内核模块(DKMS/insmod),否则服务端无法启动",
   "mimic_prompt": "(3/13)是否启用 Mimic(伪装 TCP)?默认关闭。仅 Linux+root 客户端可用。",
   "mimic_skip_port_hopping": "已启用 Mimic:与端口跳跃不兼容,跳过端口跳跃设置。",
   "min_hop_interval_error": "最小跳跃间隔格式错误,请输入不小于5s的秒数,例如10s",
@@ -534,5 +535,12 @@
   "xforwarded_choice_disable": "2、关闭",
   "xforwarded_choice_enable": "1、启用(默认)",
   "xforwarded_label": "X-Forwarded请求头: ",
-  "xforwarded_prompt": "是否附加 X-Forwarded-For / Host / Proto 请求头:"
+  "xforwarded_prompt": "是否附加 X-Forwarded-For / Host / Proto 请求头:",
+  "mimic_installing": "正在下载并安装 mimic(独立项目,含内核模块,自动完成)...",
+  "mimic_installed": "mimic %s 已安装,内核模块已加载(modprobe mimic),并已配置开机自启",
+  "mimic_download_fail": "mimic 下载或校验失败",
+  "mimic_extract_fail": "mimic 安装包解包失败",
+  "mimic_unsupported_arch": "mimic 官方暂不支持 %s 架构(仅 amd64/arm64),已跳过启用 mimic",
+  "mimic_module_manual_hint": "mimic 内核模块未能自动编译(缺少 dkms/内核头文件)。请按 Getting Started 手动安装模块后重试: https://github.com/hack3ric/mimic/blob/master/docs/getting-started.md",
+  "mimic_install_fallback": "mimic 自动安装失败,已回退为不启用(服务正常);修复后可用 hihy 9 重新配置开启"
 }

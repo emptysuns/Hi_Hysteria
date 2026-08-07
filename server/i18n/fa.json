@@ -335,8 +335,9 @@
   "mimic_disabled_label": "Mimic: غیرفعال",
   "mimic_enabled_label": "Mimic: فعال",
   "mimic_hint1": "نکته: Mimic با eBPF بسته‌های UDP را شبیه TCP می‌کند؛ برای شبکه‌هایی که UDP را محدود/مسدود می‌کنند. مستندات: https://v2.hysteria.network/zh/docs/advanced/Mimic/",
-  "mimic_hint2": "هشدار: کلاینت باید لینوکس با root باشد (مثلاً روتر نرم‌افزاری). هر دو طرف به برنامه و ماژول کرنل mimic نیاز دارند. کلاینت‌های ویندوز/موبایل وصل نمی‌شوند.",
+  "mimic_hint2": "هشدار: کلاینت باید لینوکس با root باشد (مثلاً روتر نرم‌افزاری). اسکریپت mimic را روی سرور خودکار نصب می‌کند؛ روی کلاینت باید دستی نصب کنید: https://github.com/hack3ric/mimic/blob/master/docs/getting-started.md (مرجع کامل خط فرمان: mimic(1)). کلاینت‌های ویندوز/موبایل وصل نمی‌شوند.",
   "mimic_hint3": "توجه: Mimic را نمی‌توان همراه پرش پورت استفاده کرد؛ با فعال‌سازی، پرش پورت رد می‌شود. نیاز به هسته hysteria v2.12.0+.",
+  "mimic_module_load_fail": "هشدار: بارگذاری ماژول کرنل mimic ناموفق بود (modprobe mimic). مطمئن شوید کرنل >= 6.1 است و ماژول کرنل mimic نصب شده (DKMS/insmod)، وگرنه سرور نمی‌تواند شروع شود.",
   "mimic_prompt": "(۳/۱۳) Mimic (جعل TCP) فعال شود؟ پیش‌فرض خاموش. فقط کلاینت لینوکس+root.",
   "mimic_skip_port_hopping": "Mimic فعال شد: با پرش پورت ناسازگار است، تنظیم پرش پورت رد می‌شود.",
   "min_hop_interval_error": "قالب حداقل بازه پرش اشتباه است؛ لطفاً ثانیه را وارد کنید، نه کمتر از ۵s، مثلاً ۱۰s",
@@ -534,5 +535,12 @@
   "xforwarded_choice_disable": "۲. غیرفعال شود",
   "xforwarded_choice_enable": "۱. فعال شود (پیش‌فرض)",
   "xforwarded_label": "سرصفحه‌های X-Forwarded: ",
-  "xforwarded_prompt": "سرصفحه‌های X-Forwarded-For / Host / Proto اضافه شوند؟"
+  "xforwarded_prompt": "سرصفحه‌های X-Forwarded-For / Host / Proto اضافه شوند؟",
+  "mimic_installing": "در حال دانلود و نصب mimic (پروژه مستقل، شامل ماژول کرنل)...",
+  "mimic_installed": "mimic %s نصب شد، ماژول کرنل بارگذاری شد (modprobe mimic) و در بوت فعال شد",
+  "mimic_download_fail": "دانلود یا تأیید mimic ناموفق بود",
+  "mimic_extract_fail": "استخراج بسته mimic ناموفق بود",
+  "mimic_unsupported_arch": "mimic از معماری %s پشتیبانی نمی‌کند (فقط amd64/arm64)؛ mimic فعال نشد",
+  "mimic_module_manual_hint": "ماژول کرنل mimic به‌صورت خودکار کامپایل نشد (dkms/هدر کرنل موجود نیست؟). طبق Getting Started دستی نصب کنید و دوباره تلاش کنید: https://github.com/hack3ric/mimic/blob/master/docs/getting-started.md",
+  "mimic_install_fallback": "نصب خودکار mimic ناموفق بود؛ غیرفعال شد (سرویس بدون مشکل کار می‌کند). پس از رفع مشکل با hihy 9 دوباره فعال کنید"
 }

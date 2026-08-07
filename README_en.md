@@ -2,6 +2,14 @@
 
 **English** | [中文](README.md) | [فارسی](README_fa.md) | [Русский](README_ru.md)
 
+##### (2026/08/07) ver1.18
+
+```
+Mimic auto-download & install (server side), no manual download needed
+amd64/arm64; falls back automatically on failure; client still needs manual install
+```
+
+
 ##### (2026/08/06) ver1.17
 
 ```
@@ -120,7 +128,7 @@ You can directly invoke functions by number, e.g. `hihy 5` restarts hysteria2.
  -------------------------------------------
 |**********      Hi Hysteria       **********|
 |**********    Author: emptysuns   **********|
-||**********   Version: ver1.17     **********||
+||**********   Version: ver1.18     **********||
  -------------------------------------------
 Tips: hihy  command to run this script again.
 ............................................. 
